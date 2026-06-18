@@ -1,0 +1,27 @@
+# Framework Web e Server
+fastapi>=0.115.0
+uvicorn[standard]>=0.35.0
+
+# Database e ORM
+sqlalchemy>=2.0.40
+psycopg[binary]>=3.2.0
+
+# Migrazioni Database
+alembic>=1.16.0
+
+# Gestione Dati e Configurazioni
+pydantic>=2.11.0
+pydantic-settings>=2.10.0
+
+# Sicurezza e JWT
+python-jose[cryptography]>=3.5.0
+passlib[bcrypt]>=1.7.4
+python-multipart>=0.0.20
+
+# Dipendenze esplicite spesso richieste
+bcrypt>=4.3.0
+cryptography>=45.0.0
+
+# Message Broker e Background Tasks
+celery>=5.3.6
+redis>=5.0.1
