@@ -33,7 +33,7 @@ def retrieve_node(state: EmailProcessingState):
     from app.ai.rag import retrieve_context
     try:
         queries = []
-        # ✅ raccogliamo le citazioni dello studente per ogni categoria
+        # raccogliamo le citazioni dello studente per ogni categoria
         predicted = state.get("predicted_categories_json", [])
 
         if predicted:
@@ -48,7 +48,7 @@ def retrieve_node(state: EmailProcessingState):
             else state["body"]
         )
 
-        # ✅ nuovo: passiamo la categoria principale per il metadata filtering
+        # passiamo la categoria principale per il metadata filtering
         # se ci sono più categorie usiamo la prima con confidence più alta
         primary_category = None
         if predicted:
@@ -58,14 +58,14 @@ def retrieve_node(state: EmailProcessingState):
                 for cat in item.get("categories", [])
             ]
             if all_cats:
-                # ✅ ordina per confidence decrescente e prende la prima
+                # ordina per confidence decrescente e prende la prima
                 best = sorted(all_cats, key=lambda x: x.get("confidence", 0), reverse=True)
                 primary_category = best[0].get("name")
 
         context = retrieve_context(
             query=query_str,
             k=4,
-            category_name=primary_category  # ✅ nuovo parametro
+            category_name=primary_category
         )
 
         return {"context_retrieved": context, "error": None}
@@ -130,7 +130,7 @@ def route_after_error(state: EmailProcessingState):
         return "retrieve"
     return "generate"
 
-# ✅ nuovo nodo: propone un template all'operatore se la risposta era AUTONOMOUS e buona
+# propone un template all'operatore se la risposta era AUTONOMOUS e buona
 def propose_template_node(state: EmailProcessingState):
     from app.db.database import SessionLocal
     from app.models.category import Category
@@ -142,7 +142,7 @@ def propose_template_node(state: EmailProcessingState):
         answers = response_json.get("answers", [])
 
         for answer in answers:
-            # ✅ proponiamo template solo per risposte generate autonomamente
+            # proponiamo template solo per risposte generate autonomamente
             # quelle da template esistente non ci insegnano nulla di nuovo
             if answer.get("generation_type") != "AUTONOMOUS":
                 continue
@@ -150,7 +150,7 @@ def propose_template_node(state: EmailProcessingState):
             category_name = answer.get("category_answered")
             response_text = answer.get("response_text", "")
 
-            # ✅ scarto risposte troppo corte o escalation — non sono buoni template
+            # scarto risposte troppo corte o escalation — non sono buoni template
             if len(response_text) < 50 or "inoltrerò" in response_text.lower():
                 continue
 
@@ -167,13 +167,12 @@ def propose_template_node(state: EmailProcessingState):
                 body_template=response_text,
                 category_ids=[db_category.id],
             )
-            print(f"[AGENTE] 💡 Nuovo template proposto per la categoria: {category_name}")
+            print(f"[AGENTE] Nuovo template proposto per la categoria: {category_name}")
 
         return {"error": None}
 
     except Exception as e:
-        # ✅ errori qui non bloccano il flusso principale — il draft è già salvato
-        print(f"[AGENTE] ⚠️ Proposta template fallita (non bloccante): {e}")
+        print(f"[AGENTE] Proposta template fallita (non bloccante): {e}")
         return {"error": None}
     finally:
         db.close()
@@ -183,18 +182,15 @@ workflow = StateGraph(EmailProcessingState)
 workflow.add_node("classify", classify_node)
 workflow.add_node("retrieve", retrieve_node)
 workflow.add_node("generate", generate_node)
-workflow.add_node("propose_template", propose_template_node)  # ✅ nuovo nodo
+workflow.add_node("propose_template", propose_template_node)
 workflow.add_node("error_handler", error_handler_node)
 
 workflow.set_entry_point("classify")
 
 workflow.add_conditional_edges("classify", lambda state: "error_handler" if state.get("error") else "retrieve")
 workflow.add_conditional_edges("retrieve", lambda state: "error_handler" if state.get("error") else "generate")
-
-# ✅ dopo generate: se ok va a propose_template, se errore va all'handler
 workflow.add_conditional_edges("generate", lambda state: "error_handler" if state.get("error") else "propose_template")
 
-# ✅ propose_template è sempre l'ultimo nodo del flusso felice
 workflow.add_edge("propose_template", END)
 
 workflow.add_conditional_edges("error_handler", route_after_error)

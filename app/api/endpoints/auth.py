@@ -16,11 +16,11 @@ def login(credentials: UserLogin, db: Session = Depends(get_db)):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Email o password non corretti"
         )
-    # ✅ il subject del token è l'email dell'utente
+
     token = create_access_token(data={"sub": user.email})
     return TokenResponse(access_token=token)
 
-# ✅ solo un admin può creare nuovi utenti
+
 @router.post("/register", response_model=UserResponse)
 def register(user: UserCreate, db: Session = Depends(get_db), _: object = Depends(get_current_admin)):
     if get_user_by_email(db, user.email):

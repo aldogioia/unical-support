@@ -40,8 +40,6 @@ services:
       - db
       - redis
 
-  # ✅ nuovo: Celery Beat sostituisce il container poller
-  # si occupa SOLO dello scheduling, il worker esegue i task
   beat:
     build: .
     command: celery -A app.core.celery_app beat --loglevel=info

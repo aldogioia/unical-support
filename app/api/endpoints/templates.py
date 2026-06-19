@@ -5,7 +5,7 @@ from typing import List
 from app.schemas.template import TemplateResponse, TemplateCreate, TemplateUpdate, TemplateReviewAction
 from app.services import template_service
 from app.db.database import get_db
-from app.core.dependencies import get_current_user  # ✅ importato
+from app.core.dependencies import get_current_user
 
 router = APIRouter()
 
@@ -14,14 +14,14 @@ def read_templates(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    _=Depends(get_current_user)  # ✅ protetto
+    #_=Depends(get_current_user)
 ):
     return template_service.get_templates(db, skip=skip, limit=limit)
 
 @router.get("/pending", response_model=List[TemplateResponse])
 def read_pending_templates(
     db: Session = Depends(get_db),
-    _=Depends(get_current_user)  # ✅ protetto
+    #_=Depends(get_current_user)
 ):
     return template_service.get_pending_templates(db)
 
@@ -29,7 +29,7 @@ def read_pending_templates(
 def read_templates_by_category(
     category_id: int,
     db: Session = Depends(get_db),
-    _=Depends(get_current_user)  # ✅ protetto
+    #_=Depends(get_current_user)
 ):
     return template_service.get_templates_by_category(db, category_id=category_id)
 
@@ -37,7 +37,7 @@ def read_templates_by_category(
 def create_template(
     template: TemplateCreate,
     db: Session = Depends(get_db),
-    _=Depends(get_current_user)  # ✅ protetto
+    #_=Depends(get_current_user)
 ):
     return template_service.create_template(db=db, template=template)
 
@@ -46,7 +46,7 @@ def review_template(
     template_id: int,
     action: TemplateReviewAction,
     db: Session = Depends(get_db),
-    _=Depends(get_current_user)  # ✅ protetto
+    #_=Depends(get_current_user)
 ):
     template = template_service.review_template(db, template_id, action.action)
     if not template:
@@ -58,7 +58,7 @@ def update_template(
     template_id: int,
     template_in: TemplateUpdate,
     db: Session = Depends(get_db),
-    _=Depends(get_current_user)  # ✅ protetto
+    #_=Depends(get_current_user)
 ):
     updated = template_service.update_template(db, template_id, template_in)
     if not updated:
@@ -69,7 +69,7 @@ def update_template(
 def delete_template(
     template_id: int,
     db: Session = Depends(get_db),
-    _=Depends(get_current_user)  # ✅ protetto
+    #_=Depends(get_current_user)
 ):
     success = template_service.delete_template(db, template_id)
     if not success:

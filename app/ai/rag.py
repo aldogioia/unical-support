@@ -4,16 +4,16 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from flashrank import Ranker, RerankRequest
 from app.core.config import settings
 
-# ✅ modello di embedding inizializzato subito — non richiede DB
+# modello di embedding inizializzato subito — non richiede DB
 embeddings_model = GoogleGenerativeAIEmbeddings(
     model="text-embedding-001",
     google_api_key=settings.GOOGLE_API_KEY
 )
 
-# ✅ reranker caricato una volta sola all'avvio
+# reranker caricato una volta sola all'avvio
 reranker = Ranker(model_name="ms-marco-MiniLM-L-12-v2")
 
-# ✅ lazy: il vector store viene creato solo quando serve
+# lazy: il vector store viene creato solo quando serve
 # evita il crash all'avvio se il DB non è ancora pronto
 _vector_store = None
 
@@ -43,7 +43,7 @@ def index_langchain_documents(docs: list, category_name: str = "Generale"):
     )
     chunks = splitter.split_documents(docs)
 
-    print(f"📚 Indicizzazione di {len(chunks)} frammenti nel Vector DB...")
+    print(f"Indicizzazione di {len(chunks)} frammenti nel Vector DB...")
     get_vector_store().add_documents(chunks)
 
     return len(chunks)
@@ -60,17 +60,17 @@ def retrieve_context(query: str, k: int = 4, category_name: str = None) -> str:
     try:
         if search_filter:
             candidates = vector_store.similarity_search(query, k=candidate_count, filter=search_filter)
-            print(f"🔍 Trovati {len(candidates)} candidati per categoria '{category_name}'")
+            print(f"Trovati {len(candidates)} candidati per categoria '{category_name}'")
         else:
             candidates = vector_store.similarity_search(query, k=candidate_count)
-            print(f"🔍 Trovati {len(candidates)} candidati globali")
+            print(f"Trovati {len(candidates)} candidati globali")
 
         if not candidates and search_filter:
-            print(f"⚠️ Nessun risultato per categoria '{category_name}', ricerca globale...")
+            print(f"Nessun risultato per categoria '{category_name}', ricerca globale...")
             candidates = vector_store.similarity_search(query, k=candidate_count)
 
     except Exception as e:
-        print(f"❌ Errore similarity search: {e}")
+        print(f"Errore similarity search: {e}")
         return ""
 
     if not candidates:
@@ -84,10 +84,10 @@ def retrieve_context(query: str, k: int = 4, category_name: str = None) -> str:
         reranked = reranker.rerank(rerank_request)
         top_k_ids = [r["id"] for r in reranked[:k]]
         final_docs = [candidates[i] for i in top_k_ids]
-        print(f"✅ Reranking completato: selezionati {len(final_docs)} frammenti finali")
+        print(f"Reranking completato: selezionati {len(final_docs)} frammenti finali")
 
     except Exception as e:
-        print(f"⚠️ Reranking fallito, uso candidati originali: {e}")
+        print(f"Reranking fallito, uso candidati originali: {e}")
         final_docs = candidates[:k]
 
     return "\n\n---\n\n".join([doc.page_content for doc in final_docs])

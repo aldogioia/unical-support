@@ -3,7 +3,6 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from app.core.config import settings
 
 def get_classifier_llm():
-    # ✅ Groq con openai/gpt-oss-20b per classificazione rapida
     return ChatGroq(
         temperature=0,
         model_name="openai/gpt-oss-20b",
@@ -11,7 +10,6 @@ def get_classifier_llm():
     )
 
 def get_responder_llm():
-    # ✅ Gemini 3.1 Flash Lite per la generazione delle risposte
     return ChatGoogleGenerativeAI(
         model="gemini-3.1-flash-lite",
         temperature=0.4,

@@ -1,8 +1,7 @@
 from app.core.celery_app import celery_app
 from app.db.database import SessionLocal
 
-# ✅ import espliciti di tutti i modelli per evitare errori di mapper nel worker
-from app.models import category, email, template, document, user  # noqa: F401
+from app.models import *
 from app.models.email import Email, EmailStatus
 from app.models.category import Category
 from app.ai.graph import app_graph, EmailProcessingState
@@ -17,7 +16,7 @@ def process_new_email(email_id: int):
 
         db_email.status = EmailStatus.PROCESSING
         db.commit()
-        print(f"[WORKER] 🚀 Avvio Agente LangGraph per email {email_id}...")
+        print(f"[WORKER] Avvio Agente LangGraph per email {email_id}...")
 
         all_categories = db.query(Category).all()
         category_names = [cat.name for cat in all_categories]
@@ -44,7 +43,7 @@ def process_new_email(email_id: int):
         final_state = app_graph.invoke(initial_state)
 
         if final_state.get("error"):
-            print(f"[WORKER] ❌ Fallimento definitivo: {final_state['error']}")
+            print(f"[WORKER] Fallimento definitivo: {final_state['error']}")
             db_email.status = EmailStatus.FAILED
             db.commit()
             return False
@@ -63,16 +62,16 @@ def process_new_email(email_id: int):
                             db_email.categories.append(matched)
 
             db.commit()
-            print(f"[WORKER] ✅ Elaborazione completata! Bozza creata.")
+            print(f"[WORKER] Elaborazione completata! Bozza creata.")
             return True
         else:
-            print("[WORKER] ⚠️ LangGraph non ha prodotto alcuna bozza.")
+            print("[WORKER] LangGraph non ha prodotto alcuna bozza.")
             db_email.status = EmailStatus.UNREAD
             db.commit()
             return False
 
     except Exception as e:
-        print(f"[WORKER] ❌ Errore critico: {e}")
+        print(f"[WORKER] Errore critico: {e}")
         db.rollback()
         return False
     finally:

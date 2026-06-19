@@ -23,7 +23,6 @@ class Category(Base):
     name = Column(String(255), unique=True, index=True, nullable=False)
     description = Column(Text, nullable=True)
 
-    # ✅ string reference invece di classe diretta — evita import circolare nel worker
     templates = relationship("Template", secondary=template_category_association, back_populates="categories")
     emails = relationship("Email", secondary=email_category_association, back_populates="categories")
     documents = relationship("Document", back_populates="category")

@@ -16,7 +16,6 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
-# ✅ risposta del server dopo login con il token JWT
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"

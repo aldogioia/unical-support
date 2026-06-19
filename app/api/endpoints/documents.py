@@ -5,7 +5,7 @@ from typing import List, Optional
 from app.schemas.document import DocumentResponse
 from app.services import document_service
 from app.db.database import get_db
-from app.core.dependencies import get_current_user  # ✅ importato
+from app.core.dependencies import get_current_user
 
 router = APIRouter()
 
@@ -14,7 +14,7 @@ def read_documents(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    _=Depends(get_current_user)  # ✅ protetto
+    #_=Depends(get_current_user)
 ):
     return document_service.get_documents(db, skip=skip, limit=limit)
 
@@ -24,7 +24,7 @@ async def upload_document(
     url: Optional[str] = Form(None),
     category_id: Optional[int] = Form(None),
     db: Session = Depends(get_db),
-    _=Depends(get_current_user)  # ✅ protetto
+    #_=Depends(get_current_user)
 ):
     if not file and not url:
         raise HTTPException(status_code=400, detail="Devi fornire un 'file' oppure un 'url'.")
@@ -48,7 +48,7 @@ async def upload_document(
 def delete_document(
     document_id: int,
     db: Session = Depends(get_db),
-    _=Depends(get_current_user)  # ✅ protetto
+    #_=Depends(get_current_user)
 ):
     success = document_service.delete_document(db, document_id)
     if not success:

@@ -2,7 +2,7 @@ import re
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing import List
 from app.schemas.category import CategoryResponse
-from app.models.template import TemplateStatus  # ✅ importiamo l'enum
+from app.models.template import TemplateStatus
 
 class TemplateBase(BaseModel):
     name: str = Field(..., min_length=3, max_length=100)
@@ -42,13 +42,12 @@ class TemplateUpdate(BaseModel):
             raise ValueError("Parentesi sbilanciate nel corpo.")
         return self
 
-# ✅ nuovo: schema per approvare o rifiutare un template proposto dall'agente
 class TemplateReviewAction(BaseModel):
-    action: str = Field(..., pattern="^(approve|reject)$")  # solo questi due valori
+    action: str = Field(..., pattern="^(approve|reject)$")
 
 class TemplateResponse(TemplateBase):
     id: int
-    status: TemplateStatus          # ✅ esposto nella response
-    usage_count: int                # ✅ esposto nella response
+    status: TemplateStatus
+    usage_count: int
     categories: List[CategoryResponse] = []
     model_config = ConfigDict(from_attributes=True)

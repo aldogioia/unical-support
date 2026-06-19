@@ -5,7 +5,6 @@ from app.core.security import decode_access_token
 from app.db.database import get_db
 from app.models.user import User
 
-# ✅ HTTPBearer mostra il campo singolo "Value" in Swagger invece del form OAuth2
 bearer_scheme = HTTPBearer()
 
 def get_current_user(

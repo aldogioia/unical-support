@@ -8,4 +8,4 @@ class User(Base):
     email = Column(String(255), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
-    is_admin = Column(Boolean, default=False, nullable=False)  # ✅ solo gli admin accedono al pannello
+    is_admin = Column(Boolean, default=False, nullable=False)

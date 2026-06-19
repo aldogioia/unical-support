@@ -7,7 +7,6 @@ def get_template(db: Session, template_id: int):
     return db.query(Template).filter(Template.id == template_id).first()
 
 def get_templates(db: Session, skip: int = 0, limit: int = 100):
-    # ✅ mostra solo i template attivi nella lista principale
     return (
         db.query(Template)
         .filter(Template.status == TemplateStatus.ACTIVE)
@@ -17,7 +16,6 @@ def get_templates(db: Session, skip: int = 0, limit: int = 100):
     )
 
 def get_templates_by_category(db: Session, category_id: int):
-    # ✅ solo template attivi, join many-to-many corretto
     return (
         db.query(Template)
         .join(Template.categories)
@@ -26,7 +24,6 @@ def get_templates_by_category(db: Session, category_id: int):
         .all()
     )
 
-# ✅ nuovo: lista template in attesa di revisione da parte dell'operatore
 def get_pending_templates(db: Session):
     return (
         db.query(Template)
@@ -39,7 +36,7 @@ def create_template(db: Session, template: TemplateCreate):
         name=template.name,
         subject_template=template.subject_template,
         body_template=template.body_template,
-        status=TemplateStatus.ACTIVE  # ✅ creato dall'umano → subito attivo
+        status=TemplateStatus.ACTIVE
     )
 
     if template.category_ids:
@@ -51,13 +48,12 @@ def create_template(db: Session, template: TemplateCreate):
     db.refresh(db_template)
     return db_template
 
-# ✅ nuovo: chiamato dall'agente dopo una risposta AUTONOMOUS di successo
 def create_template_from_agent(db: Session, name: str, body_template: str, category_ids: list[int], subject_template: str = None):
     db_template = Template(
         name=name,
         subject_template=subject_template,
         body_template=body_template,
-        status=TemplateStatus.PENDING_APPROVAL  # ✅ proposto → deve essere approvato
+        status=TemplateStatus.PENDING_APPROVAL
     )
 
     if category_ids:
@@ -69,7 +65,6 @@ def create_template_from_agent(db: Session, name: str, body_template: str, categ
     db.refresh(db_template)
     return db_template
 
-# ✅ nuovo: operatore approva o rifiuta un template proposto
 def review_template(db: Session, template_id: int, action: str):
     db_template = get_template(db, template_id)
     if not db_template:
@@ -111,7 +106,6 @@ def delete_template(db: Session, template_id: int):
         return True
     return False
 
-# ✅ nuovo: incrementa il contatore quando un template viene usato con successo
 def increment_usage(db: Session, template_id: int):
     db_template = get_template(db, template_id)
     if db_template:

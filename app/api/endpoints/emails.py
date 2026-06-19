@@ -17,7 +17,7 @@ def read_emails(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    _=Depends(get_current_user)  # ✅ protetto
+    #_=Depends(get_current_user)
 ):
     return email_service.get_emails(db, status=status, skip=skip, limit=limit)
 
@@ -25,7 +25,7 @@ def read_emails(
 def read_email(
     email_id: int,
     db: Session = Depends(get_db),
-    _=Depends(get_current_user)  # ✅ protetto
+    #_=Depends(get_current_user)
 ):
     email = email_service.get_email(db, email_id=email_id)
     if email is None:
@@ -36,7 +36,7 @@ def read_email(
 def create_new_email(
     email: EmailCreate,
     db: Session = Depends(get_db),
-    _=Depends(get_current_user)  # ✅ protetto
+    #_=Depends(get_current_user)
 ):
     existing_email = db.query(Email).filter(Email.gmail_id == email.gmail_id).first()
     if existing_email:
@@ -51,7 +51,7 @@ def update_email_draft(
     email_id: int,
     update_data: EmailUpdateDraft,
     db: Session = Depends(get_db),
-    _=Depends(get_current_user)  # ✅ protetto
+    #_=Depends(get_current_user)
 ):
     email = email_service.update_email_draft(db, email_id=email_id, update_data=update_data)
     if email is None:

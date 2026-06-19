@@ -13,6 +13,7 @@ def get_document(db: Session, document_id: int):
 def get_documents(db: Session, skip: int = 0, limit: int = 100):
     return db.query(Document).offset(skip).limit(limit).all()
 
+# TODO cercare di migliorare questo metodo, soprattutto la categoria deve essere fornita necessariamente
 def process_and_upload_document(db: Session, file: UploadFile | None, url: str | None, category_id: int | None):
     """Logica di business per gestire file multi-formato o URL e inviarli al Vector DB."""
     

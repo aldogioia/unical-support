@@ -5,7 +5,7 @@ from typing import List
 from app.schemas.category import CategoryResponse, CategoryCreate, CategoryUpdate
 from app.services import category_service
 from app.db.database import get_db
-from app.core.dependencies import get_current_user  # ✅ importato
+from app.core.dependencies import get_current_user
 
 router = APIRouter()
 
@@ -14,7 +14,7 @@ def read_categories(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    _=Depends(get_current_user)  # ✅ protetto
+    #_=Depends(get_current_user)
 ):
     return category_service.get_categories(db, skip=skip, limit=limit)
 
@@ -22,7 +22,7 @@ def read_categories(
 def create_category(
     category: CategoryCreate,
     db: Session = Depends(get_db),
-    _=Depends(get_current_user)  # ✅ protetto
+    #_=Depends(get_current_user)
 ):
     db_category = category_service.get_category_by_name(db, name=category.name)
     if db_category:
@@ -34,7 +34,7 @@ def update_category(
     category_id: int,
     category_in: CategoryUpdate,
     db: Session = Depends(get_db),
-    _=Depends(get_current_user)  # ✅ protetto
+    #_=Depends(get_current_user)
 ):
     updated_category = category_service.update_category(db, category_id, category_in)
     if not updated_category:
@@ -45,7 +45,7 @@ def update_category(
 def delete_category(
     category_id: int,
     db: Session = Depends(get_db),
-    _=Depends(get_current_user)  # ✅ protetto
+    #_=Depends(get_current_user)
 ):
     success = category_service.delete_category(db, category_id)
     if not success:
