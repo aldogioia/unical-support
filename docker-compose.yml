@@ -1,0 +1,54 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: unical_support
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+psycopg://postgres:root@db:5432/unical_support
+      - REDIS_URL=redis://redis:6379/0
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+    depends_on:
+      - db
+      - redis
+
+  worker:
+    build: .
+    command: celery -A app.core.celery_app worker --loglevel=info -Q emails_queue
+    environment:
+      - DATABASE_URL=postgresql+psycopg://postgres:root@db:5432/unical_support
+      - REDIS_URL=redis://redis:6379/0
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+    depends_on:
+      - db
+      - redis
+
+  poller:
+    build: .
+    command: python -m app.listener.poller
+    environment:
+      - DATABASE_URL=postgresql+psycopg://postgres:root@db:5432/unical_support
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  postgres_data:

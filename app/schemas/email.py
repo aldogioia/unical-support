@@ -10,14 +10,14 @@ class EmailBase(BaseModel):
 
 class EmailCreate(EmailBase):
     gmail_id: str = Field(..., min_length=5)
-    category_ids: List[int] = Field(default_factory=list) # Aggiunto
+    category_ids: List[int] = Field(default_factory=list)
 
 class EmailResponse(EmailBase):
     id: int
     gmail_id: str
     status: EmailStatus
     generated_draft: str | None = None
-    categories: List[CategoryResponse] = [] # Ora è una lista!
+    categories: List[CategoryResponse] = []
     model_config = ConfigDict(from_attributes=True)
 
 class EmailUpdateDraft(BaseModel):

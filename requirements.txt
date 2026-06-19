@@ -10,7 +10,7 @@ psycopg[binary]>=3.2.0
 alembic>=1.16.0
 
 # Gestione Dati e Configurazioni
-pydantic>=2.11.0
+pydantic[email]>=2.11.0
 pydantic-settings>=2.10.0
 
 # Sicurezza e JWT
@@ -25,3 +25,21 @@ cryptography>=45.0.0
 # Message Broker e Background Tasks
 celery>=5.3.6
 redis>=5.0.1
+
+# Gmail
+google-api-python-client>=2.120.0
+google-auth-httplib2>=0.2.0
+google-auth-oauthlib>=1.2.0
+
+# LangChain, RAG e Vector DB
+langchain>=0.1.13
+langchain-groq>=0.1.0
+langchain-google-genai>=1.0.1
+langchain-core>=0.1.33
+langchain-community>=0.0.29
+langchain-text-splitters>=0.0.1
+unstructured>=0.13.0
+beautifulsoup4>=4.12.3
+pgvector>=0.2.5
+langchain-postgres>=0.0.9
+pypdf>=4.2.0
