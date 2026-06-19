@@ -30,7 +30,7 @@ services:
 
   worker:
     build: .
-    command: celery -A app.core.celery_app worker --loglevel=info -Q emails_queue
+    command: celery -A app.core.celery_app worker --loglevel=info -Q emails_queue,polling_queue
     environment:
       - DATABASE_URL=postgresql+psycopg://postgres:root@db:5432/unical_support
       - REDIS_URL=redis://redis:6379/0
@@ -40,15 +40,21 @@ services:
       - db
       - redis
 
-  poller:
+  # ✅ nuovo: Celery Beat sostituisce il container poller
+  # si occupa SOLO dello scheduling, il worker esegue i task
+  beat:
     build: .
-    command: python -m app.listener.poller
+    command: celery -A app.core.celery_app beat --loglevel=info
     environment:
       - DATABASE_URL=postgresql+psycopg://postgres:root@db:5432/unical_support
       - REDIS_URL=redis://redis:6379/0
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
     depends_on:
       - db
       - redis
+
+  
 
 volumes:
   postgres_data:

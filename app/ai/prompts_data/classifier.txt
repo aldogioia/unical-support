@@ -14,18 +14,16 @@ Il tuo obiettivo è leggere l'email dello studente e individuare TUTTE le distin
 ## STRUTTURA OUTPUT OBBLIGATORIA (SOLO JSON)
 Rispondi SOLO con un array JSON. Nessun testo extra.
 
-$$JSON_SCHEMA$$
 [
-  {
-    "id": number,
+  {{
+    "id": 1,
     "categories": [
-      { "name": "nome_categoria", "confidence": number, "user_quote": "frase esatta dello studente che ha scatenato questa categoria" }
+      {{ "name": "nome_categoria", "confidence": 0.95, "user_quote": "frase esatta dello studente" }}
     ],
     "explanation": "Breve spiegazione delle scelte"
-  }
+  }}
 ]
-$$END_JSON_SCHEMA$$
 
-# [User Prompt] INPUT DA CLASSIFICARE
+## INPUT DA CLASSIFICARE
 Analizza e classifica le seguenti email:
 {EMAIL_LIST}

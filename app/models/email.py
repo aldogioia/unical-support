@@ -10,6 +10,7 @@ class EmailStatus(str, enum.Enum):
     DRAFT = "DRAFT"
     SENT = "SENT"
     IGNORED = "IGNORED"
+    FAILED = "FAILED" 
 
 class Email(Base):
     __tablename__ = "emails"

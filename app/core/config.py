@@ -7,7 +7,13 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     REDIS_URL: str = "redis://localhost:6379/0"
     GOOGLE_API_KEY: str = ""
+    GOOGLE_API_KEY_2: str = ""   # ✅ seconda chiave Google
+    GROQ_API_KEY: str = ""
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
 
 settings = Settings()

@@ -1,5 +1,8 @@
 from app.core.celery_app import celery_app
 from app.db.database import SessionLocal
+
+# ✅ import espliciti di tutti i modelli per evitare errori di mapper nel worker
+from app.models import category, email, template, document, user  # noqa: F401
 from app.models.email import Email, EmailStatus
 from app.models.category import Category
 from app.ai.graph import app_graph, EmailProcessingState
@@ -8,28 +11,27 @@ from app.ai.graph import app_graph, EmailProcessingState
 def process_new_email(email_id: int):
     db = SessionLocal()
     try:
-        email = db.query(Email).filter(Email.id == email_id).first()
-        if not email:
+        db_email = db.query(Email).filter(Email.id == email_id).first()
+        if not db_email:
             return f"Errore: Email {email_id} non trovata."
 
-        email.status = EmailStatus.PROCESSING
+        db_email.status = EmailStatus.PROCESSING
         db.commit()
-        print(f"[WORKER] Avvio Agente LangGraph per email {email_id}...")
+        print(f"[WORKER] 🚀 Avvio Agente LangGraph per email {email_id}...")
 
         all_categories = db.query(Category).all()
         category_names = [cat.name for cat in all_categories]
-        
+
         if not category_names:
-            email.status = EmailStatus.IGNORED
+            db_email.status = EmailStatus.IGNORED
             db.commit()
             return "Nessuna categoria nel sistema per classificare."
 
-        # Inizializziamo lo stato per LangGraph
         initial_state = EmailProcessingState(
-            email_id=email.id,
-            sender=email.sender,
-            subject=email.subject or "",
-            body=email.body or "",
+            email_id=db_email.id,
+            sender=db_email.sender,
+            subject=db_email.subject or "",
+            body=db_email.body or "",
             available_categories=category_names,
             predicted_categories_json=None,
             context_retrieved=None,
@@ -39,43 +41,38 @@ def process_new_email(email_id: int):
             retry_count=0
         )
 
-        # INVOCA IL GRAFO: Tutto il ragionamento multi-intento avviene qui
         final_state = app_graph.invoke(initial_state)
 
-        # Gestione fallimenti definitivi
         if final_state.get("error"):
-            print(f"[WORKER] Fallimento definitivo LangGraph: {final_state['error']}")
-            # Inserisci logica di escalation qui in futuro
-            email.status = EmailStatus.UNREAD
+            print(f"[WORKER] ❌ Fallimento definitivo: {final_state['error']}")
+            db_email.status = EmailStatus.FAILED
             db.commit()
             return False
 
-        # Salvataggio successo
         bozza = final_state.get("final_draft")
         if bozza:
-            email.generated_draft = bozza
-            email.status = EmailStatus.DRAFT
-            
-            # Salviamo le categorie multiple associate a questa email
+            db_email.generated_draft = bozza
+            db_email.status = EmailStatus.DRAFT
+
             predicted_json = final_state.get("predicted_categories_json", [])
             if isinstance(predicted_json, list):
                 for item in predicted_json:
                     for cat_info in item.get("categories", []):
                         matched = next((c for c in all_categories if c.name.lower() == cat_info.get("name", "").lower()), None)
-                        if matched and matched not in email.categories:
-                            email.categories.append(matched)
+                        if matched and matched not in db_email.categories:
+                            db_email.categories.append(matched)
 
             db.commit()
-            print(f"[WORKER] Elaborazione completata! Bozza creata con successo.")
+            print(f"[WORKER] ✅ Elaborazione completata! Bozza creata.")
             return True
         else:
-            print("[WORKER] Errore: LangGraph non ha prodotto alcuna bozza.")
-            email.status = EmailStatus.UNREAD
+            print("[WORKER] ⚠️ LangGraph non ha prodotto alcuna bozza.")
+            db_email.status = EmailStatus.UNREAD
             db.commit()
             return False
 
     except Exception as e:
-        print(f"[WORKER] Errore critico nel Worker: {e}")
+        print(f"[WORKER] ❌ Errore critico: {e}")
         db.rollback()
         return False
     finally:

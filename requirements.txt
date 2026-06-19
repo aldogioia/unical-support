@@ -19,7 +19,8 @@ passlib[bcrypt]>=1.7.4
 python-multipart>=0.0.20
 
 # Dipendenze esplicite spesso richieste
-bcrypt>=4.3.0
+bcrypt==4.0.1
+passlib==1.7.4
 cryptography>=45.0.0
 
 # Message Broker e Background Tasks
@@ -43,3 +44,6 @@ beautifulsoup4>=4.12.3
 pgvector>=0.2.5
 langchain-postgres>=0.0.9
 pypdf>=4.2.0
+
+# ✅ nuovo: reranking dei risultati RAG per migliorare la qualità
+flashrank>=0.2.0
