@@ -19,7 +19,8 @@ celery_app.conf.update(
     timezone="Europe/Rome",
     enable_utc=True,
     task_routes={
-        "app.tasks.email_tasks.*": {"queue": "emails_queue"},
+        "app.tasks.email_tasks.classify_email*": {"queue": "classify_queue"},
+        "app.tasks.email_tasks.respond_email*": {"queue": "respond_queue"},
         "app.tasks.polling_tasks.*": {"queue": "polling_queue"},
     },
     beat_schedule={

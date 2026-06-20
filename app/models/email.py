@@ -6,11 +6,13 @@ from app.models.category import email_category_association
 
 class EmailStatus(str, enum.Enum):
     UNREAD = "UNREAD"
-    PROCESSING = "PROCESSING"
+    TO_CLASSIFY = "TO_CLASSIFY"
+    TO_RESPOND = "TO_RESPOND"
     DRAFT = "DRAFT"
+    ESCALATED = "ESCALATED"
     SENT = "SENT"
     IGNORED = "IGNORED"
-    FAILED = "FAILED" 
+    FAILED = "FAILED"
 
 class Email(Base):
     __tablename__ = "emails"
@@ -20,6 +22,6 @@ class Email(Base):
     sender = Column(String(255), nullable=False)
     subject = Column(String(255), nullable=True)
     body = Column(Text, nullable=True)
-    status = Column(Enum(EmailStatus), default=EmailStatus.UNREAD)
+    status = Column(Enum(EmailStatus), default=EmailStatus.TO_CLASSIFY)
     generated_draft = Column(Text, nullable=True)
     categories = relationship("Category", secondary=email_category_association, back_populates="emails")

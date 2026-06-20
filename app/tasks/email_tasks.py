@@ -1,78 +1,114 @@
 from app.core.celery_app import celery_app
-from app.db.database import SessionLocal
-
-from app.models import *
+from app.db.database import session_scope
 from app.models.email import Email, EmailStatus
-from app.models.category import Category
-from app.ai.graph import app_graph, EmailProcessingState
+from app.ai.llm_factory import get_classifier_llm, get_responder_llm
+from langgraph.prebuilt import create_react_agent
+from langchain_core.messages import SystemMessage, HumanMessage
+from app.ai.prompts import get_classifier_system_prompt, get_responder_system_prompt
 
-@celery_app.task(name="app.tasks.email_tasks.process_new_email")
-def process_new_email(email_id: int):
-    db = SessionLocal()
+from app.ai.tools import (
+    get_available_categories,
+    assign_categories_and_route,
+    search_knowledge_base,
+    get_category_template,
+    save_draft_response,
+    escalate_to_human
+)
+
+@celery_app.task(name="app.tasks.email_tasks.classify_email_task")
+def classify_email_task(email_id: int):
     try:
-        db_email = db.query(Email).filter(Email.id == email_id).first()
-        if not db_email:
-            return f"Errore: Email {email_id} non trovata."
-
-        db_email.status = EmailStatus.PROCESSING
-        db.commit()
-        print(f"[WORKER] Avvio Agente LangGraph per email {email_id}...")
-
-        all_categories = db.query(Category).all()
-        category_names = [cat.name for cat in all_categories]
-
-        if not category_names:
-            db_email.status = EmailStatus.IGNORED
-            db.commit()
-            return "Nessuna categoria nel sistema per classificare."
-
-        initial_state = EmailProcessingState(
-            email_id=db_email.id,
-            sender=db_email.sender,
-            subject=db_email.subject or "",
-            body=db_email.body or "",
-            available_categories=category_names,
-            predicted_categories_json=None,
-            context_retrieved=None,
-            generated_response_json=None,
-            final_draft=None,
-            error=None,
-            retry_count=0
+        with session_scope() as db:
+            email = db.query(Email).filter(Email.id == email_id).first()
+            if not email or email.status != EmailStatus.TO_CLASSIFY:
+                return f"Email {email_id} non trovata o stato non valido."
+            
+            sender = email.sender
+            subject = email.subject or ""
+            body = email.body or ""
+        
+        print(f"[WORKER-CLASSIFY] Avvio classificazione per email {email_id}...")
+        
+        llm = get_classifier_llm()
+        tools = [get_available_categories, assign_categories_and_route]
+        
+        sys_msg = SystemMessage(content=get_classifier_system_prompt())
+        user_msg = HumanMessage(content=f"L'email ID è {email_id}.\nMittente: {sender}\nOggetto: {subject}\nTesto:\n{body}")
+        
+        agent = create_react_agent(llm, tools)
+        
+        agent.invoke(
+            {"messages": [sys_msg, user_msg]}, 
+            config={"recursion_limit": 25}
         )
-
-        final_state = app_graph.invoke(initial_state)
-
-        if final_state.get("error"):
-            print(f"[WORKER] Fallimento definitivo: {final_state['error']}")
-            db_email.status = EmailStatus.FAILED
-            db.commit()
-            return False
-
-        bozza = final_state.get("final_draft")
-        if bozza:
-            db_email.generated_draft = bozza
-            db_email.status = EmailStatus.DRAFT
-
-            predicted_json = final_state.get("predicted_categories_json", [])
-            if isinstance(predicted_json, list):
-                for item in predicted_json:
-                    for cat_info in item.get("categories", []):
-                        matched = next((c for c in all_categories if c.name.lower() == cat_info.get("name", "").lower()), None)
-                        if matched and matched not in db_email.categories:
-                            db_email.categories.append(matched)
-
-            db.commit()
-            print(f"[WORKER] Elaborazione completata! Bozza creata.")
-            return True
-        else:
-            print("[WORKER] LangGraph non ha prodotto alcuna bozza.")
-            db_email.status = EmailStatus.UNREAD
-            db.commit()
-            return False
+        
+        with session_scope() as db:
+            check_email = db.query(Email).filter(Email.id == email_id).first()
+            if check_email and check_email.status == EmailStatus.TO_CLASSIFY:
+                print(f"[WORKER-CLASSIFY] L'agente non ha aggiornato lo stato per l'email {email_id}. Forzatura a FAILED.")
+                check_email.status = EmailStatus.FAILED
+                return False
+                
+        print(f"[WORKER-CLASSIFY] Classificazione completata per email {email_id}.")
+        return True
 
     except Exception as e:
-        print(f"[WORKER] Errore critico: {e}")
-        db.rollback()
+        print(f"[WORKER-CLASSIFY] Errore: {e}")
+        try:
+            with session_scope() as db:
+                email = db.query(Email).filter(Email.id == email_id).first()
+                if email and email.status == EmailStatus.TO_CLASSIFY:
+                    email.status = EmailStatus.FAILED
+        except Exception:
+            pass
         return False
-    finally:
-        db.close()
+
+@celery_app.task(name="app.tasks.email_tasks.respond_email_task")
+def respond_email_task(email_id: int):
+    try:
+        with session_scope() as db:
+            email = db.query(Email).filter(Email.id == email_id).first()
+            if not email or email.status != EmailStatus.TO_RESPOND:
+                return f"Email {email_id} non trovata o stato non valido."
+            
+            sender = email.sender
+            subject = email.subject or ""
+            body = email.body or ""
+            categories = ", ".join([c.name for c in email.categories])
+        
+        print(f"[WORKER-RESPOND] Avvio risposta per email {email_id} (Categorie: {categories})...")
+        
+        llm = get_responder_llm()
+        tools = [search_knowledge_base, get_category_template, save_draft_response, escalate_to_human]
+        
+        sys_msg = SystemMessage(content=get_responder_system_prompt())
+        user_msg = HumanMessage(content=f"L'email ID è {email_id}.\nMittente: {sender}\nOggetto: {subject}\nCategorie Assegnate: {categories}\nTesto:\n{body}")
+        
+        agent = create_react_agent(llm, tools)
+        agent.invoke(
+            {"messages": [sys_msg, user_msg]}, 
+            config={"recursion_limit": 40}
+        )
+        
+        with session_scope() as db:
+            check_email = db.query(Email).filter(Email.id == email_id).first()
+            if check_email and check_email.status == EmailStatus.TO_RESPOND:
+                print(f"[WORKER-RESPOND] L'agente ha mancato l'obiettivo per l'email {email_id}. Forzatura a ESCALATED.")
+                check_email.status = EmailStatus.ESCALATED
+                check_email.draft_response = "Il sistema AI non è riuscito a formulare una risposta e ha ignorato i tool. Richiesto intervento umano."
+                return False
+
+        print(f"[WORKER-RESPOND] Risposta completata per email {email_id}.")
+        return True
+
+    except Exception as e:
+        print(f"[WORKER-RESPOND] Errore: {e}")
+        try:
+            with session_scope() as db:
+                email = db.query(Email).filter(Email.id == email_id).first()
+                if email and email.status == EmailStatus.TO_RESPOND:
+                    email.status = EmailStatus.ESCALATED
+                    email.draft_response = f"Errore interno di sistema: {str(e)}"
+        except Exception:
+            pass
+        return False

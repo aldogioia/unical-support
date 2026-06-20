@@ -30,7 +30,7 @@ services:
 
   worker:
     build: .
-    command: celery -A app.core.celery_app worker --loglevel=info -Q emails_queue,polling_queue
+    command: celery -A app.core.celery_app worker -Q polling_queue,classify_queue,respond_queue -l INFO --concurrency=2
     environment:
       - DATABASE_URL=postgresql+psycopg://postgres:root@db:5432/unical_support
       - REDIS_URL=redis://redis:6379/0
@@ -39,6 +39,14 @@ services:
     depends_on:
       - db
       - redis
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
 
   beat:
     build: .

@@ -1,5 +1,14 @@
-from app.models.category import Category
-from app.models.email import Email
-from app.models.template import Template
-from app.models.document import Document
-from app.models.user import User
+from .category import Category
+from .document import Document
+from .email import Email, EmailStatus
+from .template import Template
+from .user import User
+
+__all__ = [
+    "Category",
+    "Document",
+    "Email",
+    "EmailStatus",
+    "Template",
+    "User",
+]

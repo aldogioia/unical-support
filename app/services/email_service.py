@@ -19,7 +19,7 @@ def create_email(db: Session, email: EmailCreate):
         sender=email.sender,
         subject=email.subject,
         body=email.body,
-        status=EmailStatus.UNREAD
+        status=EmailStatus.TO_CLASSIFY
     )
     
     if getattr(email, 'category_ids', None):
@@ -43,7 +43,6 @@ def update_email_draft(db: Session, email_id: int, update_data: EmailUpdateDraft
     db.refresh(db_email)
     return db_email
 
-# Questa funzione verrà usata dal Worker Asincrono in futuro
 def update_email_status(db: Session, email_id: int, new_status: EmailStatus, category_ids: list[int] = None):
     db_email = db.query(Email).filter(Email.id == email_id).first()
     if db_email:

@@ -17,17 +17,14 @@ pydantic-settings>=2.10.0
 python-jose[cryptography]>=3.5.0
 passlib[bcrypt]>=1.7.4
 python-multipart>=0.0.20
-
-# Dipendenze esplicite spesso richieste
 bcrypt==4.0.1
-passlib==1.7.4
 cryptography>=45.0.0
 
 # Message Broker e Background Tasks
 celery>=5.3.6
 redis>=5.0.1
 
-# Gmail
+# Gmail API
 google-api-python-client>=2.120.0
 google-auth-httplib2>=0.2.0
 google-auth-oauthlib>=1.2.0
@@ -41,6 +38,7 @@ langchain-community>=0.3.0
 langchain-text-splitters>=0.3.0
 langchain-postgres>=0.0.9
 langchain-unstructured>=0.1.0
+langgraph>=0.2.0
 unstructured[pdf]>=0.16.0
 beautifulsoup4>=4.12.3
 pgvector>=0.3.0

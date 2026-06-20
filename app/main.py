@@ -1,12 +1,26 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 from app.core.config import settings
-from app.api.endpoints import categories, templates, documents, emails, auth  # ✅ aggiunto auth
+from app.api.endpoints import categories, templates, documents, emails, auth
+from app.ai.rag import init_vector_store
+from app.db.database import engine, Base
+import app.models
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("Inizializzazione Vector DB...")
+    init_vector_store()
+    print("Vector DB inizializzato con successo.")
+    yield
+    print("Spegnimento dell'applicazione...")
+
+Base.metadata.create_all(bind=engine)
 app = FastAPI(
     title=settings.PROJECT_NAME,
     description="API Gateway per Unical Support (Email Responder)",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 app.add_middleware(
@@ -17,7 +31,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])  # ✅ aggiunto
+app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(categories.router, prefix="/api/categories", tags=["Categories"])
 app.include_router(templates.router, prefix="/api/templates", tags=["Templates"])
 app.include_router(documents.router, prefix="/api/documents", tags=["Documents"])

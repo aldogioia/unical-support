@@ -6,7 +6,7 @@ from app.schemas.email import EmailResponse, EmailUpdateDraft, EmailCreate
 from app.models.email import EmailStatus, Email
 from app.services import email_service
 from app.db.database import get_db
-from app.tasks.email_tasks import process_new_email
+from app.tasks.email_tasks import classify_email_task
 
 router = APIRouter()
 
@@ -27,7 +27,7 @@ def create_new_email(email: EmailCreate, db: Session = Depends(get_db)):
     if existing_email:
         raise HTTPException(status_code=400, detail="Email già processata")
     db_email = email_service.create_email(db=db, email=email)
-    process_new_email.apply_async(args=[db_email.id], queue="emails_queue")
+    classify_email_task.delay(db_email.id)
     return db_email
 
 @router.put("/{email_id}/draft", response_model=EmailResponse)
