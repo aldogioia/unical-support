@@ -1,20 +1,16 @@
 import os
+import time
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from flashrank import Ranker, RerankRequest
 from app.core.config import settings
 
-# modello di embedding inizializzato subito — non richiede DB
 embeddings_model = GoogleGenerativeAIEmbeddings(
-    model="text-embedding-001",
+    model="models/gemini-embedding-2",
     google_api_key=settings.GOOGLE_API_KEY
 )
 
-# reranker caricato una volta sola all'avvio
 reranker = Ranker(model_name="ms-marco-MiniLM-L-12-v2")
-
-# lazy: il vector store viene creato solo quando serve
-# evita il crash all'avvio se il DB non è ancora pronto
 _vector_store = None
 
 def get_vector_store():
@@ -31,28 +27,41 @@ def get_vector_store():
 
 
 def index_langchain_documents(docs: list, category_name: str = "Generale"):
-    """
-    Riceve documenti LangChain, li taglia in chunk e li salva nel VectorDB.
-    """
     for doc in docs:
         doc.metadata["category"] = category_name
 
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=800,
-        chunk_overlap=150
-    )
+    splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=150)
     chunks = splitter.split_documents(docs)
 
-    print(f"Indicizzazione di {len(chunks)} frammenti nel Vector DB...")
-    get_vector_store().add_documents(chunks)
+    print(f"📚 Indicizzazione di {len(chunks)} frammenti nel Vector DB...")
+
+    # ✅ batch piccoli da 5 con pausa di 3 secondi tra ognuno
+    batch_size = 5
+    vector_store = get_vector_store()
+    total_batches = (len(chunks) - 1) // batch_size + 1
+
+    for i in range(0, len(chunks), batch_size):
+        batch = chunks[i:i + batch_size]
+        batch_num = i // batch_size + 1
+        retries = 5
+        for attempt in range(retries):
+            try:
+                vector_store.add_documents(batch)
+                print(f"  ✅ Batch {batch_num}/{total_batches} indicizzato")
+                time.sleep(3)  # ✅ pausa fissa tra ogni batch
+                break
+            except Exception as e:
+                if "429" in str(e) and attempt < retries - 1:
+                    wait = 30 * (attempt + 1)  # ✅ attesa più lunga
+                    print(f"  ⏳ Rate limit, aspetto {wait}s...")
+                    time.sleep(wait)
+                else:
+                    raise e
 
     return len(chunks)
 
 
 def retrieve_context(query: str, k: int = 4, category_name: str = None) -> str:
-    """
-    Recupera i frammenti più rilevanti con metadata filtering e reranking.
-    """
     vector_store = get_vector_store()
     search_filter = {"category": category_name} if category_name else None
     candidate_count = k * 3
@@ -60,17 +69,14 @@ def retrieve_context(query: str, k: int = 4, category_name: str = None) -> str:
     try:
         if search_filter:
             candidates = vector_store.similarity_search(query, k=candidate_count, filter=search_filter)
-            print(f"Trovati {len(candidates)} candidati per categoria '{category_name}'")
         else:
             candidates = vector_store.similarity_search(query, k=candidate_count)
-            print(f"Trovati {len(candidates)} candidati globali")
 
         if not candidates and search_filter:
-            print(f"Nessun risultato per categoria '{category_name}', ricerca globale...")
             candidates = vector_store.similarity_search(query, k=candidate_count)
 
     except Exception as e:
-        print(f"Errore similarity search: {e}")
+        print(f"❌ Errore similarity search: {e}")
         return ""
 
     if not candidates:
@@ -84,10 +90,8 @@ def retrieve_context(query: str, k: int = 4, category_name: str = None) -> str:
         reranked = reranker.rerank(rerank_request)
         top_k_ids = [r["id"] for r in reranked[:k]]
         final_docs = [candidates[i] for i in top_k_ids]
-        print(f"Reranking completato: selezionati {len(final_docs)} frammenti finali")
-
     except Exception as e:
-        print(f"Reranking fallito, uso candidati originali: {e}")
+        print(f"⚠️ Reranking fallito: {e}")
         final_docs = candidates[:k]
 
     return "\n\n---\n\n".join([doc.page_content for doc in final_docs])
