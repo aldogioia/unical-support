@@ -2,10 +2,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Unical Support MVP"
-    DATABASE_URL: str = "postgresql+psycopg://postgres:root@localhost:5432/unical_support"
+    DATABASE_URL: str = ""
     SECRET_KEY: str = ""
-    ALGORITHM: str = "HS256"
-    REDIS_URL: str = "redis://localhost:6379/0"
+    ALGORITHM: str = ""
+    REDIS_URL: str = ""
     GOOGLE_API_KEY: str = ""
     GOOGLE_API_KEY_2: str = ""
     GROQ_API_KEY: str = ""

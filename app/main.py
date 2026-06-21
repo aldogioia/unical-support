@@ -5,7 +5,6 @@ from app.core.config import settings
 from app.api.endpoints import categories, templates, documents, emails, auth
 from app.ai.rag import init_vector_store
 from app.db.database import engine, Base
-import app.models
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

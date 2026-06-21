@@ -37,16 +37,14 @@ class GmailClient:
         emails_data = []
         for msg in messages:
             msg_id = msg['id']
-            # Preleviamo l'email completa
+
             message_detail = self.service.users().messages().get(userId='me', id=msg_id, format='full').execute()
             payload = message_detail.get('payload', {})
             headers = payload.get('headers', [])
 
-            # Estrazione Header
             subject = next((h['value'] for h in headers if h['name'].lower() == 'subject'), "Nessun Oggetto")
             sender = next((h['value'] for h in headers if h['name'].lower() == 'from'), "Sconosciuto")
 
-            # Estrazione Body (Il body su Gmail può essere annidato in 'parts')
             body = self._extract_body(payload)
 
             emails_data.append({

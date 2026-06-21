@@ -12,6 +12,6 @@ def get_classifier_llm():
 def get_responder_llm():
     return ChatGoogleGenerativeAI(
         model="gemini-3.1-flash-lite",
-        temperature=0.4,
+        temperature=0.2,
         google_api_key=settings.GOOGLE_API_KEY
     )

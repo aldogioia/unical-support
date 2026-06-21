@@ -35,7 +35,6 @@ def poll_gmail():
 
                 try:
                     db_email = email_service.create_email(db=db, email=email_create)
-                    
                     db.commit() 
                     
                     print(f"[BEAT] Salvata: {db_email.subject}")
@@ -47,11 +46,9 @@ def poll_gmail():
                         countdown=2 
                     )
 
-                    client.mark_as_read(email_data["gmail_id"])
-                    print(f"[BEAT] Lanciata in coda e segnata come letta.")
+                    print(f"[BEAT] Lanciata in coda. Rimarrà UNREAD su Gmail fino a completamento.")
 
                 except IntegrityError:
-                    print(f"[BEAT] Email {email_data['gmail_id']} già nel DB, skip.")
                     db.rollback()
 
             return True
