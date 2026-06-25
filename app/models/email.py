@@ -1,27 +1,39 @@
-from sqlalchemy import Column, Integer, String, Text, Enum
-from sqlalchemy.orm import relationship
-import enum
+import uuid
+from enum import Enum
+from typing import List
+from sqlalchemy import String, Text, Enum as SQLEnum, UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.database import Base
 from app.models.category import email_category_association
-
-class EmailStatus(str, enum.Enum):
-    UNREAD = "UNREAD"
-    TO_CLASSIFY = "TO_CLASSIFY"
-    TO_RESPOND = "TO_RESPOND"
-    DRAFT = "DRAFT"
-    ESCALATED = "ESCALATED"
-    SENT = "SENT"
-    IGNORED = "IGNORED"
-    FAILED = "FAILED"
+from app.models.enumerators.enumerators import EmailStatus
 
 class Email(Base):
     __tablename__ = "emails"
 
-    id = Column(Integer, primary_key=True, index=True)
-    gmail_id = Column(String(255), unique=True, index=True)
-    sender = Column(String(255), nullable=False)
-    subject = Column(String(255), nullable=True)
-    body = Column(Text, nullable=True)
-    status = Column(Enum(EmailStatus), default=EmailStatus.TO_CLASSIFY)
-    generated_draft = Column(Text, nullable=True)
-    categories = relationship("Category", secondary=email_category_association, back_populates="emails")
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), 
+        primary_key=True, 
+        index=True, 
+        default=uuid.uuid4
+    )
+
+    gmail_id: Mapped[str | None] = mapped_column(String(255), unique=True, index=True)
+    
+    sender: Mapped[str] = mapped_column(String(255))
+    
+    subject: Mapped[str | None] = mapped_column(String(255))
+    body: Mapped[str | None] = mapped_column(Text)
+    
+    status: Mapped[EmailStatus] = mapped_column(
+        SQLEnum(EmailStatus), 
+        default=EmailStatus.TO_CLASSIFY
+    )
+    
+    generated_draft: Mapped[str | None] = mapped_column(Text)
+
+    categories: Mapped[List["Category"]] = relationship(
+        "Category",
+        secondary=email_category_association,
+        back_populates="emails"
+    )

@@ -1,27 +1,36 @@
-from sqlalchemy import Column, Integer, String, Text, Enum
-from sqlalchemy.orm import relationship
+import uuid
+from enum import Enum
+from sqlalchemy import String, Text, Enum as SQLEnum, UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.database import Base
 from app.models.category import template_category_association
-import enum
-
-class TemplateStatus(str, enum.Enum):
-    ACTIVE = "ACTIVE"               # creato dall'umano o approvato
-    PENDING_APPROVAL = "PENDING_APPROVAL"   # proposto dall'agente, in attesa
-    REJECTED = "REJECTED"           # rifiutato dall'operatore
+from typing import List
+from app.models.enumerators.enumerators import TemplateStatus
 
 class Template(Base):
     __tablename__ = "templates"
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(255), nullable=False)
-    subject_template = Column(String(255), nullable=True)
-    body_template = Column(Text, nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), 
+        primary_key=True, 
+        index=True, 
+        default=uuid.uuid4
+    )
+    
+    name: Mapped[str] = mapped_column(String(255))
+    
+    subject_template: Mapped[str | None] = mapped_column(String(255))
+    
+    body_template: Mapped[str] = mapped_column(Text)
 
-    status = Column(Enum(TemplateStatus), default=TemplateStatus.ACTIVE, nullable=False)
+    status: Mapped[TemplateStatus] = mapped_column(
+        SQLEnum(TemplateStatus), 
+        default=TemplateStatus.ACTIVE
+    )
 
-    usage_count = Column(Integer, default=0, nullable=False)
+    usage_count: Mapped[int] = mapped_column(default=0)
 
-    categories = relationship(
+    categories: Mapped[List["Category"]] = relationship(
         "Category",
         secondary=template_category_association,
         back_populates="templates"

@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from app.schemas.email import EmailResponse, EmailUpdateDraft, EmailCreate
-from app.models.email import EmailStatus, Email
+from app.models.enumerators.enumerators import EmailStatus
+from app.models.email import Email
 from app.services import email_service
 from app.db.database import get_db
 from app.tasks.email_tasks import classify_email_task

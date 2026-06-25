@@ -1,7 +1,8 @@
 from pydantic import BaseModel, ConfigDict, Field, EmailStr
 from typing import List
-from app.models.email import EmailStatus
+from app.models.enumerators.enumerators import EmailStatus
 from app.schemas.category import CategoryResponse
+import uuid
 
 class EmailBase(BaseModel):
     sender: EmailStr = Field(...)
@@ -10,10 +11,10 @@ class EmailBase(BaseModel):
 
 class EmailCreate(EmailBase):
     gmail_id: str = Field(..., min_length=5)
-    category_ids: List[int] = Field(default_factory=list)
+    category_ids: List[uuid.UUID] = Field(default_factory=list)
 
 class EmailResponse(EmailBase):
-    id: int
+    id: uuid.UUID
     gmail_id: str
     status: EmailStatus
     generated_draft: str | None = None
