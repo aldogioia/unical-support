@@ -1,7 +1,8 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
-from app.core.security import decode_access_token
+from app.api.jwt_handler import decode_and_validate_access_token
+from app.services.blacklist_service import is_token_blacklisted
 from app.db.database import get_db
 from app.models.user import User
 
@@ -16,7 +17,12 @@ def get_current_user(
         detail="Token non valido o scaduto",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    payload = decode_access_token(credentials.credentials)
+
+    token_str = credentials.credentials
+    if is_token_blacklisted(db, token_str):
+        raise exc
+        
+    payload = decode_and_validate_access_token(token_str)
     if not payload:
         raise exc
 
@@ -29,11 +35,3 @@ def get_current_user(
         raise exc
 
     return user
-
-def get_current_admin(current_user: User = Depends(get_current_user)) -> User:
-    if not current_user.is_admin:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Accesso riservato agli amministratori"
-        )
-    return current_user
