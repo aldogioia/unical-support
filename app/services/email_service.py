@@ -1,7 +1,9 @@
+from uuid import UUID
 from sqlalchemy.orm import Session
 from app.models.category import Category
 from app.models.email import Email, EmailStatus
 from app.schemas.email import EmailUpdateDraft, EmailCreate
+from fastapi import HTTPException
 
 def get_email(db: Session, email_id: int):
     return db.query(Email).filter(Email.id == email_id).first()
@@ -13,7 +15,11 @@ def get_emails(db: Session, status: EmailStatus = None, skip: int = 0, limit: in
     # Ordiniamo per le più recenti
     return query.order_by(Email.id.desc()).offset(skip).limit(limit).all()
 
-def create_email(db: Session, email: EmailCreate):
+def create_email(db: Session, email: EmailCreate, user_id: UUID):
+    existing_email = db.query(Email).filter(Email.gmail_id == email.gmail_id).first()
+    if existing_email:
+        raise HTTPException(status_code=400, detail="Email già processata")
+
     db_email = Email(
         gmail_id=email.gmail_id,
         sender=email.sender,
@@ -25,30 +31,35 @@ def create_email(db: Session, email: EmailCreate):
     if getattr(email, 'category_ids', None):
         categories = db.query(Category).filter(Category.id.in_(email.category_ids)).all()
         db_email.categories = categories
-        
+
+    db_email.apply_audit_fields(user_id=user_id, is_create=True)
+
     db.add(db_email)
     db.commit()
     db.refresh(db_email)
     return db_email
 
-def update_email_draft(db: Session, email_id: int, update_data: EmailUpdateDraft):
+def update_email_draft(db: Session, email_id: int, update_data: EmailUpdateDraft, user_id: UUID):
     db_email = db.query(Email).filter(Email.id == email_id).first()
     if not db_email:
-        return None
+        raise HTTPException(status_code=404, detail="Email non trovata")
     
     db_email.generated_draft = update_data.generated_draft
     db_email.status = update_data.status
+
+    db_email.apply_audit_fields(user_id=user_id)
     
     db.commit()
     db.refresh(db_email)
     return db_email
 
-def update_email_status(db: Session, email_id: int, new_status: EmailStatus, category_ids: list[int] = None):
+def update_email_status(db: Session, email_id: int, new_status: EmailStatus, category_ids: list[int] = None, user_id: UUID):
     db_email = db.query(Email).filter(Email.id == email_id).first()
     if db_email:
         db_email.status = new_status
         if category_ids:
             db_email.categories = db.query(Category).filter(Category.id.in_(category_ids)).all()
+        db_email.apply_audit_fields(user_id=user_id)
         db.commit()
         db.refresh(db_email)
     return db_email

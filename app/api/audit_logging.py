@@ -24,8 +24,8 @@ class Auditable:
     last_updated_by: Mapped[str] = mapped_column(String(36), nullable=False, default="System")
 
 
-def apply_audit_fields(audit: Auditable, user_id: Optional[UUID] = None, is_create: bool = False):
-    if user_id is not None:
-        if is_create:
-            audit.created_by = str(user_id)
-        audit.last_updated_by = str(user_id)
+    def apply_audit_fields(self, user_id: Optional[UUID] = None, is_create: bool = False):
+        if user_id is not None:
+            if is_create:
+                self.created_by = str(user_id)
+            self.last_updated_by = str(user_id)

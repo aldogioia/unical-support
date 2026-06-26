@@ -1,9 +1,11 @@
+from app.api.audit_logging import Auditable
 from app.db.database import Base
 from sqlalchemy import Mapped, mapped_column, String
 from datetime import datetime
+from app.api.audit_logging import Auditable
 
 
-class Blacklist(Base):
+class Blacklist(Base, Auditable):
     __tablename__ = "blacklist"
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),

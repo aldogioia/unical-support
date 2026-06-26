@@ -1,3 +1,4 @@
+from uuid import UUID
 from sqlalchemy.orm import Session
 from app.models.user import User
 from app.schemas.user import UserCreate
@@ -9,12 +10,19 @@ from fastapi import HTTPException, status
 def get_user_by_email(db: Session, email: str):
     return db.query(User).filter(User.email == email).first()
 
-def create_user(db: Session, user: UserCreate):
+def create_user(db: Session, user: UserCreate, user_id: UUID):
+    if get_user_by_email(db, user.email):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email già registrata"
+        )
+        
     db_user = User(
         email=user.email,
         hashed_password=get_password_hash(user.password),
         role = user.role
     )
+    db_user.apply_audit_fields(user_id=user_id, is_create=True)
     db.add(db_user)
     db.commit()
     db.refresh(db_user)

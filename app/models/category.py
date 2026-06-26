@@ -3,6 +3,7 @@ from typing import List
 from sqlalchemy import String, Text, Table, ForeignKey, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.database import Base
+from app.api.audit_logging import Auditable
 
 template_category_association = Table(
     "template_category",
@@ -19,7 +20,7 @@ email_category_association = Table(
 )
 
 
-class Category(Base):
+class Category(Base, Auditable):
     __tablename__ = "categories"
 
     id: Mapped[uuid.UUID] = mapped_column(

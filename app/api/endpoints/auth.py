@@ -1,10 +1,12 @@
+from typing import Annotated
 from app.api.authorization import is_admin_user
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.schemas.user import UserCreate, UserResponse, UserLogin, TokenResponse
 from app.api.authentication import get_current_user
-from app.services.user_service import authenticate_user, create_user, get_user_by_email, refresh
+from app.services.user_service import authenticate_user, create_user, refresh
 from app.db.database import get_db
+from app.models import User
 
 router = APIRouter()
 
@@ -15,13 +17,8 @@ def login(credentials: UserLogin, db: Session = Depends(get_db)):
 
 
 @router.post("/register", response_model=UserResponse)
-def register(user: UserCreate, db: Session = Depends(get_db), _: object = Depends(is_admin_user)): # todo remove admin control ?
-    if get_user_by_email(db, user.email):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email già registrata"
-        )
-    return create_user(db, user)
+def register(user: UserCreate, db: Session = Depends(get_db), current_user = Annotated[User, Depends(is_admin_user)] ): # todo remove admin control ?
+    return create_user(db, user, current_user.id)
 
 @router.get("/me", response_model=UserResponse)
 def me(current_user=Depends(get_current_user)):
