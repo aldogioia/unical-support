@@ -1,24 +1,23 @@
 import uuid
 from typing import List
-from sqlalchemy import String, Text, Table, ForeignKey, UUID
+from sqlalchemy import String, Text, Table, ForeignKey, UUID, Column 
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.database import Base
-from app.api.audit_logging import Auditable
+from app.core.audit_logging import Auditable
 
 template_category_association = Table(
     "template_category",
     Base.metadata,
-    mapped_column("template_id", UUID(as_uuid=True), ForeignKey("templates.id", ondelete="CASCADE"), primary_key=True),
-    mapped_column("category_id", UUID(as_uuid=True), ForeignKey("categories.id", ondelete="CASCADE"), primary_key=True),
+    Column("template_id", UUID(as_uuid=True), ForeignKey("templates.id", ondelete="CASCADE"), primary_key=True),
+    Column("category_id", UUID(as_uuid=True), ForeignKey("categories.id", ondelete="CASCADE"), primary_key=True),
 )
 
 email_category_association = Table(
     "email_category",
     Base.metadata,
-    mapped_column("email_id", UUID(as_uuid=True), ForeignKey("emails.id", ondelete="CASCADE"), primary_key=True),
-    mapped_column("category_id", UUID(as_uuid=True), ForeignKey("categories.id", ondelete="CASCADE"), primary_key=True),
+    Column("email_id", UUID(as_uuid=True), ForeignKey("emails.id", ondelete="CASCADE"), primary_key=True),
+    Column("category_id", UUID(as_uuid=True), ForeignKey("categories.id", ondelete="CASCADE"), primary_key=True),
 )
-
 
 class Category(Base, Auditable):
     __tablename__ = "categories"

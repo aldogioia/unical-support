@@ -3,7 +3,7 @@ from sqlalchemy import String, Boolean, Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column
 from app.db.database import Base
 from app.models.enumerators.enumerators import UserRole 
-from app.api.audit_logging import Auditable
+from app.core.audit_logging import Auditable
 
 class User(Base, Auditable):
     __tablename__ = "users"

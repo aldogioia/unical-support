@@ -2,7 +2,7 @@ import uuid
 from sqlalchemy import String, Text, ForeignKey, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.database import Base
-from app.api.audit_logging import Auditable
+from app.core.audit_logging import Auditable
 
 class Document(Base, Auditable):
     __tablename__ = "documents"

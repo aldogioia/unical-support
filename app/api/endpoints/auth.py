@@ -6,7 +6,7 @@ from app.schemas.user import UserCreate, UserResponse, UserLogin, TokenResponse
 from app.api.authentication import get_current_user
 from app.services.user_service import authenticate_user, create_user, refresh
 from app.db.database import get_db
-from app.models import User
+from app.models.user import User
 
 router = APIRouter()
 

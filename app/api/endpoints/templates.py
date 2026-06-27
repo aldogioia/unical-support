@@ -1,5 +1,5 @@
 from app.api.authentication import get_current_user
-from app.models import User
+from app.models.user import User
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session

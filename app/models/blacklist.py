@@ -1,9 +1,9 @@
-from app.api.audit_logging import Auditable
+from app.core.audit_logging import Auditable
 from app.db.database import Base
-from sqlalchemy import Mapped, mapped_column, String
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String, DateTime, UUID
 from datetime import datetime
-from app.api.audit_logging import Auditable
-
+import uuid
 
 class Blacklist(Base, Auditable):
     __tablename__ = "blacklist"

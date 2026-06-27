@@ -6,7 +6,7 @@ from app.db.database import Base
 from app.models.category import template_category_association
 from typing import List
 from app.models.enumerators.enumerators import TemplateStatus
-from app.api.audit_logging import Auditable
+from app.core.audit_logging import Auditable
 
 class Template(Base, Auditable):
     __tablename__ = "templates"

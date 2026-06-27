@@ -2,7 +2,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 from app.models.user import User
 from app.schemas.user import UserCreate
-from api.schemas.user import TokenResponse
+from app.schemas.user import TokenResponse
 from app.api.jwt_handler import create_access_token, create_refresh_token, decode_and_validate_refresh_token
 from app.api.password_handler import verify_dummy_password, verify_password, get_password_hash
 from fastapi import HTTPException, status

@@ -52,7 +52,7 @@ def create_template(db: Session, template: TemplateCreate, user_id: UUID):
     db.refresh(db_template)
     return db_template
 
-def create_template_from_agent(db: Session, name: str, body_template: str, category_ids: list[int], subject_template: str = None, user_id: UUID):
+def create_template_from_agent(db: Session, name: str, body_template: str, category_ids: list[int], user_id: UUID, subject_template: str = None):
     db_template = Template(
         name=name,
         subject_template=subject_template,

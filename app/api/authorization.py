@@ -1,9 +1,9 @@
-from src.security.authentication import get_current_user
+from app.api.authentication import get_current_user
 from fastapi import HTTPException, Depends, status
 from typing import Annotated, List
 
-from src.data.model.user import User
-from src.data.enumerators import UserRole
+from app.models.user import User
+from app.models.enumerators.enumerators import UserRole
 
 class RoleChecker:
     def __init__(self, allowed_roles: List[UserRole]):

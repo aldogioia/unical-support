@@ -6,7 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.database import Base
 from app.models.category import email_category_association
 from app.models.enumerators.enumerators import EmailStatus
-from app.api.audit_logging import Auditable
+from app.core.audit_logging import Auditable
 
 class Email(Base, Auditable):
     __tablename__ = "emails"

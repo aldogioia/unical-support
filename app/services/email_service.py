@@ -53,7 +53,7 @@ def update_email_draft(db: Session, email_id: int, update_data: EmailUpdateDraft
     db.refresh(db_email)
     return db_email
 
-def update_email_status(db: Session, email_id: int, new_status: EmailStatus, category_ids: list[int] = None, user_id: UUID):
+def update_email_status(db: Session, email_id: int, new_status: EmailStatus, user_id: UUID, category_ids: list[int] = None):
     db_email = db.query(Email).filter(Email.id == email_id).first()
     if db_email:
         db_email.status = new_status
