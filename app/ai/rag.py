@@ -4,6 +4,7 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from flashrank import Ranker, RerankRequest
 from app.core.config import settings
+from langchain_postgres import PGVector
 
 embeddings_model = GoogleGenerativeAIEmbeddings(
     model="models/gemini-embedding-2",
@@ -17,7 +18,6 @@ _vector_store = None
 
 def init_vector_store():
     global _vector_store
-    from langchain_postgres import PGVector
     _vector_store = PGVector(
         embeddings=embeddings_model,
         collection_name="unical_knowledge_base",
@@ -28,8 +28,7 @@ def init_vector_store():
 def get_vector_store():
     global _vector_store
     if _vector_store is None:
-        init_vector_store()
-        #raise RuntimeError("Vector store non inizializzato. Assicurarsi che lifespan abbia chiamato init_vector_store().")
+        raise RuntimeError("Vector store non inizializzato. Assicurarsi che lifespan abbia chiamato init_vector_store().")
     return _vector_store
 
 

@@ -64,7 +64,6 @@ def classify_email_task(self, email_id: int):
                     if email:
                         email.status = EmailStatus.FAILED
                 
-                GmailClient().mark_as_read(gmail_id)
             except Exception as inner_e:
                 print(f"Errore critico durante la marcatura di FAILED: {inner_e}")
             return False
@@ -107,12 +106,6 @@ def respond_email_task(self, email_id: int):
             if check_email and check_email.status == EmailStatus.TO_RESPOND:
                 raise Exception("L'agente non ha completato la risposta o l'escalation. Forzatura retry.")
 
-        try:
-            GmailClient().mark_as_read(gmail_id)
-            print(f"[WORKER-RESPOND] Successo. Email {gmail_id} marcata come letta su Gmail.")
-        except Exception as e:
-             print(f"[WORKER-RESPOND] Bozza salvata, ma errore nel segnare come letta su Gmail: {e}")
-
         return True
 
     except Exception as e:
@@ -127,7 +120,6 @@ def respond_email_task(self, email_id: int):
                         email.status = EmailStatus.ESCALATED
                         email.draft_response = f"Errore interno di sistema dopo 3 tentativi: {str(e)}"
                 
-                GmailClient().mark_as_read(gmail_id)
             except Exception as inner_e:
                 print(f"Errore critico durante la marcatura di ESCALATED: {inner_e}")
             return False
