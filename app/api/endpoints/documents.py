@@ -1,3 +1,6 @@
+from app.api.authentication import get_current_user
+from app.models.user import User
+from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -17,12 +20,13 @@ async def upload_document(
     file: Optional[UploadFile] = File(None),
     url: Optional[str] = Form(None),
     category_id: Optional[int] = Form(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user = Annotated[User, Depends(get_current_user)]
 ):
     if not file and not url:
         raise HTTPException(status_code=400, detail="Devi fornire un 'file' oppure un 'url'.")
     try:
-        db_document, chunks = document_service.process_and_upload_document(db=db, file=file, url=url, category_id=category_id)
+        db_document, chunks = document_service.process_and_upload_document(db=db, file=file, url=url, category_id=category_id, user_id=current_user.id)
         return db_document
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
@@ -31,6 +35,4 @@ async def upload_document(
 
 @router.delete("/{document_id}", status_code=204)
 def delete_document(document_id: int, db: Session = Depends(get_db)):
-    success = document_service.delete_document(db, document_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Documento non trovato")
+    document_service.delete_document(db, document_id)

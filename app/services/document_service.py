@@ -1,6 +1,7 @@
+from uuid import UUID
 import os
 import tempfile
-from fastapi import UploadFile
+from fastapi import UploadFile, HTTPException
 from sqlalchemy.orm import Session
 from langchain_unstructured import UnstructuredLoader
 from langchain_community.document_loaders import WebBaseLoader
@@ -14,7 +15,7 @@ def get_document(db: Session, document_id: int):
 def get_documents(db: Session, skip: int = 0, limit: int = 100):
     return db.query(Document).offset(skip).limit(limit).all()
 
-def process_and_upload_document(db: Session, file: UploadFile | None, url: str | None, category_id: int | None):
+def process_and_upload_document(db: Session, file: UploadFile | None, url: str | None, category_id: int | None, user_id: UUID):
     docs = []
     filename = "Link Web"
     content_type = "text/html"
@@ -31,7 +32,7 @@ def process_and_upload_document(db: Session, file: UploadFile | None, url: str |
 
         try:
             print(f"[SERVICE] 📄 Estrazione dati da: {filename}...")
-            # ✅ nuovo loader aggiornato
+            # nuovo loader aggiornato
             loader = UnstructuredLoader(temp_path)
             docs = loader.load()
         finally:
@@ -62,6 +63,9 @@ def process_and_upload_document(db: Session, file: UploadFile | None, url: str |
         extracted_text=preview_text,
         category_id=category_id
     )
+
+    db_document.apply_audit_fields(user_id=user_id, is_create=True)
+
     db.add(db_document)
     db.commit()
     db.refresh(db_document)
@@ -73,5 +77,5 @@ def delete_document(db: Session, document_id: int):
     if db_document:
         db.delete(db_document)
         db.commit()
-        return True
-    return False
+    else:
+        raise HTTPException(status_code=404, detail="Categoria non trovata")

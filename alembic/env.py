@@ -1,8 +1,14 @@
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
+
 # ✅ aggiungi user agli import — era mancante
-from app.models import category, email, template, document, user  # noqa: F401
+from app.models.user import User
+from app.models.category import Category
+from app.models.document import Document
+from app.models.template import Template
+from app.models.blacklist import Blacklist
+from app.models.email import Email
 
 # ✅ importiamo settings per leggere DATABASE_URL dal .env
 from app.core.config import settings
@@ -10,7 +16,6 @@ from app.core.config import settings
 # ✅ importiamo Base e tutti i modelli così Alembic li conosce
 # è fondamentale importarli tutti, altrimenti non genera le migration
 from app.db.database import Base
-from app.models import category, email, template, document  # noqa: F401
 
 config = context.config
 

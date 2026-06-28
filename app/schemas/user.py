@@ -1,15 +1,18 @@
+from app.models.enumerators.enumerators import UserRole
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
+import uuid
 
 class UserCreate(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8)
-    is_admin: bool = False
+    role: UserRole = UserRole.user  # todo modificare, non va fatto qui
+
 
 class UserResponse(BaseModel):
-    id: int
+    id: uuid.UUID
     email: EmailStr
     is_active: bool
-    is_admin: bool
+    role: UserRole
     model_config = ConfigDict(from_attributes=True)
 
 class UserLogin(BaseModel):
@@ -18,4 +21,5 @@ class UserLogin(BaseModel):
 
 class TokenResponse(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str = "bearer"

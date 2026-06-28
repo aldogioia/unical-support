@@ -3,7 +3,7 @@ fastapi>=0.115.0
 uvicorn[standard]>=0.35.0
 
 # Database e ORM
-sqlalchemy>=2.0.40
+sqlalchemy==2.0.40
 psycopg[binary]>=3.2.0
 
 # Migrazioni Database
@@ -19,6 +19,7 @@ passlib[bcrypt]>=1.7.4
 python-multipart>=0.0.20
 bcrypt==4.0.1
 cryptography>=45.0.0
+pwdlib[argon2]
 
 # Message Broker e Background Tasks
 celery>=5.3.6
@@ -36,7 +37,7 @@ langchain-google-genai>=2.0.0
 langchain-core>=0.3.0
 langchain-community>=0.3.0
 langchain-text-splitters>=0.3.0
-langchain-postgres>=0.0.9
+langchain-postgres>=0.0.12
 langchain-unstructured>=0.1.0
 langgraph>=0.2.0
 unstructured[pdf]>=0.16.0
@@ -46,3 +47,4 @@ pypdf>=4.2.0
 
 # Reranking RAG
 flashrank>=0.2.0
+PyJWT>=2.10.1

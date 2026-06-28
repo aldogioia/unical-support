@@ -1,3 +1,10 @@
+from app.models.user import User
+from app.models.category import Category
+from app.models.document import Document
+from app.models.template import Template
+from app.models.blacklist import Blacklist
+from app.models.email import Email
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager

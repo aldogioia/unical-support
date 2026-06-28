@@ -1,4 +1,5 @@
 from pydantic import BaseModel, ConfigDict, Field
+import uuid
 
 class CategoryBase(BaseModel):
     name: str = Field(..., min_length=2, max_length=50, description="Nome univoco della categoria")
@@ -12,5 +13,5 @@ class CategoryUpdate(BaseModel):
     description: str | None = Field(default=None, max_length=500)
 
 class CategoryResponse(CategoryBase):
-    id: int
+    id: uuid.UUID
     model_config = ConfigDict(from_attributes=True)

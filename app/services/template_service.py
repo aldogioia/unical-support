@@ -1,7 +1,9 @@
+from uuid import UUID
 from sqlalchemy.orm import Session
 from app.models.template import Template, TemplateStatus
 from app.models.category import Category
 from app.schemas.template import TemplateCreate, TemplateUpdate
+from fastapi import HTTPException
 
 def get_template(db: Session, template_id: int):
     return db.query(Template).filter(Template.id == template_id).first()
@@ -31,7 +33,7 @@ def get_pending_templates(db: Session):
         .all()
     )
 
-def create_template(db: Session, template: TemplateCreate):
+def create_template(db: Session, template: TemplateCreate, user_id: UUID):
     db_template = Template(
         name=template.name,
         subject_template=template.subject_template,
@@ -43,12 +45,14 @@ def create_template(db: Session, template: TemplateCreate):
         categories = db.query(Category).filter(Category.id.in_(template.category_ids)).all()
         db_template.categories = categories
 
+    db_template.apply_audit_fields(user_id=user_id, is_create=True)
+
     db.add(db_template)
     db.commit()
     db.refresh(db_template)
     return db_template
 
-def create_template_from_agent(db: Session, name: str, body_template: str, category_ids: list[int], subject_template: str = None):
+def create_template_from_agent(db: Session, name: str, body_template: str, category_ids: list[int], user_id: UUID, subject_template: str = None):
     db_template = Template(
         name=name,
         subject_template=subject_template,
@@ -60,29 +64,33 @@ def create_template_from_agent(db: Session, name: str, body_template: str, categ
         categories = db.query(Category).filter(Category.id.in_(category_ids)).all()
         db_template.categories = categories
 
+    db_template.apply_audit_fields(user_id=user_id, is_create=True)
+
     db.add(db_template)
     db.commit()
     db.refresh(db_template)
     return db_template
 
-def review_template(db: Session, template_id: int, action: str):
+def review_template(db: Session, template_id: int, action: str, user_id: UUID):
     db_template = get_template(db, template_id)
     if not db_template:
-        return None
+        raise HTTPException(status_code=404, detail="Template non trovato")
 
     if action == "approve":
         db_template.status = TemplateStatus.ACTIVE
     elif action == "reject":
         db_template.status = TemplateStatus.REJECTED
 
+    db_template.apply_audit_fields(user_id=user_id)
+
     db.commit()
     db.refresh(db_template)
     return db_template
 
-def update_template(db: Session, template_id: int, template_data: TemplateUpdate):
+def update_template(db: Session, template_id: int, template_data: TemplateUpdate, user_id: UUID):
     db_template = get_template(db, template_id)
     if not db_template:
-        return None
+        raise HTTPException(status_code=404, detail="Template non trovato")
 
     update_dict = template_data.model_dump(exclude_unset=True)
 
@@ -93,6 +101,8 @@ def update_template(db: Session, template_id: int, template_data: TemplateUpdate
 
     for key, value in update_dict.items():
         setattr(db_template, key, value)
+    
+    db_template.apply_audit_fields(user_id=user_id)
 
     db.commit()
     db.refresh(db_template)
@@ -103,11 +113,12 @@ def delete_template(db: Session, template_id: int):
     if db_template:
         db.delete(db_template)
         db.commit()
-        return True
-    return False
+    else:
+        raise HTTPException(status_code=404, detail="Template non trovato")
 
-def increment_usage(db: Session, template_id: int):
+def increment_usage(db: Session, template_id: int, user_id: UUID):
     db_template = get_template(db, template_id)
     if db_template:
         db_template.usage_count += 1
+        db_template.apply_audit_fields(user_id=user_id)
         db.commit()
