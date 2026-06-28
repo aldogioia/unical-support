@@ -1,0 +1,111 @@
+/*
+ * Design Pill: Progettazione di Moduli Digitali e Accessibilità
+ * Regola: Layout a colonna singola, vertical stacking delle label,
+ * hint sotto le label, design dei controlli accessibile (stepper, radio/check).
+ */
+
+/* Form e Layout Colonna Singola */
+.form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px; /* Spaziatura generosa per evitare sovrapposizioni verticali */
+  max-width: 600px;
+}
+
+/* Gruppi dei campi a colonna singola */
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Label: Vertical Stacking, poste sempre sopra i campi */
+.form-label {
+  font-weight: 600;
+  color: var(--color-text-strong);
+  margin-bottom: 4px;
+}
+
+/* Text Hint (Suggerimenti) posizionati sotto la label, sopra l'input */
+.form-hint {
+  font-size: 14px;
+  color: var(--color-text-weak);
+  margin-bottom: 8px;
+}
+
+/* Campi Input: Bordo accessibile (minimo 3:1) */
+.form-control {
+  font-family: inherit;
+  font-size: var(--font-size-base);
+  padding: 12px 16px;
+  border: 2px solid var(--color-stroke-strong);
+  border-radius: 8px;
+  background-color: transparent;
+  color: var(--color-text-strong);
+  min-height: 48px; /* Target ergonomico */
+  transition: border-color 0.2s ease, outline 0.2s ease;
+}
+
+.form-control:focus {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+  border-color: var(--color-brand);
+}
+
+/* Validazione di Errore */
+.form-control.is-invalid {
+  border-color: var(--color-error);
+}
+
+.form-error-msg {
+  color: var(--color-error);
+  font-size: 14px;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Stepper Control (Numerico per Moduli) - Orizzontale */
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stepper-btn {
+  min-width: 48px;
+  min-height: 48px;
+  border-radius: 8px;
+  border: 2px solid var(--color-stroke-strong);
+  background: transparent;
+  color: var(--color-text-strong);
+  font-size: 24px; /* Iconografia + / - */
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.stepper-value {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  min-width: 48px;
+  text-align: center;
+}
+
+/* Checkbox & Radio Button - Convenzioni Iconiche mantenute */
+.check-radio-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px; /* Legge di Fitts */
+  cursor: pointer;
+}
+
+.check-radio-input {
+  /* Assicura che le forme native non siano soppresse eccessivamente, 
+     radio circolari e checkbox quadrati (Jacob's Law) */
+  width: 24px;
+  height: 24px;
+  accent-color: var(--color-brand);
+}

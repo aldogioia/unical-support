@@ -1,0 +1,73 @@
+/*
+ * Design Pill: Design dei Pulsanti
+ * Regola: Target area minimo 48x48pt, gerarchia primaria/secondaria/terziaria,
+ * Hover/Disabled alpha states, contrasti.
+ */
+
+.btn {
+  /* Area ergonomica di target minima */
+  min-height: 48px;
+  min-width: 48px;
+  
+  /* Stile base */
+  border-radius: 8px; /* Standard: Medium */
+  font-family: inherit;
+  font-size: var(--font-size-base);
+  font-weight: 600; /* Semi-bold consentito */
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px; /* Spazio per icone */
+  padding: 0 16px;
+  transition: opacity 0.2s ease;
+  border: none;
+  background: transparent;
+  text-decoration: none;
+  color: var(--color-text-strong);
+}
+
+.btn:disabled {
+  /* Un pulsante disabilitato deve usare alpha 20% come da rules */
+  opacity: var(--alpha-disabled);
+  cursor: not-allowed;
+}
+
+/* Pulsante Primario */
+.btn-primary {
+  background-color: var(--color-brand);
+  color: #FFFFFF; /* Testo bianco a contrasto */
+}
+
+.btn-primary:hover:not(:disabled) {
+  opacity: var(--alpha-hover);
+}
+
+/* Pulsante Secondario (Outline) */
+.btn-secondary {
+  /* Evitare grigio chiaro per i bordi. Usa il brand con stroke-strong */
+  border: 2px solid var(--color-brand);
+  color: var(--color-brand);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  opacity: var(--alpha-hover);
+}
+
+/* Pulsante Terziario */
+.btn-tertiary {
+  color: var(--color-text-strong);
+  text-decoration: underline; /* Obbligatorio per terziari */
+}
+
+.btn-tertiary:hover:not(:disabled) {
+  opacity: var(--alpha-hover);
+}
+
+/* Posizionamento mobile: Full width e flow verticale */
+@media (max-width: 768px) {
+  .btn {
+    width: 100%;
+    margin-bottom: 16px; /* Mobile stacking */
+  }
+}

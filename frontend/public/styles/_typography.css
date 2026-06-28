@@ -1,0 +1,70 @@
+/*
+ * Design Pill: Standard Tipografici
+ * Regola: Ratio Minor Third (1.200), Typeface Sans Serif (system-ui), 
+ * Griglia Verticale (line-height divisibile per 4), Allineamento a sinistra.
+ */
+
+:root {
+  /* Scale: Base 16px, Minor Third Ratio (1.200) */
+  --font-size-base: 16px;
+  --font-size-h3: 24px;   /* 16 * ~1.5 */
+  --font-size-h2: 32px;   /* 16 * 2.0 */
+  --font-size-h1: 40px;   /* 16 * 2.5 */
+  
+  --font-family-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-base);
+  color: var(--color-text-strong);
+  
+  /* Allineamento a Sinistra Obbligatorio (Niente testo centrato o giustificato per testi lunghi) */
+  text-align: left;
+  
+  /* Interlinea ottimizzata, proporzionale. Per corpo: 1.5 (24px div per 4) */
+  line-height: 24px; 
+}
+
+/* Headings: Bold solo per i titoli */
+h1, h2, h3, h4, h5 {
+  font-weight: 700; /* Bold */
+  color: var(--color-text-strong);
+  margin-top: 0;
+  margin-bottom: 16px; /* Multiplo di 4 */
+}
+
+h1 {
+  font-size: var(--font-size-h1);
+  line-height: 48px; /* Divisibile per 4 */
+}
+
+h2 {
+  font-size: var(--font-size-h2);
+  line-height: 40px; /* Divisibile per 4 */
+}
+
+h3 {
+  font-size: var(--font-size-h3);
+  line-height: 32px; /* Divisibile per 4 */
+}
+
+p {
+  font-size: var(--font-size-base);
+  font-weight: 400; /* Regular per corpo testo */
+  line-height: 24px; /* Divisibile per 4 */
+  margin-top: 0;
+  margin-bottom: 16px; /* Multiplo di 4 */
+  /* Lunghezza di linea ottimale (40-80 chr) applicata nei container layout */
+  max-width: 70ch; 
+}
+
+/* Obbligo link sottolineati per accessibilità */
+a {
+  color: var(--color-brand);
+  text-decoration: underline;
+}
+
+a:hover {
+  opacity: var(--alpha-hover);
+}
