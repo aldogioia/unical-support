@@ -2,7 +2,6 @@ from celery import Celery
 from celery.signals import worker_process_init
 from celery.schedules import crontab
 from app.core.config import settings
-from app.ai.rag import init_vector_store
 import logging
 
 logger = logging.getLogger(__name__)
@@ -42,6 +41,7 @@ celery_app.conf.update(
 
 @worker_process_init.connect
 def init_worker_dependencies(**kwargs):
+    from app.ai.rag import init_vector_store
     logger.info("Inizializzazione del Vector Store per il worker Celery...")
     try:
         init_vector_store()

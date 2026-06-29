@@ -1,5 +1,5 @@
-import os
 import time
+import random
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from flashrank import Ranker, RerankRequest
@@ -18,12 +18,25 @@ _vector_store = None
 
 def init_vector_store():
     global _vector_store
-    _vector_store = PGVector(
-        embeddings=embeddings_model,
-        collection_name="unical_knowledge_base",
-        connection=settings.DATABASE_URL,
-        use_jsonb=True,
-    )
+    
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            _vector_store = PGVector(
+                embeddings=embeddings_model,
+                collection_name="unical_knowledge_base",
+                connection=settings.DATABASE_URL,
+                use_jsonb=True,
+            )
+            break 
+        except Exception as e:
+            if attempt < max_retries - 1:
+                sleep_time = random.uniform(0.5, 2.0)
+                print(f"[RAG] Conflitto di inizializzazione DB (Worker paralleli). Ritento tra {sleep_time:.2f}s...")
+                time.sleep(sleep_time)
+            else:
+                print("[RAG] Errore critico: impossibile inizializzare il Vector Store.")
+                raise e
 
 def get_vector_store():
     global _vector_store
