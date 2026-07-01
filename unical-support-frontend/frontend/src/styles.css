@@ -1,0 +1,155 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+
+*{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
+}
+
+html, body {
+  overscroll-behavior: none;
+}
+
+/* LIGHT */
+:root {
+  --background: #FAFAFA;
+  --background-60: #FAFAFA99;
+
+  --text-strong: #1E1E1E;
+  --text-weak: #1E1E1EBF;
+  --stroke-strong: #1E1E1E73;
+  --stroke-weak: #1E1E1E1A;
+  --fill: #1E1E1E0A;
+
+  --brand-strong: #CC3C00;
+  --brand-weak: #CC3C00CC;
+  --brand-stroke-strong: #CC3C0099;
+  --brand-stroke-weak: #CC3C0033;
+  --brand-fill: #CC3C001A;
+
+  --error-strong: #D9534F;
+  --error-weak: #D9534FCC;
+  --error-stroke-strong: #D9534F99;
+  --error-stroke-weak: #D9534F33;
+  --error-fill: #D9534F1A;
+
+  --success-strong: #33A852;
+  --success-weak: #33A852CC;
+  --success-stroke-strong: #33A85299;
+  --success-stroke-weak: #33A85233;
+  --success-fill: #33A8521A;
+
+  --warning-strong: #F8BC00;
+  --warning-weak: #F8BC00CC;
+  --warning-stroke-strong: #F8BC0099;
+  --warning-stroke-weak: #F8BC0033;
+  --warning-fill: #F8BC001A;
+}
+
+/* DARK */
+.dark {
+  --background: #121212;
+  --background-60: #12121299;
+
+  --text-strong: #E6E6E6E6;
+  --text-weak: #E6E6E699;
+  --stroke-strong: #E6E6E673;
+  --stroke-weak: #E6E6E61A;
+  --fill: #E6E6E60A;
+
+  --brand-strong: #FF5722;
+  --brand-weak: #FF5722CC;
+  --brand-stroke-strong: #FF572299;
+  --brand-stroke-weak: #FF572233;
+  --brand-fill: #FF57221A;
+
+  --error-strong: #F44336;
+  --error-weak: #F44336B3;
+  --error-stroke-strong: #F4433699;
+  --error-stroke-weak: #F4433633;
+  --error-fill: #F443361A;
+
+  --success-strong: #4CAF50;
+  --success-weak: #4CAF50CC;
+  --success-stroke-strong: #4CAF5099;
+  --success-stroke-weak: #4CAF5033;
+  --success-fill: #4CAF501A;
+
+  --warning-strong: #FFC107;
+  --warning-weak: #FFC107CC;
+  --warning-stroke-strong: #FFC10799;
+  --warning-stroke-weak: #FFC10733;
+  --warning-fill: #FFC1071A;
+}
+
+h1, h2, h3, h4, h5 {
+  color: var(--text-strong);
+  letter-spacing: 1.2pt;
+  font-weight: 300;
+}
+
+p {
+  color: var(--text-weak);
+  line-height: 1.5em;
+}
+
+span {
+  color: var(--text-strong);
+}
+
+hugeicons-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* SKELETON */
+
+.skeleton-item {
+  width: 100%;
+  background: var(--fill);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  gap: 4pt;
+  border-radius: 8pt;
+  padding: 16pt;
+  color: var(--text-weak);
+  font-size: 14px;
+  border: 1px solid transparent;
+}
+
+.skeleton-item.animated {
+  background: linear-gradient(90deg, var(--fill) 0%, var(--stroke-weak) 50%, var(--fill) 100%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 3s infinite linear;
+  height: 150px;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* CHIPS (categorie / stato) */
+.chip-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2pt 8pt;
+  border-radius: 8pt;
+  font-size: 12px;
+  border: 1px solid var(--brand-stroke-weak);
+  background: var(--brand-fill);
+  color: var(--brand-strong);
+}
+
+.chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6pt;
+}

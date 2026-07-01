@@ -1,0 +1,14 @@
+.venv
+venv
+__pycache__/
+*.pyc
+frontend/
+!frontend/README.md
+.git
+.gitignore
+.idea
+*.iml
+dist/
+*.egg-info/
+.env
+*.log

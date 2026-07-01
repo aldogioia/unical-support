@@ -1,0 +1,18 @@
+.neutral {
+  position: absolute;
+  top: 8pt;
+  right: 8pt;
+  opacity: .3;
+  padding: 2pt 4pt;
+  border-radius: 4pt;
+  backdrop-filter: blur(8pt);
+  transition: .3s ease-in-out;
+  background-color: var(--stroke-weak);
+  border: 1px solid var(--stroke-weak);
+  color: var(--text-weak);
+}
+
+.item:hover > .neutral,
+.item.selected > .neutral {
+  opacity: 1;
+}

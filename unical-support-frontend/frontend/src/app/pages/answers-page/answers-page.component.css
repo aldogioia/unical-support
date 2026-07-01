@@ -1,0 +1,19 @@
+.responses {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-top: 2px solid var(--stroke-weak);
+  padding-top: 16px;
+}
+
+textarea {
+  width: 100%;
+}
+
+select {
+  width: 100%;
+}
+
+.error {
+  color: var(--error-strong) !important;
+}

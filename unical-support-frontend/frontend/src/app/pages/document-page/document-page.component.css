@@ -1,0 +1,263 @@
+.file-uploader > .file-upload-button, button {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.separator {
+  height: 1px;
+  width: 100%;
+  background-color: var(--stroke-weak);
+}
+
+.cancel-btn {
+  background: var(--stroke-strong);
+  color: var(--text-weak);
+}
+
+.cancel-btn:hover {
+  background: var(--text-weak);
+}
+
+/* Chrome, Safari e Edge */
+section::-webkit-scrollbar,
+.file-list::-webkit-scrollbar {
+  display: none;
+}
+
+
+/*----------General----------*/
+.category-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+p.red {
+  color: red;
+}
+
+
+/*----------Header----------*/
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+header > .header-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+
+/*----------Section----------*/
+
+
+
+.file-uploader {
+  border: 3px dotted gray;
+  padding: 16px;
+  border-radius: 10px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+
+  transition: .3s ease-in-out;
+}
+
+.file-uploader > .file-upload-button {
+  height: 28pt;
+  border-radius: 8pt;
+  background: var(--brand-weak);
+  color: var(--text-strong);
+  outline: none;
+  border: none;
+  font-size: 11pt;
+  cursor: pointer;
+  transition: .3s ease-in-out;
+}
+
+.file-uploader > .file-upload-button:hover {
+  background: var(--brand-strong);
+}
+
+.ia-warning {
+  background-color: var(--warning-fill);
+  border: 1px solid var(--warning-stroke-weak);
+  color: var(--warning-strong) !important;
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.file-uploader.drag {
+  border-color: var(--brand-strong);
+}
+
+/*----------Icons----------*/
+.cancel-icon {
+  stroke: var(--text-weak);
+  padding: 4px;
+  transition: .3s ease-in-out;
+}
+
+.cancel-icon:hover {
+  background-color: var(--fill);
+  border-radius: 8px;
+}
+
+.header-content > hugeicons-icon {
+  stroke: var(--brand-strong);
+  stroke-width: 2pt;
+}
+
+/*----------Selected file----------*/
+
+.file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px;
+  border: 1px solid var(--stroke-weak);
+  border-radius: 8px;
+}
+
+.file {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.file > hugeicons-icon {
+  stroke: var(--text-strong);
+}
+
+.selected-files {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.file-info > p {
+  word-break: break-all;
+}
+
+
+
+
+/*-------AGGIUNTE ALDO------*/
+
+.list-item{
+  display: flex;
+  align-items: flex-start;
+  gap: 4pt;
+  width: 100%;
+  padding: 8pt;
+  border-radius: 8pt;
+  cursor: pointer;
+  background: var(--fill);
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.list-item:hover {
+  border-color: var(--brand-stroke-weak);
+}
+
+.list-item > hugeicons-icon {
+  height: 29px;
+  stroke: var(--brand-strong);
+}
+
+.text-info {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4pt;
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+}
+
+.item-actions {
+  display: flex;
+  gap: 8pt;
+}
+
+.item-actions hugeicons-icon {
+  stroke-width: 1.5px;
+  stroke: var(--text-weak);
+  transition: .3s ease-in-out;
+}
+
+.item-actions > a > hugeicons-icon:first-of-type:hover {
+  stroke: var(--success-strong) !important;
+}
+
+.item-actions > hugeicons-icon:last-of-type:hover {
+  stroke: var(--error-strong) !important;
+}
+
+.item-actions a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.actions {
+  display: flex;
+  gap: 8pt;
+  width: 100%;
+}
+
+.actions {
+  flex-direction: column;
+}
+
+button, .secondary-btn {
+  width: 100% !important;
+}
+
+.secondary-btn {
+  border-radius: 8pt !important;
+}
+
+/*----------Upload mode toggle----------*/
+.upload-mode-toggle {
+  display: flex;
+  gap: 8pt;
+}
+
+.upload-mode-toggle > button {
+  flex: 1;
+  background: var(--fill);
+  color: var(--text-weak);
+  border: 1px solid var(--stroke-weak);
+}
+
+.upload-mode-toggle > button.active {
+  background: var(--brand-weak);
+  color: var(--text-strong);
+  border: 1px solid var(--brand-stroke-strong);
+}
+
+.link-input {
+  display: flex;
+  align-items: center;
+  gap: 6pt;
+}
+
+.link-input hugeicons-icon {
+  stroke: var(--brand-strong);
+}
+
+.link-input input {
+  width: 100%;
+}
