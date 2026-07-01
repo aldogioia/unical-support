@@ -2,7 +2,7 @@
   padding: 32px;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: fit-content;
 }
 
 .page-header {
@@ -24,10 +24,12 @@
   position: relative;
   transition: background-color 0.2s ease, border-color 0.2s ease;
 }
+
 .upload-zone:hover {
   border-color: var(--color-brand);
   background-color: var(--color-fill);
 }
+
 .upload-zone.is-dragging {
   border-color: var(--color-brand);
   background-color: hsla(var(--brand-hue, 230), 80%, 50%, 0.1);
@@ -59,6 +61,7 @@
   border-radius: 50%;
   transition: background-color 0.2s, color 0.2s;
 }
+
 .upload-icon-container.is-dragging {
   background-color: hsla(var(--brand-hue, 230), 80%, 50%, 0.2);
   color: var(--color-brand);
@@ -72,10 +75,12 @@
 .upload-text {
   font-size: 14px;
 }
+
 .upload-text-primary {
   font-weight: 600;
   color: var(--color-brand);
 }
+
 .upload-text-secondary {
   color: var(--color-text-weak);
 }
@@ -102,9 +107,15 @@
   display: inline-block;
   animation: rotation 1s linear infinite;
 }
+
 @keyframes rotation {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Document List (Borderless & Elegant) */
@@ -227,9 +238,11 @@
   justify-content: center;
   transition: color 0.2s, background-color 0.2s;
 }
+
 .icon-btn:hover {
   background-color: var(--color-fill);
 }
+
 .icon-btn.text-danger:hover {
   color: var(--color-error);
   background-color: hsla(0, 65%, 50%, 0.1);
@@ -245,12 +258,15 @@
   height: 14px;
 }
 
-.ml-1 { margin-left: 4px; }
+.ml-1 {
+  margin-left: 4px;
+}
 
 .fade-in-hover {
   opacity: 0;
   transition: opacity 0.2s ease;
 }
+
 .document-list-item:hover .fade-in-hover {
   opacity: 1;
 }

@@ -1,0 +1,17 @@
+# LangChain, RAG e Vector DB
+langchain>=0.3.0
+langchain-groq>=0.2.0
+langchain-google-genai>=2.0.0
+langchain-core>=0.3.0
+langchain-community>=0.3.0
+langchain-text-splitters>=0.3.0
+langchain-postgres>=0.0.12
+langchain-unstructured>=0.1.0
+langgraph>=0.2.0
+unstructured[pdf]>=0.16.0
+beautifulsoup4>=4.12.3
+pgvector>=0.3.0
+pypdf>=4.2.0
+
+# Reranking RAG
+flashrank>=0.2.0

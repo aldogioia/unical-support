@@ -54,11 +54,10 @@
   opacity: var(--alpha-hover);
 }
 
-/* Posizionamento mobile: Full width e flow verticale */
+
 @media (max-width: 768px) {
   .btn {
     width: 100%;
     margin-bottom: 16px;
-    /* Mobile stacking */
   }
 }

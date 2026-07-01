@@ -1,12 +1,21 @@
-# Dockerfile
-FROM python:3.13-slim
-
+FROM python:3.13-slim AS base
 WORKDIR /app
-
-# Installazione delle dipendenze di sistema necessarie per PostgreSQL e utilità varie
-RUN apt-get update && apt-get install -y \
-    build-essential \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+
+FROM base AS backend
+COPY requirements-base.txt .
+RUN pip install --no-cache-dir -r requirements-base.txt
+COPY . .
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+
+
+FROM base AS worker
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
     gcc \
     libxcb1 \
     libxext6 \
@@ -17,13 +26,6 @@ RUN apt-get update && apt-get install -y \
     poppler-utils \
     tesseract-ocr \
     && rm -rf /var/lib/apt/lists/*
-
-# Copia dei requisiti e installazione
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copia del codice sorgente
+COPY requirements-base.txt requirements-worker.txt ./
+RUN pip install --no-cache-dir -r requirements-base.txt -r requirements-worker.txt
 COPY . .
-
-# Il comando di default può essere sovrascritto dal docker-compose
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

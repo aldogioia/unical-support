@@ -2,23 +2,16 @@ from uuid import UUID
 from app.core.celery_app import celery_app
 from app.db.database import session_scope
 from app.models.email import Email, EmailStatus
-from app.ai.llm_factory import get_classifier_llm, get_responder_llm
-from langgraph.prebuilt import create_react_agent
-from langchain_core.messages import SystemMessage, HumanMessage
-from app.ai.prompts import get_classifier_system_prompt, get_responder_system_prompt
-from app.listener.gmail_client import GmailClient
-
-from app.ai.tools import (
-    get_available_categories,
-    assign_categories_and_route,
-    search_knowledge_base,
-    get_category_template,
-    save_draft_response,
-    escalate_to_human
-)
 
 @celery_app.task(bind=True, max_retries=3, name="app.tasks.email_tasks.classify_email_task")
 def classify_email_task(self, email_id: UUID):
+    
+    from app.ai.llm_factory import get_classifier_llm
+    from langgraph.prebuilt import create_react_agent
+    from langchain_core.messages import SystemMessage, HumanMessage
+    from app.ai.prompts import get_classifier_system_prompt
+    from app.ai.tools import get_available_categories, assign_categories_and_route
+
     try:
         with session_scope() as db:
             email = db.query(Email).filter(Email.id == email_id).first()
@@ -75,6 +68,13 @@ def classify_email_task(self, email_id: UUID):
 
 @celery_app.task(bind=True, max_retries=3, name="app.tasks.email_tasks.respond_email_task")
 def respond_email_task(self, email_id: UUID):
+
+    from app.ai.llm_factory import get_responder_llm
+    from langgraph.prebuilt import create_react_agent
+    from langchain_core.messages import SystemMessage, HumanMessage
+    from app.ai.prompts import get_responder_system_prompt
+    from app.ai.tools import search_knowledge_base, get_category_template, save_draft_response, escalate_to_human
+
     try:
         with session_scope() as db:
             email = db.query(Email).filter(Email.id == email_id).first()

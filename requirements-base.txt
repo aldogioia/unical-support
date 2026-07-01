@@ -1,0 +1,32 @@
+numpy==2.3.5
+
+# Framework Web e Server
+fastapi>=0.115.0
+uvicorn[standard]>=0.35.0
+
+# Database e ORM
+sqlalchemy==2.0.40
+psycopg[binary]>=3.2.0
+alembic>=1.16.0
+
+# Gestione Dati e Configurazioni
+pydantic[email]>=2.11.0
+pydantic-settings>=2.10.0
+
+# Sicurezza e JWT
+python-jose[cryptography]>=3.5.0
+passlib[bcrypt]>=1.7.4
+python-multipart>=0.0.20
+bcrypt==4.0.1
+cryptography>=45.0.0
+pwdlib[argon2]
+PyJWT>=2.10.1
+
+# Message Broker e Background Tasks
+celery>=5.3.6
+redis>=5.0.1
+
+# Gmail API (Se il backend legge le email, altrimenti puoi spostarlo nel worker)
+google-api-python-client>=2.120.0
+google-auth-httplib2>=0.2.0
+google-auth-oauthlib>=1.2.0

@@ -1,32 +1,14 @@
-from app.models.user import User
-from app.models.category import Category
-from app.models.document import Document
-from app.models.template import Template
-from app.models.blacklist import Blacklist
-from app.models.email import Email
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
 from app.core.config import settings
 from app.api.endpoints import categories, templates, documents, emails, auth
-from app.ai.rag import init_vector_store
 from app.db.database import engine, Base
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    print("Inizializzazione Vector DB...")
-    init_vector_store()
-    print("Vector DB inizializzato con successo.")
-    yield
-    print("Spegnimento dell'applicazione...")
 
 Base.metadata.create_all(bind=engine)
 app = FastAPI(
     title=settings.PROJECT_NAME,
     description="API Gateway per Unical Support (Email Responder)",
     version="1.0.0",
-    lifespan=lifespan
 )
 
 app.add_middleware(

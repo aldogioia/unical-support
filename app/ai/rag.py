@@ -11,9 +11,13 @@ embeddings_model = GoogleGenerativeAIEmbeddings(
     google_api_key=settings.GOOGLE_API_KEY
 )
 
-# reranker caricato una volta sola all'avvio
-reranker = Ranker(model_name="ms-marco-MiniLM-L-12-v2")
+_reranker_instance = None
 
+def get_reranker():
+    global _reranker_instance
+    if _reranker_instance is None:
+        _reranker_instance = Ranker(model_name="ms-marco-MiniLM-L-12-v2")
+    return _reranker_instance
 _vector_store = None
 
 def init_vector_store():
@@ -109,7 +113,7 @@ def retrieve_context(query: str, k: int = 4, category_name: str = None) -> str:
             query=query,
             passages=[{"id": i, "text": doc.page_content} for i, doc in enumerate(candidates)]
         )
-        reranked = reranker.rerank(rerank_request)
+        reranked = get_reranker().rerank(rerank_request)
         top_k_ids = [r["id"] for r in reranked[:k]]
         final_docs = [candidates[i] for i in top_k_ids]
         print(f"Reranking completato: selezionati {len(final_docs)} frammenti finali")
