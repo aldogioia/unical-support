@@ -1,0 +1,137 @@
+.skeleton {
+  position: relative;
+  align-items: initial;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(1, 1fr);
+  gap: 16pt;
+}
+
+.svg-email {
+  height: 50pt;
+  width: 100%;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8pt;
+  width: 100%;
+}
+
+.header-list {
+  position: sticky;
+  top: calc(59px);
+  background: var(--background);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8pt 0;
+  gap: 8pt;
+  width: 100%;
+}
+
+.list-actions {
+  display: flex;
+  gap: 8pt;
+}
+
+.list-actions > hugeicons-icon {
+  stroke: var(--stroke-strong);
+  transition: .3s ease-in-out;
+  cursor: pointer;
+}
+
+.list-actions > hugeicons-icon:hover {
+  stroke: var(--brand-stroke-strong);
+}
+
+.list-actions > hugeicons-icon.active {
+  stroke: var(--brand-strong);
+}
+
+.preview {
+  top: calc(16pt + 59px);
+  position: sticky;
+  display: flex;
+  flex-direction: column;
+  gap: 16pt;
+  padding: 16pt;
+  height: fit-content;
+  background: var(--fill);
+  border: 1px solid var(--stroke-weak);
+  border-radius: 8pt;
+  max-height: calc(100vh - (47px + 32pt));
+  overflow-y: auto;
+}
+
+.preview span {
+  color: var(--text-weak);
+  font-size: 14px;
+}
+
+.preview p {
+  color: var(--text-strong);
+  font-size: 14px;
+}
+
+.sec-header {
+  display: flex;
+  align-items: center;
+  gap: 4pt;
+  stroke: var(--brand-strong);
+}
+
+.sec {
+  display: flex;
+  flex-direction: column;
+  gap: 4pt;
+  width: 100%;
+}
+
+.classifications {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16pt;
+}
+
+.classification {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 4pt;
+}
+
+.confidence-info {
+  display: flex;
+  justify-content: space-between;
+}
+
+.confidence-info > span {
+  color: var(--text-strong);
+}
+
+span.delete {
+  display: flex;
+  gap: 2pt;
+  stroke: var(--text-weak);
+  cursor: pointer;
+}
+
+span.delete:hover {
+  stroke: var(--error-strong);
+}
+
+.confidence-info > span > span.high {
+  color: var(--success-strong);
+}
+
+.confidence-info > span > span.mid {
+  color: var(--warning-strong);
+}
+
+.confidence-info > span > span.low {
+  color: var(--error-strong);
+}

@@ -1,0 +1,142 @@
+.list-item{
+  display: flex;
+  align-items: flex-start;
+  gap: 4pt;
+  width: 100%;
+  padding: 8pt;
+  border-radius: 8pt;
+  cursor: pointer;
+  background: var(--fill);
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.list-item:hover {
+  border-color: var(--brand-stroke-weak);
+}
+
+.list-item.selected {
+  border-color: var(--brand-stroke-strong);
+}
+
+.list-item hugeicons-icon {
+  height: 29px;
+  stroke: var(--brand-strong);
+}
+
+.text-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4pt;
+  overflow: hidden;
+  width: 100%;
+}
+
+.text-info-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8pt;
+}
+
+.text-info p {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.usage {
+  font-size: 11px;
+}
+
+.status-inline {
+  display: inline-flex;
+  width: fit-content;
+  padding: 1pt 6pt;
+  border-radius: 8pt;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.status-inline.valid {
+  background-color: var(--success-fill);
+  border: 1px solid var(--success-stroke-weak);
+  color: var(--success-strong);
+}
+
+.status-inline.invalid {
+  background-color: var(--error-fill);
+  border: 1px solid var(--error-stroke-weak);
+  color: var(--error-strong);
+}
+
+.status-inline.neutral {
+  background-color: var(--stroke-weak);
+  border: 1px solid var(--stroke-weak);
+  color: var(--text-weak);
+}
+
+.review-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6pt;
+}
+
+.review-actions hugeicons-icon {
+  height: auto;
+  transition: .3s ease-in-out;
+}
+
+.review-actions .approve:hover {
+  stroke: var(--success-strong);
+}
+
+.review-actions .reject:hover {
+  stroke: var(--error-strong);
+}
+
+.checkbox-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8pt 16pt;
+}
+
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  color: var(--text-strong);
+}
+
+.param-chip {
+  font-family: monospace;
+}
+
+.info-box {
+  padding: 12px;
+  background: var(--fill);
+  border-radius: 4pt;
+  color: var(--text-weak);
+  font-size: 12pt;
+}
+
+.actions, .sub-actions {
+  display: flex;
+  gap: 8pt;
+  width: 100%;
+}
+
+.actions {
+  flex-direction: column;
+}
+
+button, .secondary-btn {
+  width: 100% !important;
+}
+
+.secondary-btn {
+  border-radius: 8pt !important;
+}
