@@ -1,27 +1,17 @@
-/*
- * Entry point del Design System
- * Importazione gerarchica dei moduli CSS come da KB
- */
-
+/* Design System Imports */
 @import '../public/styles/_tokens.css';
 @import '../public/styles/_typography.css';
-@import '../public/styles/_buttons.css';
 @import '../public/styles/_forms.css';
+@import '../public/styles/_buttons.css';
 
-/* Reset Essenziale Compatibile */
-*, *::before, *::after {
-  box-sizing: border-box;
-}
-
-body {
+/* Base Application Styles */
+html, body {
+  height: 100%;
   margin: 0;
   padding: 0;
-  background-color: var(--color-fill); /* Sfondo chiaro appena percepibile per light mode */
+  background-color: var(--color-fill, #f8fafc);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Modificatore body per interfacce Dark Mode - applica i gradienti di elevazione */
-@media (prefers-color-scheme: dark) {
-  body {
-    background-color: var(--surface-base); /* Evitare #000000 puro */
-  }
-}
+/* Add any global resets or layout utilities here if needed */

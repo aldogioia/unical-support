@@ -4,7 +4,7 @@ from app.schemas.category import CategoryCreate, CategoryUpdate
 from uuid import UUID
 from fastapi import HTTPException
 
-def get_category(db: Session, category_id: int):
+def get_category(db: Session, category_id: UUID):
     return db.query(Category).filter(Category.id == category_id).first()
 
 def get_category_by_name(db: Session, name: str):
@@ -30,7 +30,7 @@ def create_category(db: Session, category: CategoryCreate, user_id: UUID):
     db.refresh(db_category)
     return db_category
 
-def update_category(db: Session, category_id: int, category_data: CategoryUpdate, user_id: UUID):
+def update_category(db: Session, category_id: UUID, category_data: CategoryUpdate, user_id: UUID):
     db_category = get_category(db, category_id)
     if not db_category:
         raise HTTPException(status_code=404, detail="Categoria non trovata")
@@ -44,7 +44,7 @@ def update_category(db: Session, category_id: int, category_data: CategoryUpdate
     db.refresh(db_category)
     return db_category
 
-def delete_category(db: Session, category_id: int):
+def delete_category(db: Session, category_id: UUID):
     db_category = get_category(db, category_id)
     if db_category:
         db.delete(db_category)

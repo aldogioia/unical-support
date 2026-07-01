@@ -5,7 +5,7 @@ from app.models.email import Email, EmailStatus
 from app.schemas.email import EmailUpdateDraft, EmailCreate
 from fastapi import HTTPException
 
-def get_email(db: Session, email_id: int):
+def get_email(db: Session, email_id: UUID):
     return db.query(Email).filter(Email.id == email_id).first()
 
 def get_emails(db: Session, status: EmailStatus = None, skip: int = 0, limit: int = 100):
@@ -39,7 +39,7 @@ def create_email(db: Session, email: EmailCreate, user_id: UUID):
     db.refresh(db_email)
     return db_email
 
-def update_email_draft(db: Session, email_id: int, update_data: EmailUpdateDraft, user_id: UUID):
+def update_email_draft(db: Session, email_id: UUID, update_data: EmailUpdateDraft, user_id: UUID):
     db_email = db.query(Email).filter(Email.id == email_id).first()
     if not db_email:
         raise HTTPException(status_code=404, detail="Email non trovata")
@@ -53,7 +53,7 @@ def update_email_draft(db: Session, email_id: int, update_data: EmailUpdateDraft
     db.refresh(db_email)
     return db_email
 
-def update_email_status(db: Session, email_id: int, new_status: EmailStatus, user_id: UUID, category_ids: list[int] = None):
+def update_email_status(db: Session, email_id: UUID, new_status: EmailStatus, user_id: UUID, category_ids: list[UUID] = None):
     db_email = db.query(Email).filter(Email.id == email_id).first()
     if db_email:
         db_email.status = new_status

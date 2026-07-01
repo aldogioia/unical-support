@@ -1,0 +1,78 @@
+<div class="page-container">
+  <div class="page-header">
+    <div class="page-title-group">
+      <h1>Knowledge Base</h1>
+      <p class="page-subtitle">Manage documents and URLs used for Retrieval-Augmented Generation (RAG).</p>
+    </div>
+  </div>
+
+  <!-- Drag & Drop Upload Zone -->
+  <div class="upload-zone"
+       [ngClass]="{'is-dragging': isDragging()}"
+       (dragover)="onDragOver($event)"
+       (dragleave)="onDragLeave($event)"
+       (drop)="onDrop($event)">
+    <input type="file" multiple class="upload-input" (change)="onFileSelected($event)">
+    
+    <div class="upload-content">
+      <div class="upload-icon-container" [ngClass]="{'is-dragging': isDragging()}">
+        <svg class="upload-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+      </div>
+      <div class="upload-text">
+        <span class="upload-text-primary">Click to upload</span>
+        <span class="upload-text-secondary"> or drag and drop</span>
+      </div>
+      <p class="upload-hint">PDF, TXT, DOCX up to 10MB</p>
+    </div>
+  </div>
+
+  <!-- Document List -->
+  @if (loading()) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+    </div>
+  } @else {
+    <div class="document-list">
+      @for (doc of documents(); track doc.id) {
+        <div class="document-list-item group">
+          <div class="doc-icon-wrapper">
+            <svg class="doc-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10l6 6v10a2 2 0 01-2 2z"></path>
+            </svg>
+          </div>
+          
+          <div class="doc-main-info">
+            @if (doc.link) {
+              <a [href]="doc.link" target="_blank" class="doc-title-link">
+                {{ doc.filename || doc.link }}
+                <svg class="icon-xs ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+              </a>
+            } @else {
+              <span class="doc-title">{{ doc.filename }}</span>
+            }
+            <p class="doc-preview" [title]="doc.extracted_text">
+              {{ (doc.extracted_text || 'No text extracted') | slice:0:80 }}{{ (doc.extracted_text?.length ?? 0) > 80 ? '...' : '' }}
+            </p>
+          </div>
+          
+          <div class="doc-meta">
+            <span class="badge">{{ doc.content_type }}</span>
+            @if (doc.category?.name) {
+              <span class="badge badge-outline">{{ doc.category?.name }}</span>
+            }
+          </div>
+          
+          <div class="doc-actions">
+            <button (click)="deleteDocument(doc.id)" class="icon-btn text-danger fade-in-hover" aria-label="Delete">
+              <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </button>
+          </div>
+        </div>
+      } @empty {
+        <div class="empty-state-full">
+          <p class="empty-state-text">No documents in the knowledge base yet. Upload some files above.</p>
+        </div>
+      }
+    </div>
+  }
+</div>

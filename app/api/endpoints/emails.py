@@ -1,3 +1,4 @@
+from uuid import UUID
 from app.api.authentication import get_current_user
 from app.models.user import User
 from typing import Annotated
@@ -19,7 +20,7 @@ def read_emails(status: Optional[EmailStatus] = None, skip: int = 0, limit: int 
     return email_service.get_emails(db, status=status, skip=skip, limit=limit)
 
 @router.get("/{email_id}", response_model=EmailResponse)
-def read_email(email_id: int, db: Session = Depends(get_db)):
+def read_email(email_id: UUID, db: Session = Depends(get_db)):
     email = email_service.get_email(db, email_id=email_id)
     if email is None:
         raise HTTPException(status_code=404, detail="Email non trovata")
@@ -32,5 +33,5 @@ def create_new_email(email: EmailCreate, db: Session = Depends(get_db), current_
     return db_email
 
 @router.put("/{email_id}/draft", response_model=EmailResponse)
-def update_email_draft(email_id: int, update_data: EmailUpdateDraft, db: Session = Depends(get_db), current_user = Annotated[User, Depends(get_current_user)]):
+def update_email_draft(email_id: UUID, update_data: EmailUpdateDraft, db: Session = Depends(get_db), current_user = Annotated[User, Depends(get_current_user)]):
     return email_service.update_email_draft(db, email_id=email_id, update_data=update_data, user_id=current_user.id)

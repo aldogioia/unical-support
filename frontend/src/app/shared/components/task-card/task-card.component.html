@@ -1,0 +1,24 @@
+<div class="task-card" (click)="cardClick.emit(email)">
+  <div class="task-card-header">
+    <h3 class="task-card-sender" [title]="email.sender">{{ email.sender }}</h3>
+    <span class="status-badge"
+          [ngClass]="{
+            'status-draft': email.status === 'DRAFT',
+            'status-error': email.status === 'ESCALATED' || email.status === 'FAILED',
+            'status-success': email.status === 'SENT',
+            'status-default': email.status === 'UNREAD' || email.status === 'TO_CLASSIFY' || email.status === 'TO_RESPOND'
+          }">
+      {{ email.status }}
+    </span>
+  </div>
+  
+  <p class="task-card-subject">{{ email.subject }}</p>
+  
+  <div class="task-card-tags">
+    @for (cat of email.categories; track cat.id) {
+      <span class="tag">
+        {{ cat.name }}
+      </span>
+    }
+  </div>
+</div>

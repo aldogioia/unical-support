@@ -78,3 +78,6 @@ class GmailClient:
             id=msg_id, 
             body={'removeLabelIds': ['UNREAD']}
         ).execute()
+
+# Per rinonvare il token di testing
+#GmailClient()

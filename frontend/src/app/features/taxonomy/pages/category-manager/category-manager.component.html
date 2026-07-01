@@ -1,0 +1,72 @@
+<div class="page-container">
+  <div class="page-header">
+    <div class="page-title-group">
+      <h1>Taxonomy</h1>
+      <p class="page-subtitle">Manage categories used for classifying emails and documents.</p>
+    </div>
+    <button (click)="isAdding.set(true)" class="btn btn-primary shadow-sm">
+      + New Category
+    </button>
+  </div>
+
+  <!-- Add New Category Form (Slide-down) -->
+  @if (isAdding()) {
+    <div class="card add-category-card fade-in slide-in">
+      <h3 class="card-title mb-16">Create New Category</h3>
+      <div class="form-row">
+        <div class="form-col-1">
+          <input type="text" [(ngModel)]="newCategory.name" placeholder="Category Name" class="form-control">
+        </div>
+        <div class="form-col-2">
+          <input type="text" [(ngModel)]="newCategory.description" placeholder="Description (Optional)" class="form-control">
+        </div>
+        <div class="form-actions-inline">
+          <button (click)="cancelAdd()" class="btn btn-secondary">Cancel</button>
+          <button (click)="saveNewCategory()" class="btn btn-primary" [disabled]="!newCategory.name">Save</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+    </div>
+  } @else {
+    <div class="grid-container auto-rows-max">
+      @for (cat of categories(); track cat.id) {
+        <div class="card category-card group">
+          @if (editingId() === cat.id) {
+            <div class="edit-category-form">
+              <input type="text" [(ngModel)]="editCategory.name" class="form-control input-sm font-semibold">
+              <textarea [(ngModel)]="editCategory.description" class="form-control input-sm resize-none" rows="2"></textarea>
+              <div class="form-actions-end mt-8">
+                <button (click)="cancelEdit()" class="btn btn-secondary btn-sm">Cancel</button>
+                <button (click)="saveEdit(cat.id)" class="btn btn-primary btn-sm">Save</button>
+              </div>
+            </div>
+          } @else {
+            <div class="category-header mb-8">
+              <h3 class="category-name">{{ cat.name }}</h3>
+              
+              <!-- Actions (appear on hover) -->
+              <div class="category-actions fade-in-hover">
+                <button (click)="startEdit(cat)" class="icon-btn" aria-label="Edit">
+                  <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                </button>
+                <button (click)="deleteCategory(cat.id)" class="icon-btn text-danger" aria-label="Delete">
+                  <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </button>
+              </div>
+            </div>
+            <p class="category-description pr-32">{{ cat.description || 'No description provided.' }}</p>
+          }
+        </div>
+      } @empty {
+        <div class="empty-state-full">
+          <p class="empty-state-text">No categories found.</p>
+        </div>
+      }
+    </div>
+  }
+</div>

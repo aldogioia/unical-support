@@ -5,7 +5,7 @@ from app.models.category import Category
 from app.schemas.template import TemplateCreate, TemplateUpdate
 from fastapi import HTTPException
 
-def get_template(db: Session, template_id: int):
+def get_template(db: Session, template_id: UUID):
     return db.query(Template).filter(Template.id == template_id).first()
 
 def get_templates(db: Session, skip: int = 0, limit: int = 100):
@@ -17,7 +17,7 @@ def get_templates(db: Session, skip: int = 0, limit: int = 100):
         .all()
     )
 
-def get_templates_by_category(db: Session, category_id: int):
+def get_templates_by_category(db: Session, category_id: UUID):
     return (
         db.query(Template)
         .join(Template.categories)
@@ -52,7 +52,7 @@ def create_template(db: Session, template: TemplateCreate, user_id: UUID):
     db.refresh(db_template)
     return db_template
 
-def create_template_from_agent(db: Session, name: str, body_template: str, category_ids: list[int], user_id: UUID, subject_template: str = None):
+def create_template_from_agent(db: Session, name: str, body_template: str, category_ids: list[UUID], user_id: UUID, subject_template: str = None):
     db_template = Template(
         name=name,
         subject_template=subject_template,
@@ -71,7 +71,7 @@ def create_template_from_agent(db: Session, name: str, body_template: str, categ
     db.refresh(db_template)
     return db_template
 
-def review_template(db: Session, template_id: int, action: str, user_id: UUID):
+def review_template(db: Session, template_id: UUID, action: str, user_id: UUID):
     db_template = get_template(db, template_id)
     if not db_template:
         raise HTTPException(status_code=404, detail="Template non trovato")
@@ -87,7 +87,7 @@ def review_template(db: Session, template_id: int, action: str, user_id: UUID):
     db.refresh(db_template)
     return db_template
 
-def update_template(db: Session, template_id: int, template_data: TemplateUpdate, user_id: UUID):
+def update_template(db: Session, template_id: UUID, template_data: TemplateUpdate, user_id: UUID):
     db_template = get_template(db, template_id)
     if not db_template:
         raise HTTPException(status_code=404, detail="Template non trovato")
@@ -108,7 +108,7 @@ def update_template(db: Session, template_id: int, template_data: TemplateUpdate
     db.refresh(db_template)
     return db_template
 
-def delete_template(db: Session, template_id: int):
+def delete_template(db: Session, template_id: UUID):
     db_template = get_template(db, template_id)
     if db_template:
         db.delete(db_template)
@@ -116,7 +116,7 @@ def delete_template(db: Session, template_id: int):
     else:
         raise HTTPException(status_code=404, detail="Template non trovato")
 
-def increment_usage(db: Session, template_id: int, user_id: UUID):
+def increment_usage(db: Session, template_id: UUID, user_id: UUID):
     db_template = get_template(db, template_id)
     if db_template:
         db_template.usage_count += 1

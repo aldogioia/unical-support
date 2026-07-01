@@ -1,3 +1,4 @@
+from uuid import UUID
 from app.models.user import User
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
@@ -25,7 +26,7 @@ def create_category(
 
 @router.put("/{category_id}", response_model=CategoryResponse)
 def update_category(
-    category_id: int, 
+    category_id: UUID, 
     category_in: CategoryUpdate, 
     db: Session = Depends(get_db),
     current_user = Annotated[User, Depends(get_current_user)]
@@ -33,6 +34,6 @@ def update_category(
     return category_service.update_category(db, category_id, category_in, current_user.id)
 
 @router.delete("/{category_id}", status_code=204)
-def delete_category(category_id: int, db: Session = Depends(get_db)):
+def delete_category(category_id: UUID, db: Session = Depends(get_db)):
     category_service.delete_category(db, category_id)
         

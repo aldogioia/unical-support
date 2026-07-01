@@ -1,0 +1,100 @@
+.task-card {
+  background-color: var(--color-surface, #fff);
+  border-radius: 12px;
+  border: 1px solid var(--color-stroke-weak);
+  padding: 20px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+
+.task-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+  border-color: var(--color-stroke-strong);
+}
+
+.task-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.task-card-sender {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-strong);
+  margin: 0;
+  padding-right: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.status-draft {
+  background-color: hsla(36, 100%, 50%, 0.1);
+  color: var(--color-warning, #FFA000);
+  border-color: hsla(36, 100%, 50%, 0.2);
+}
+
+.status-error {
+  background-color: hsla(0, 65%, 50%, 0.1);
+  color: var(--color-error, #D32F2F);
+  border-color: hsla(0, 65%, 50%, 0.2);
+}
+
+.status-success {
+  background-color: hsla(122, 39%, 39%, 0.1);
+  color: var(--color-success, #388E3C);
+  border-color: hsla(122, 39%, 39%, 0.2);
+}
+
+.status-default {
+  background-color: var(--color-fill);
+  color: var(--color-text-weak);
+  border-color: var(--color-stroke-weak);
+}
+
+.task-card-subject {
+  color: var(--color-text-strong);
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.4;
+  margin: 0 0 8px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.task-card-tags {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 12px;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 6px;
+  background-color: var(--color-fill);
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-weak);
+}

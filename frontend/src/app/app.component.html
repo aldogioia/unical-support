@@ -1,60 +1,7 @@
-<main class="main-content">
-  <header>
-    <h1>Unical Support Design System</h1>
-    <p>Questo progetto Angular applica il Design System richiesto basandosi sulle regole di <strong>HSB, Alpha opacity, Minor Third typography, Ergonomia e Accessibilità WCAG</strong>.</p>
-  </header>
-
-  <section>
-    <h2>Test Pulsanti (Legge di Fitts & Contrasto)</h2>
-    <div style="display: flex; gap: 16px; flex-wrap: wrap;">
-      <button class="btn btn-primary">Azione Primaria</button>
-      <button class="btn btn-secondary">Azione Secondaria</button>
-      <button class="btn btn-tertiary">Azione Terziaria</button>
-      <button class="btn btn-primary" disabled>Disabilitato (Alpha 20%)</button>
-    </div>
-  </section>
-
-  <section style="margin-top: 48px;">
-    <h2>Test Moduli (Colonna Singola & Vertical Stacking)</h2>
-    <form class="form-container">
-      
-      <div class="form-group">
-        <label class="form-label" for="email">Indirizzo Email *</label>
-        <span class="form-hint">Usato per inviare comunicazioni.</span>
-        <input type="email" id="email" class="form-control" placeholder="" />
-      </div>
-
-      <div class="form-group">
-        <label class="form-label" for="username">Nome Utente (Errore di Test)</label>
-        <input type="text" id="username" class="form-control is-invalid" placeholder="" />
-        <span class="form-error-msg">⚠️ Questo nome utente è già in uso.</span>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Quantità (Stepper Accessibile)</label>
-        <div class="stepper">
-          <button type="button" class="stepper-btn">-</button>
-          <span class="stepper-value">3</span>
-          <button type="button" class="stepper-btn">+</button>
-        </div>
-      </div>
-
-      <label class="check-radio-group">
-        <input type="checkbox" class="check-radio-input" />
-        <span>Confermo di voler iscrivermi alla newsletter (Azione esplicita)</span>
-      </label>
-
-      <button type="button" class="btn btn-primary" style="margin-top: 16px; align-self: flex-start;">Salva Dati (Submit)</button>
-    </form>
-  </section>
-
-  <router-outlet />
-</main>
-
-<style>
-  .main-content {
-    padding: 32px;
-    max-width: 800px;
-    margin: 0 auto;
-  }
-</style>
+<div class="app-layout">
+  <app-side-navbar></app-side-navbar>
+  
+  <main class="app-main">
+    <router-outlet></router-outlet>
+  </main>
+</div>

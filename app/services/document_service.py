@@ -9,7 +9,7 @@ from app.models.document import Document
 from app.models.category import Category
 from app.ai.rag import index_langchain_documents
 
-def get_document(db: Session, document_id: int):
+def get_document(db: Session, document_id: UUID):
     return db.query(Document).filter(Document.id == document_id).first()
 
 def get_documents(db: Session, skip: int = 0, limit: int = 100):
@@ -31,7 +31,7 @@ def process_and_upload_document(db: Session, file: UploadFile | None, url: str |
             temp_path = temp_file.name
 
         try:
-            print(f"[SERVICE] 📄 Estrazione dati da: {filename}...")
+            print(f"[SERVICE] Estrazione dati da: {filename}...")
             # nuovo loader aggiornato
             loader = UnstructuredLoader(temp_path)
             docs = loader.load()
@@ -39,7 +39,7 @@ def process_and_upload_document(db: Session, file: UploadFile | None, url: str |
             os.remove(temp_path)
 
     elif url:
-        print(f"[SERVICE] 🌐 Estrazione dati da URL: {url}...")
+        print(f"[SERVICE] Estrazione dati da URL: {url}...")
         filename = url
         loader = WebBaseLoader(url)
         docs = loader.load()
@@ -72,7 +72,7 @@ def process_and_upload_document(db: Session, file: UploadFile | None, url: str |
 
     return db_document, chunk_count
 
-def delete_document(db: Session, document_id: int):
+def delete_document(db: Session, document_id: UUID):
     db_document = get_document(db, document_id)
     if db_document:
         db.delete(db_document)

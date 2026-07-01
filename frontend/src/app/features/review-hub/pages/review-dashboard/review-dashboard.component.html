@@ -1,0 +1,41 @@
+<div class="page-container">
+  <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
+    <div class="page-title-group">
+      <h1>Review Hub</h1>
+      <p class="page-subtitle">Manage and review AI-generated email responses.</p>
+    </div>
+    <div class="header-actions">
+      <div class="pill-group">
+        @for (status of statuses; track status.value) {
+          <button 
+            (click)="setStatus(status.value)"
+            class="pill" 
+            [class.active]="selectedStatus() === status.value">
+            {{ status.label }}
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+    </div>
+  } @else {
+    <div class="grid-container">
+      @for (email of emails(); track email.id) {
+        <app-task-card [email]="email" (cardClick)="openModal($event, modal)"></app-task-card>
+      } @empty {
+        <div class="empty-state-full">
+          <p class="empty-state-text">No emails pending review.</p>
+        </div>
+      }
+    </div>
+  }
+
+  <app-edit-modal #modal 
+    (approve)="handleApprove($event)" 
+    (escalate)="handleEscalate($event)">
+  </app-edit-modal>
+</div>

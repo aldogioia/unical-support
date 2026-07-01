@@ -1,3 +1,4 @@
+from uuid import UUID
 from app.api.authentication import get_current_user
 from app.models.user import User
 from typing import Annotated
@@ -19,7 +20,7 @@ def read_documents(skip: int = 0, limit: int = 100, db: Session = Depends(get_db
 async def upload_document(
     file: Optional[UploadFile] = File(None),
     url: Optional[str] = Form(None),
-    category_id: Optional[int] = Form(None),
+    category_id: Optional[UUID] = Form(None),
     db: Session = Depends(get_db),
     current_user = Annotated[User, Depends(get_current_user)]
 ):
@@ -34,5 +35,5 @@ async def upload_document(
         raise HTTPException(status_code=500, detail=f"Errore critico: {str(e)}")
 
 @router.delete("/{document_id}", status_code=204)
-def delete_document(document_id: int, db: Session = Depends(get_db)):
+def delete_document(document_id: UUID, db: Session = Depends(get_db)):
     document_service.delete_document(db, document_id)

@@ -1,0 +1,51 @@
+<dialog #modal class="modal-dialog">
+  @if (email) {
+    <div class="modal-content">
+      <!-- Header -->
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title">Review Draft</h2>
+          <p class="modal-subtitle">From: {{email.sender}}</p>
+        </div>
+        <button (click)="close()" class="icon-btn" aria-label="Close">
+          <svg class="icon-md" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <!-- Split Layout -->
+      <div class="modal-body">
+        <!-- Context Area (Read Only) -->
+        <div class="modal-context">
+          <div class="info-group">
+            <h3 class="info-label">Subject</h3>
+            <p class="info-value">{{ email.subject }}</p>
+          </div>
+          <div class="info-group">
+            <h3 class="info-label">Original Request</h3>
+            <div class="info-value pre-wrap">{{ email.body }}</div>
+          </div>
+        </div>
+
+        <!-- Edit Area -->
+        <div class="modal-edit">
+          <h3 class="info-label">Generated Draft</h3>
+          <textarea 
+            [(ngModel)]="editableDraft" 
+            class="form-control flex-1 resize-none"
+            placeholder="Write your response here..."
+          ></textarea>
+        </div>
+      </div>
+
+      <!-- Footer Actions -->
+      <div class="modal-footer">
+        <button (click)="onEscalate()" class="btn btn-danger">
+          Reject / Escalate
+        </button>
+        <button (click)="onApprove()" class="btn btn-primary shadow-sm">
+          Approve & Send
+        </button>
+      </div>
+    </div>
+  }
+</dialog>

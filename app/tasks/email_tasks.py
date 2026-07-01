@@ -1,3 +1,4 @@
+from uuid import UUID
 from app.core.celery_app import celery_app
 from app.db.database import session_scope
 from app.models.email import Email, EmailStatus
@@ -17,7 +18,7 @@ from app.ai.tools import (
 )
 
 @celery_app.task(bind=True, max_retries=3, name="app.tasks.email_tasks.classify_email_task")
-def classify_email_task(self, email_id: int):
+def classify_email_task(self, email_id: UUID):
     try:
         with session_scope() as db:
             email = db.query(Email).filter(Email.id == email_id).first()
@@ -73,7 +74,7 @@ def classify_email_task(self, email_id: int):
             raise self.retry(exc=e, countdown=delay)
 
 @celery_app.task(bind=True, max_retries=3, name="app.tasks.email_tasks.respond_email_task")
-def respond_email_task(self, email_id: int):
+def respond_email_task(self, email_id: UUID):
     try:
         with session_scope() as db:
             email = db.query(Email).filter(Email.id == email_id).first()

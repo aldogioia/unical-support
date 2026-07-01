@@ -20,7 +20,7 @@ def get_current_user(
     token_str = credentials.credentials
     if is_token_blacklisted(db, token_str):
         raise exc
-        
+    
     payload = decode_and_validate_access_token(token_str)
     if not payload:
         raise exc

@@ -1,3 +1,5 @@
+from uuid import UUID
+# pyrefly: ignore [missing-import]
 from langchain_core.tools import tool
 from app.db.database import session_scope
 from app.models.category import Category
@@ -18,7 +20,7 @@ def get_available_categories() -> str:
         return "\n".join([f"- {c.name}: {c.description}" for c in categories])
 
 @tool
-def assign_categories_and_route(email_id: int, category_names: list[str]) -> str:
+def assign_categories_and_route(email_id: UUID, category_names: list[str]) -> str:
     """
     Assegna le categorie indicate all'email e la invia all'agente risponditore.
     Obbligatorio chiamare questo tool alla fine del processo di classificazione.
@@ -68,7 +70,7 @@ def get_category_template(category_name: str) -> str:
         return category.templates[0].body_template
 
 @tool
-def save_draft_response(email_id: int, draft_text: str) -> str:
+def save_draft_response(email_id: UUID, draft_text: str) -> str:
     """
     Salva la bozza finale sull'email indicata.
     Obbligatorio chiamare questo tool alla fine del processo di risposta se è stata creata una bozza.
@@ -83,7 +85,7 @@ def save_draft_response(email_id: int, draft_text: str) -> str:
         return "Bozza salvata con successo."
 
 @tool
-def escalate_to_human(email_id: int, reason: str) -> str:
+def escalate_to_human(email_id: UUID, reason: str) -> str:
     """
     Usa questo tool se non trovi informazioni sufficienti per rispondere
     e ritieni che l'email debba essere gestita da un operatore umano.
