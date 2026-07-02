@@ -22,3 +22,5 @@ export type { UserLogin } from './models/user-login';
 export type { UserResponse } from './models/user-response';
 export type { UserRole } from './models/user-role';
 export type { ValidationError } from './models/validation-error';
+export type { AISettingsResponse } from './models/ai-settings-response';
+export type { AISettingsUpdate } from './models/ai-settings-update';

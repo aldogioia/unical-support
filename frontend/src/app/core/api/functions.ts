@@ -47,3 +47,7 @@ export type { UpdateEmailDraftApiEmailsEmailIdDraftPut$Params as UpdateEmailDraf
 export { updateEmailDraftApiEmailsEmailIdDraftPut as updateEmailDraftApiEmailsEmailIdDraftPut } from './fn/emails/update-email-draft-api-emails-email-id-draft-put';
 export type { ReadRootGet$Params as ReadRootGet$Params } from './fn/operations/read-root-get';
 export { readRootGet as readRootGet } from './fn/operations/read-root-get';
+export type { ReadAiSettingsApiAiSettingsGet$Params as ReadAiSettingsApiAiSettingsGet$Params } from './fn/ai-settings/read-ai-settings-api-ai-settings-get';
+export { readAiSettingsApiAiSettingsGet as readAiSettingsApiAiSettingsGet } from './fn/ai-settings/read-ai-settings-api-ai-settings-get';
+export type { UpdateAiSettingsApiAiSettingsPut$Params as UpdateAiSettingsApiAiSettingsPut$Params } from './fn/ai-settings/update-ai-settings-api-ai-settings-put';
+export { updateAiSettingsApiAiSettingsPut as updateAiSettingsApiAiSettingsPut } from './fn/ai-settings/update-ai-settings-api-ai-settings-put';

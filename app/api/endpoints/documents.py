@@ -18,11 +18,11 @@ def read_documents(skip: int = 0, limit: int = 100, db: Session = Depends(get_db
 
 @router.post("/upload", response_model=DocumentResponse)
 async def upload_document(
+    current_user: Annotated[User, Depends(get_current_user)],
     file: Optional[UploadFile] = File(None),
     url: Optional[str] = Form(None),
     category_id: Optional[UUID] = Form(None),
     db: Session = Depends(get_db),
-    current_user = Annotated[User, Depends(get_current_user)]
 ):
     if not file and not url:
         raise HTTPException(status_code=400, detail="Devi fornire un 'file' oppure un 'url'.")

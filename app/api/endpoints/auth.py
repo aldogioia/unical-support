@@ -17,7 +17,7 @@ def login(credentials: UserLogin, db: Session = Depends(get_db)):
 
 
 @router.post("/register", response_model=UserResponse)
-def register(user: UserCreate, db: Session = Depends(get_db), current_user = Annotated[User, Depends(is_admin_user)] ): # todo remove admin control ?
+def register(user: UserCreate, current_user: Annotated[User, Depends(is_admin_user)], db: Session = Depends(get_db)): # todo remove admin control ?
     return create_user(db, user, current_user.id)
 
 @router.get("/me", response_model=UserResponse)

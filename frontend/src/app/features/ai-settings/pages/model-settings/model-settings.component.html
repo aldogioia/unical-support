@@ -1,0 +1,89 @@
+<div class="page-container">
+  <div class="page-header">
+    <div class="page-title-group">
+      <h1>Modelli AI</h1>
+      <p class="page-subtitle">Scegli quali modelli LLM usare per classificazione e generazione delle risposte.</p>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+    </div>
+  } @else {
+    <div class="card" style="max-width: 640px;">
+
+      @if (error()) {
+        <p class="text-danger mb-16">{{ error() }}</p>
+      }
+
+      <h3 class="card-title mb-16">Classificazione email</h3>
+      <div class="form-row mb-16">
+        <div class="form-col-1">
+          <label class="form-label">Provider</label>
+          <select [(ngModel)]="form.classifier_provider" class="form-control">
+            @for (p of providers; track p.value) {
+              <option [value]="p.value">{{ p.label }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-col-2">
+          <label class="form-label">Modello</label>
+          <input type="text" [(ngModel)]="form.classifier_model" placeholder="openai/gpt-oss-20b" class="form-control">
+        </div>
+      </div>
+      @if (form.classifier_provider === 'local') {
+        <div class="form-row mb-16">
+          <div class="form-col-1"></div>
+          <div class="form-col-2">
+            <label class="form-label">URL server locale</label>
+            <input type="text" [(ngModel)]="form.classifier_base_url" placeholder="http://host.docker.internal:11434/v1" class="form-control">
+          </div>
+        </div>
+      }
+
+      <h3 class="card-title mb-16">Generazione risposte</h3>
+      <div class="form-row mb-16">
+        <div class="form-col-1">
+          <label class="form-label">Provider</label>
+          <select [(ngModel)]="form.responder_provider" class="form-control">
+            @for (p of providers; track p.value) {
+              <option [value]="p.value">{{ p.label }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-col-2">
+          <label class="form-label">Modello</label>
+          <input type="text" [(ngModel)]="form.responder_model" placeholder="gemini-3.1-flash-lite" class="form-control">
+        </div>
+      </div>
+      @if (form.responder_provider === 'local') {
+        <div class="form-row mb-16">
+          <div class="form-col-1"></div>
+          <div class="form-col-2">
+            <label class="form-label">URL server locale</label>
+            <input type="text" [(ngModel)]="form.responder_base_url" placeholder="http://host.docker.internal:11434/v1" class="form-control">
+          </div>
+        </div>
+      }
+
+      <div class="form-actions-end mt-8">
+        @if (saved()) {
+          <span class="text-success" style="margin-right: 12px; align-self: center;">Salvato ✓</span>
+        }
+        <button (click)="save()" class="btn btn-primary" [disabled]="saving()">
+          {{ saving() ? 'Salvataggio...' : 'Salva' }}
+        </button>
+      </div>
+    </div>
+
+    <p class="page-subtitle mt-16" style="max-width: 640px;">
+      Il nome del modello deve corrispondere esattamente a un identificativo valido per il provider scelto
+      (es. per Groq: "openai/gpt-oss-20b"; per Google: "gemini-3.1-flash-lite"). Per un modello che gira
+      in locale (Ollama, LM Studio, vLLM...), seleziona "Server locale" e indica l'URL — se il server gira
+      sul tuo host (fuori Docker), usa <code>http://host.docker.internal:PORTA/v1</code> invece di
+      <code>localhost</code>, altrimenti il worker non riuscirà a raggiungerlo. Le modifiche si applicano
+      alla prossima email classificata o risposta generata — non serve riavviare nulla.
+    </p>
+  }
+</div>

@@ -13,5 +13,9 @@ export const routes: Routes = [
   { 
     path: 'knowledge-base', 
     loadComponent: () => import('./features/knowledge-base/pages/document-manager/document-manager.component').then(m => m.DocumentManagerComponent)
+  },
+  {
+    path: 'ai-settings',
+    loadComponent: () => import('./features/ai-settings/pages/model-settings/model-settings.component').then(m => m.ModelSettingsComponent)
   }
 ];

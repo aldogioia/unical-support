@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api.endpoints import categories, templates, documents, emails, auth
+from app.api.endpoints import categories, templates, documents, emails, auth, ai_settings
 from app.db.database import engine, Base
 
 Base.metadata.create_all(bind=engine)
@@ -24,6 +24,7 @@ app.include_router(categories.router, prefix="/api/categories", tags=["Categorie
 app.include_router(templates.router, prefix="/api/templates", tags=["Templates"])
 app.include_router(documents.router, prefix="/api/documents", tags=["Documents"])
 app.include_router(emails.router, prefix="/api/emails", tags=["Emails"])
+app.include_router(ai_settings.router, prefix="/api/ai-settings", tags=["AI Settings"])
 
 @app.get("/")
 def read_root():
