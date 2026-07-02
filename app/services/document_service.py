@@ -52,6 +52,17 @@ def process_and_upload_document(db: Session, file: UploadFile | None, url: str |
 
     return db_document, 0
 
+def update_document_category(db: Session, document_id: UUID, category_id, user_id: UUID):
+    db_document = get_document(db, document_id)
+    if not db_document:
+        raise HTTPException(status_code=404, detail="Documento non trovato")
+
+    db_document.category_id = category_id
+    db_document.apply_audit_fields(user_id=user_id, is_create=False)
+    db.commit()
+    db.refresh(db_document)
+    return db_document
+
 def delete_document(db: Session, document_id: UUID):
     db_document = get_document(db, document_id)
     if db_document:

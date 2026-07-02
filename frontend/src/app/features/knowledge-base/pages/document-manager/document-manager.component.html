@@ -6,13 +6,48 @@
     </div>
   </div>
 
+  <!-- Categoria + Link: si applicano sia all'upload di file sia all'aggiunta di un link -->
+  <div class="upload-options">
+    <div class="upload-options-row">
+      <select [(ngModel)]="selectedCategoryId" class="form-control" [disabled]="uploading()">
+        <option value="">Nessuna categoria</option>
+        @for (cat of categories(); track cat.id) {
+          <option [value]="cat.id">{{ cat.name }}</option>
+        }
+      </select>
+
+      <input
+        type="text"
+        [(ngModel)]="linkUrl"
+        placeholder="Link (fonte del file, oppure incollalo e clicca 'Aggiungi link' per un URL da solo)"
+        class="form-control"
+        [disabled]="uploading()"
+        (keydown.enter)="addLink()">
+
+      <button
+        type="button"
+        class="btn btn-secondary"
+        [disabled]="!linkUrl.trim() || uploading()"
+        (click)="addLink()">
+        Aggiungi link
+      </button>
+    </div>
+
+    @if (uploadError()) {
+      <p class="upload-error">{{ uploadError() }}</p>
+    }
+    @if (uploading()) {
+      <p class="upload-hint">Caricamento in corso...</p>
+    }
+  </div>
+
   <!-- Drag & Drop Upload Zone -->
   <div class="upload-zone"
-       [ngClass]="{'is-dragging': isDragging()}"
+       [ngClass]="{'is-dragging': isDragging(), 'is-uploading': uploading()}"
        (dragover)="onDragOver($event)"
        (dragleave)="onDragLeave($event)"
        (drop)="onDrop($event)">
-    <input type="file" multiple class="upload-input" (change)="onFileSelected($event)">
+    <input type="file" multiple class="upload-input" (change)="onFileSelected($event)" [disabled]="uploading()">
     
     <div class="upload-content">
       <div class="upload-icon-container" [ngClass]="{'is-dragging': isDragging()}">
@@ -57,8 +92,27 @@
           
           <div class="doc-meta">
             <span class="badge">{{ doc.content_type }}</span>
-            @if (doc.category?.name) {
-              <span class="badge badge-outline">{{ doc.category?.name }}</span>
+
+            @if (editingCategoryDocId() === doc.id) {
+              <select
+                class="form-control category-inline-select"
+                [disabled]="savingCategoryDocId() === doc.id"
+                [ngModel]="doc.category?.id || ''"
+                (ngModelChange)="saveDocumentCategory(doc, $event)">
+                <option value="">Nessuna categoria</option>
+                @for (cat of categories(); track cat.id) {
+                  <option [value]="cat.id">{{ cat.name }}</option>
+                }
+              </select>
+              <button type="button" class="icon-btn" (click)="cancelEditCategory()" aria-label="Annulla">
+                <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            } @else {
+              @if (doc.category?.name) {
+                <span class="badge badge-outline badge-clickable" (click)="startEditCategory(doc)">{{ doc.category?.name }}</span>
+              } @else {
+                <span class="badge badge-outline badge-clickable badge-muted" (click)="startEditCategory(doc)">+ Categoria</span>
+              }
             }
           </div>
           

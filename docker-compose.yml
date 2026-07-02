@@ -41,7 +41,7 @@ services:
     volumes:
       - .:/app
       - shared_uploads:/app/uploads
-    command: celery -A app.core.celery_app worker -Q polling_queue,classify_queue,respond_queue -l INFO --concurrency=2
+    command: celery -A app.core.celery_app worker -Q polling_queue,classify_queue,respond_queue,document_queue -l INFO --concurrency=2
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:

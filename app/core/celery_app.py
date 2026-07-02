@@ -26,6 +26,7 @@ celery_app.conf.update(
         "app.tasks.email_tasks.classify_email*": {"queue": "classify_queue"},
         "app.tasks.email_tasks.respond_email*": {"queue": "respond_queue"},
         "app.tasks.polling_tasks.*": {"queue": "polling_queue"},
+        "app.tasks.document_tasks.*": {"queue": "document_queue"},
     },
     beat_schedule={
         "poll-gmail-every-2-minutes": {

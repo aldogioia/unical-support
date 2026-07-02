@@ -1,12 +1,12 @@
 from uuid import UUID
-from app.api.authentication import get_current_user
+from app.api.authentication import get_current_user_dev_bypass  # TODO: torna a get_current_user quando c'è il login
 from app.models.user import User
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
-from app.schemas.document import DocumentResponse
+from app.schemas.document import DocumentResponse, DocumentUpdate
 from app.services import document_service
 from app.db.database import get_db
 
@@ -16,9 +16,18 @@ router = APIRouter()
 def read_documents(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return document_service.get_documents(db, skip=skip, limit=limit)
 
+@router.put("/{document_id}", response_model=DocumentResponse)
+def update_document(
+    document_id: UUID,
+    document_in: DocumentUpdate,
+    current_user: Annotated[User, Depends(get_current_user_dev_bypass)],
+    db: Session = Depends(get_db),
+):
+    return document_service.update_document_category(db, document_id, document_in.category_id, current_user.id)
+
 @router.post("/upload", response_model=DocumentResponse)
 async def upload_document(
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(get_current_user_dev_bypass)],
     file: Optional[UploadFile] = File(None),
     url: Optional[str] = Form(None),
     category_id: Optional[UUID] = Form(None),

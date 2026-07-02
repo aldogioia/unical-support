@@ -25,6 +25,40 @@
   transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
+.upload-zone.is-uploading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.upload-options {
+  margin-bottom: 16px;
+}
+
+.upload-options-row {
+  display: flex;
+  gap: 12px;
+}
+
+.upload-options-row .form-control {
+  flex: 1;
+  min-width: 0;
+}
+
+.upload-options-row select.form-control {
+  flex: 0 0 220px;
+}
+
+.upload-options-row .btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.upload-error {
+  color: var(--color-error);
+  font-size: 13px;
+  margin-top: 8px;
+}
+
 .upload-zone:hover {
   border-color: var(--color-brand);
   background-color: var(--color-fill);
@@ -217,6 +251,28 @@
 .badge-outline {
   background-color: transparent;
   border: 1px solid var(--color-stroke-strong);
+}
+
+.badge-clickable {
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.badge-clickable:hover {
+  border-color: var(--color-brand);
+  background-color: var(--color-fill);
+}
+
+.badge-muted {
+  color: var(--color-text-weak);
+  border-style: dashed;
+}
+
+.category-inline-select {
+  padding: 4px 8px;
+  font-size: 12px;
+  min-height: auto;
+  width: auto;
 }
 
 .doc-actions {

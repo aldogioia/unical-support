@@ -12,6 +12,9 @@ class DocumentBase(BaseModel):
 class DocumentCreate(DocumentBase):
     pass
 
+class DocumentUpdate(BaseModel):
+    category_id: uuid.UUID | None = Field(default=None)
+
 class DocumentResponse(DocumentBase):
     id: uuid.UUID
     category: CategoryResponse | None = None

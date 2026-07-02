@@ -1,5 +1,5 @@
 from uuid import UUID
-from app.api.authentication import get_current_user
+from app.api.authentication import get_current_user_dev_bypass  # TODO: torna a get_current_user quando c'è il login
 from app.models.user import User
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
@@ -27,11 +27,11 @@ def read_email(email_id: UUID, db: Session = Depends(get_db)):
     return email
 
 @router.post("/", response_model=EmailResponse)
-def create_new_email(email: EmailCreate, current_user: Annotated[User, Depends(get_current_user)], db: Session = Depends(get_db)):
+def create_new_email(email: EmailCreate, current_user: Annotated[User, Depends(get_current_user_dev_bypass)], db: Session = Depends(get_db)):
     db_email = email_service.create_email(db=db, email=email, user_id=current_user.id)
     classify_email_task.delay(db_email.id)
     return db_email
 
 @router.put("/{email_id}/draft", response_model=EmailResponse)
-def update_email_draft(email_id: UUID, update_data: EmailUpdateDraft, current_user: Annotated[User, Depends(get_current_user)], db: Session = Depends(get_db)):
+def update_email_draft(email_id: UUID, update_data: EmailUpdateDraft, current_user: Annotated[User, Depends(get_current_user_dev_bypass)], db: Session = Depends(get_db)):
     return email_service.update_email_draft(db, email_id=email_id, update_data=update_data, user_id=current_user.id)
