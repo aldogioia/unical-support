@@ -1,11 +1,12 @@
-from pydantic import BaseModel, ConfigDict, Field, EmailStr
+from pydantic import BaseModel, ConfigDict, Field
 from typing import List
 from app.models.enumerators.enumerators import EmailStatus
 from app.schemas.category import CategoryResponse
 import uuid
 
 class EmailBase(BaseModel):
-    sender: EmailStr = Field(...)
+
+    sender: str = Field(..., min_length=1, max_length=255)
     subject: str | None = Field(default=None, max_length=255)
     body: str | None = Field(default=None)
 
