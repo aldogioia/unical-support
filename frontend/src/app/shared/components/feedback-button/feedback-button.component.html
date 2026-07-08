@@ -1,0 +1,85 @@
+<!-- Floating Feedback Button -->
+<button *ngIf="isButtonVisible" class="feedback-fab" (click)="startFeedbackFlow()" [disabled]="isCapturing"
+  title="Invia feedback">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-message-square">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+  </svg>
+  <span>Feedback</span>
+</button>
+
+<!-- Feedback Dialog -->
+<dialog #feedbackDialog class="feedback-dialog">
+  <div class="feedback-modal-content">
+
+    <!-- Header -->
+    <div class="feedback-modal-header">
+      <h2 class="feedback-modal-title">Invia un Feedback</h2>
+      <button class="feedback-close-btn" (click)="closeDialog()" [disabled]="loading">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Success View -->
+    <div *ngIf="success" class="feedback-success-view">
+      <div class="feedback-success-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+          stroke="var(--color-success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+      </div>
+      <p class="feedback-success-message">Grazie! Il tuo feedback è stato inviato con successo.</p>
+    </div>
+
+    <!-- Main Form View -->
+    <form *ngIf="!success" (submit)="submitFeedback($event)" class="feedback-form">
+      <div class="feedback-modal-body">
+
+        <!-- Error Message -->
+        <div *ngIf="errorMsg" class="feedback-error-banner">
+          {{ errorMsg }}
+        </div>
+
+        <!-- Description Form Group -->
+        <div class="form-group">
+          <label for="feedback-desc" class="form-label">Descrizione del problema o suggerimento *</label>
+          <textarea id="feedback-desc" class="form-control feedback-textarea" [(ngModel)]="description"
+            name="description" placeholder="Descrivi in dettaglio cosa stavi facendo o come possiamo migliorare..."
+            required [disabled]="loading" rows="4">
+          </textarea>
+        </div>
+
+        <!-- Screenshot Attachment Toggle -->
+        <div *ngIf="screenshotUrl" class="feedback-screenshot-group">
+          <label class="check-radio-group">
+            <input type="checkbox" class="check-radio-input" [(ngModel)]="attachScreenshot" name="attachScreenshot"
+              [disabled]="loading">
+            <span class="form-label feedback-checkbox-label">Allega screenshot della schermata corrente</span>
+          </label>
+
+          <!-- Screenshot Preview -->
+          <div *ngIf="attachScreenshot" class="feedback-preview-container">
+            <img [src]="screenshotUrl" alt="Anteprima Screenshot" class="feedback-screenshot-preview">
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Buttons -->
+      <div class="feedback-modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeDialog()" [disabled]="loading">
+          Annulla
+        </button>
+        <button type="submit" class="btn btn-primary" [disabled]="loading || !description.trim()">
+          <span *ngIf="loading">Invio in corso...</span>
+          <span *ngIf="!loading">Invia Feedback</span>
+        </button>
+      </div>
+    </form>
+
+  </div>
+</dialog>

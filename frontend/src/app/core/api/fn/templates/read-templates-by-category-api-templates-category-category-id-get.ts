@@ -10,7 +10,7 @@ import { RequestBuilder } from '../../request-builder';
 import { TemplateResponse } from '../../models/template-response';
 
 export interface ReadTemplatesByCategoryApiTemplatesCategoryCategoryIdGet$Params {
-  category_id: number;
+  category_id: string;
 }
 
 export function readTemplatesByCategoryApiTemplatesCategoryCategoryIdGet(http: HttpClient, rootUrl: string, params: ReadTemplatesByCategoryApiTemplatesCategoryCategoryIdGet$Params, context?: HttpContext): Observable<StrictHttpResponse<Array<TemplateResponse>>> {

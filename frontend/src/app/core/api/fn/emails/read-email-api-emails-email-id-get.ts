@@ -10,7 +10,7 @@ import { RequestBuilder } from '../../request-builder';
 import { EmailResponse } from '../../models/email-response';
 
 export interface ReadEmailApiEmailsEmailIdGet$Params {
-  email_id: number;
+  email_id: string;
 }
 
 export function readEmailApiEmailsEmailIdGet(http: HttpClient, rootUrl: string, params: ReadEmailApiEmailsEmailIdGet$Params, context?: HttpContext): Observable<StrictHttpResponse<EmailResponse>> {

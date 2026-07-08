@@ -11,14 +11,12 @@ import { TemplateCreate } from '../../models/template-create';
 import { TemplateResponse } from '../../models/template-response';
 
 export interface CreateTemplateApiTemplatesPost$Params {
-  current_user?: any;
       body: TemplateCreate
 }
 
 export function createTemplateApiTemplatesPost(http: HttpClient, rootUrl: string, params: CreateTemplateApiTemplatesPost$Params, context?: HttpContext): Observable<StrictHttpResponse<TemplateResponse>> {
   const rb = new RequestBuilder(rootUrl, createTemplateApiTemplatesPost.PATH, 'post');
   if (params) {
-    rb.query('current_user', params.current_user, {});
     rb.body(params.body, 'application/json');
   }
 

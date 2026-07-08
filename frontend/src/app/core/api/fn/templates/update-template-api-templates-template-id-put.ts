@@ -11,8 +11,7 @@ import { TemplateResponse } from '../../models/template-response';
 import { TemplateUpdate } from '../../models/template-update';
 
 export interface UpdateTemplateApiTemplatesTemplateIdPut$Params {
-  template_id: number;
-  current_user?: any;
+  template_id: string;
       body: TemplateUpdate
 }
 
@@ -20,7 +19,6 @@ export function updateTemplateApiTemplatesTemplateIdPut(http: HttpClient, rootUr
   const rb = new RequestBuilder(rootUrl, updateTemplateApiTemplatesTemplateIdPut.PATH, 'put');
   if (params) {
     rb.path('template_id', params.template_id, {});
-    rb.query('current_user', params.current_user, {});
     rb.body(params.body, 'application/json');
   }
 

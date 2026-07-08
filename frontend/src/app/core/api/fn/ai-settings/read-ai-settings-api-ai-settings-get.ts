@@ -7,12 +7,12 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { AISettingsResponse } from '../../models/ai-settings-response';
+import { AiSettingsResponse } from '../../models/ai-settings-response';
 
 export interface ReadAiSettingsApiAiSettingsGet$Params {
 }
 
-export function readAiSettingsApiAiSettingsGet(http: HttpClient, rootUrl: string, params?: ReadAiSettingsApiAiSettingsGet$Params, context?: HttpContext): Observable<StrictHttpResponse<AISettingsResponse>> {
+export function readAiSettingsApiAiSettingsGet(http: HttpClient, rootUrl: string, params?: ReadAiSettingsApiAiSettingsGet$Params, context?: HttpContext): Observable<StrictHttpResponse<AiSettingsResponse>> {
   const rb = new RequestBuilder(rootUrl, readAiSettingsApiAiSettingsGet.PATH, 'get');
   if (params) {
   }
@@ -22,7 +22,7 @@ export function readAiSettingsApiAiSettingsGet(http: HttpClient, rootUrl: string
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return r as StrictHttpResponse<AISettingsResponse>;
+      return r as StrictHttpResponse<AiSettingsResponse>;
     })
   );
 }

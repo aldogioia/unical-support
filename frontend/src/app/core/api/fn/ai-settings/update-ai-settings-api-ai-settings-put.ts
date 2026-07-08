@@ -7,14 +7,14 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { AISettingsResponse } from '../../models/ai-settings-response';
-import { AISettingsUpdate } from '../../models/ai-settings-update';
+import { AiSettingsResponse } from '../../models/ai-settings-response';
+import { AiSettingsUpdate } from '../../models/ai-settings-update';
 
 export interface UpdateAiSettingsApiAiSettingsPut$Params {
-      body: AISettingsUpdate
+      body: AiSettingsUpdate
 }
 
-export function updateAiSettingsApiAiSettingsPut(http: HttpClient, rootUrl: string, params: UpdateAiSettingsApiAiSettingsPut$Params, context?: HttpContext): Observable<StrictHttpResponse<AISettingsResponse>> {
+export function updateAiSettingsApiAiSettingsPut(http: HttpClient, rootUrl: string, params: UpdateAiSettingsApiAiSettingsPut$Params, context?: HttpContext): Observable<StrictHttpResponse<AiSettingsResponse>> {
   const rb = new RequestBuilder(rootUrl, updateAiSettingsApiAiSettingsPut.PATH, 'put');
   if (params) {
     rb.body(params.body, 'application/json');
@@ -25,7 +25,7 @@ export function updateAiSettingsApiAiSettingsPut(http: HttpClient, rootUrl: stri
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return r as StrictHttpResponse<AISettingsResponse>;
+      return r as StrictHttpResponse<AiSettingsResponse>;
     })
   );
 }

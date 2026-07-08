@@ -11,14 +11,12 @@ import { BodyUploadDocumentApiDocumentsUploadPost } from '../../models/body-uplo
 import { DocumentResponse } from '../../models/document-response';
 
 export interface UploadDocumentApiDocumentsUploadPost$Params {
-  current_user?: any;
       body?: BodyUploadDocumentApiDocumentsUploadPost
 }
 
 export function uploadDocumentApiDocumentsUploadPost(http: HttpClient, rootUrl: string, params?: UploadDocumentApiDocumentsUploadPost$Params, context?: HttpContext): Observable<StrictHttpResponse<DocumentResponse>> {
   const rb = new RequestBuilder(rootUrl, uploadDocumentApiDocumentsUploadPost.PATH, 'post');
   if (params) {
-    rb.query('current_user', params.current_user, {});
     rb.body(params.body, 'multipart/form-data');
   }
 

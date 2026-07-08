@@ -9,7 +9,7 @@ import { RequestBuilder } from '../../request-builder';
 
 
 export interface DeleteTemplateApiTemplatesTemplateIdDelete$Params {
-  template_id: number;
+  template_id: string;
 }
 
 export function deleteTemplateApiTemplatesTemplateIdDelete(http: HttpClient, rootUrl: string, params: DeleteTemplateApiTemplatesTemplateIdDelete$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {

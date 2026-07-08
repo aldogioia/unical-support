@@ -11,8 +11,7 @@ import { EmailResponse } from '../../models/email-response';
 import { EmailUpdateDraft } from '../../models/email-update-draft';
 
 export interface UpdateEmailDraftApiEmailsEmailIdDraftPut$Params {
-  email_id: number;
-  current_user?: any;
+  email_id: string;
       body: EmailUpdateDraft
 }
 
@@ -20,7 +19,6 @@ export function updateEmailDraftApiEmailsEmailIdDraftPut(http: HttpClient, rootU
   const rb = new RequestBuilder(rootUrl, updateEmailDraftApiEmailsEmailIdDraftPut.PATH, 'put');
   if (params) {
     rb.path('email_id', params.email_id, {});
-    rb.query('current_user', params.current_user, {});
     rb.body(params.body, 'application/json');
   }
 

@@ -1,0 +1,215 @@
+/* Floating Action Button (FAB) */
+.feedback-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  height: 48px;
+  
+  background-color: var(--color-brand);
+  color: #ffffff;
+  border: none;
+  border-radius: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.feedback-fab:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
+  opacity: var(--alpha-hover, 0.9);
+}
+
+.feedback-fab:active {
+  transform: translateY(0);
+}
+
+.feedback-fab:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Dialog & Modal Structure */
+.feedback-dialog {
+  width: 100%;
+  max-width: 540px;
+  border-radius: 16px;
+  padding: 0;
+  border: 1px solid var(--color-stroke-weak);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  background: transparent;
+  overflow: hidden;
+}
+
+.feedback-dialog::backdrop {
+  background-color: hsla(222, 47%, 11%, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.feedback-dialog[open] {
+  animation: feedbackModalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes feedbackModalIn {
+  0% { opacity: 0; transform: scale(0.95); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.feedback-modal-content {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-surface, #ffffff);
+  border-radius: inherit;
+  overflow: hidden;
+}
+
+/* Header */
+.feedback-modal-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--color-stroke-weak);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.feedback-modal-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--color-text-strong);
+}
+
+.feedback-close-btn {
+  padding: 6px;
+  color: var(--color-text-weak);
+  background-color: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.feedback-close-btn:hover {
+  background-color: var(--color-fill);
+  color: var(--color-text-strong);
+}
+
+/* Body and Form */
+.feedback-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.feedback-modal-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.feedback-textarea {
+  min-height: 100px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+/* Banner Error */
+.feedback-error-banner {
+  padding: 12px 16px;
+  background-color: hsla(0, 65%, 50%, 0.1);
+  color: var(--color-error, #D32F2F);
+  border: 1px solid hsla(0, 65%, 50%, 0.2);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Screenshot styling */
+.feedback-screenshot-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.feedback-checkbox-label {
+  margin-bottom: 0 !important;
+  font-weight: 500 !important;
+  cursor: pointer;
+}
+
+.feedback-preview-container {
+  border: 1px solid var(--color-stroke-strong);
+  border-radius: 8px;
+  overflow: hidden;
+  max-height: 180px;
+  background-color: var(--color-fill);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.feedback-screenshot-preview {
+  max-width: 100%;
+  max-height: 180px;
+  object-fit: contain;
+}
+
+/* Footer */
+.feedback-modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--color-stroke-weak);
+  background-color: var(--color-fill);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* Success View */
+.feedback-success-view {
+  padding: 48px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 16px;
+}
+
+.feedback-success-icon {
+  background-color: hsla(120, 44%, 40%, 0.1);
+  padding: 16px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  animation: feedbackSuccessScale 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes feedbackSuccessScale {
+  0% { transform: scale(0.6); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.feedback-success-message {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-strong);
+  margin: 0;
+}

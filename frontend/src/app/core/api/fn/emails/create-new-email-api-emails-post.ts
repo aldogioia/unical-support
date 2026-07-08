@@ -11,14 +11,12 @@ import { EmailCreate } from '../../models/email-create';
 import { EmailResponse } from '../../models/email-response';
 
 export interface CreateNewEmailApiEmailsPost$Params {
-  current_user?: any;
       body: EmailCreate
 }
 
 export function createNewEmailApiEmailsPost(http: HttpClient, rootUrl: string, params: CreateNewEmailApiEmailsPost$Params, context?: HttpContext): Observable<StrictHttpResponse<EmailResponse>> {
   const rb = new RequestBuilder(rootUrl, createNewEmailApiEmailsPost.PATH, 'post');
   if (params) {
-    rb.query('current_user', params.current_user, {});
     rb.body(params.body, 'application/json');
   }
 

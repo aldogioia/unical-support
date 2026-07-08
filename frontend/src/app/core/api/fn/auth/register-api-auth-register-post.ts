@@ -11,14 +11,12 @@ import { UserCreate } from '../../models/user-create';
 import { UserResponse } from '../../models/user-response';
 
 export interface RegisterApiAuthRegisterPost$Params {
-  current_user?: any;
       body: UserCreate
 }
 
 export function registerApiAuthRegisterPost(http: HttpClient, rootUrl: string, params: RegisterApiAuthRegisterPost$Params, context?: HttpContext): Observable<StrictHttpResponse<UserResponse>> {
   const rb = new RequestBuilder(rootUrl, registerApiAuthRegisterPost.PATH, 'post');
   if (params) {
-    rb.query('current_user', params.current_user, {});
     rb.body(params.body, 'application/json');
   }
 

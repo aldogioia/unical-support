@@ -11,8 +11,7 @@ import { TemplateResponse } from '../../models/template-response';
 import { TemplateReviewAction } from '../../models/template-review-action';
 
 export interface ReviewTemplateApiTemplatesTemplateIdReviewPost$Params {
-  template_id: number;
-  current_user?: any;
+  template_id: string;
       body: TemplateReviewAction
 }
 
@@ -20,7 +19,6 @@ export function reviewTemplateApiTemplatesTemplateIdReviewPost(http: HttpClient,
   const rb = new RequestBuilder(rootUrl, reviewTemplateApiTemplatesTemplateIdReviewPost.PATH, 'post');
   if (params) {
     rb.path('template_id', params.template_id, {});
-    rb.query('current_user', params.current_user, {});
     rb.body(params.body, 'application/json');
   }
 

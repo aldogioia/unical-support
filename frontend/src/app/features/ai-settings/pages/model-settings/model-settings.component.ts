@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Api } from '../../../../core/api/api';
 import { readAiSettingsApiAiSettingsGet } from '../../../../core/api/fn/ai-settings/read-ai-settings-api-ai-settings-get';
 import { updateAiSettingsApiAiSettingsPut } from '../../../../core/api/fn/ai-settings/update-ai-settings-api-ai-settings-put';
-import { AISettingsResponse } from '../../../../core/api/models/ai-settings-response';
+import { AiSettingsResponse } from '../../../../core/api/models/ai-settings-response';
 
 @Component({
   selector: 'app-model-settings',
@@ -45,7 +45,7 @@ export class ModelSettingsComponent implements OnInit {
     this.loading.set(true);
     this.error.set(null);
     try {
-      const data: AISettingsResponse = await this.api.invoke(readAiSettingsApiAiSettingsGet, {});
+      const data: AiSettingsResponse = await this.api.invoke(readAiSettingsApiAiSettingsGet, {});
       this.form = {
         classifier_provider: data.classifier_provider,
         classifier_model: data.classifier_model,
