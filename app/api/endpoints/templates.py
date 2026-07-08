@@ -1,5 +1,5 @@
 from uuid import UUID
-from app.api.authentication import get_current_user_dev_bypass  # TODO: torna a get_current_user quando c'è il login
+from app.api.authentication import get_current_user
 from app.models.user import User
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
@@ -25,15 +25,15 @@ def read_templates_by_category(category_id: UUID, db: Session = Depends(get_db))
     return template_service.get_templates_by_category(db, category_id=category_id)
 
 @router.post("/", response_model=TemplateResponse)
-def create_template(template: TemplateCreate, current_user: Annotated[User, Depends(get_current_user_dev_bypass)], db: Session = Depends(get_db)):
+def create_template(template: TemplateCreate, current_user: Annotated[User, Depends(get_current_user)], db: Session = Depends(get_db)):
     return template_service.create_template(db=db, template=template, user_id=current_user.id)
 
 @router.post("/{template_id}/review", response_model=TemplateResponse)
-def review_template(template_id: UUID, action: TemplateReviewAction, current_user: Annotated[User, Depends(get_current_user_dev_bypass)], db: Session = Depends(get_db)):
+def review_template(template_id: UUID, action: TemplateReviewAction, current_user: Annotated[User, Depends(get_current_user)], db: Session = Depends(get_db)):
     return template_service.review_template(db, template_id, action.action, user_id=current_user.id)
 
 @router.put("/{template_id}", response_model=TemplateResponse)
-def update_template(template_id: UUID, template_in: TemplateUpdate, current_user: Annotated[User, Depends(get_current_user_dev_bypass)], db: Session = Depends(get_db)):
+def update_template(template_id: UUID, template_in: TemplateUpdate, current_user: Annotated[User, Depends(get_current_user)], db: Session = Depends(get_db)):
     return template_service.update_template(db, template_id, template_in, user_id=current_user.id)
 
 @router.delete("/{template_id}", status_code=204)

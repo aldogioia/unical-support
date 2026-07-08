@@ -1,4 +1,3 @@
-from app.api.authentication import get_current_user_dev_bypass
 from uuid import UUID
 from typing import Annotated, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
@@ -15,7 +14,7 @@ router = APIRouter()
 
 @router.post("/", response_model=FeedbackResponse, status_code=status.HTTP_201_CREATED)
 def create_user_feedback(
-    current_user: Annotated[User, Depends(get_current_user_dev_bypass)],
+    current_user: Annotated[User, Depends(get_current_user)],
     description: str = Form(...),
     image: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db)
@@ -29,7 +28,7 @@ def create_user_feedback(
 
 @router.get("/", response_model=List[FeedbackResponse])
 def read_feedbacks(
-    current_user: Annotated[User, Depends(get_current_user_dev_bypass)],
+    current_user: Annotated[User, Depends(get_current_user)],
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db)

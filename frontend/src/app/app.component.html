@@ -1,10 +1,14 @@
-<div class="app-layout">
-  <app-side-navbar></app-side-navbar>
-  
-  <main class="app-main">
-    <router-outlet></router-outlet>
-  </main>
+@if (showChrome()) {
+  <div class="app-layout">
+    <app-side-navbar></app-side-navbar>
 
-  <!-- Global Feedback Widget -->
-  <app-feedback-button></app-feedback-button>
-</div>
+    <main class="app-main">
+      <router-outlet></router-outlet>
+    </main>
+
+    <!-- Global Feedback Widget -->
+    <app-feedback-button></app-feedback-button>
+  </div>
+} @else {
+  <router-outlet></router-outlet>
+}

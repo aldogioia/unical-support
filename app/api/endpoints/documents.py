@@ -1,5 +1,5 @@
 from uuid import UUID
-from app.api.authentication import get_current_user_dev_bypass  # TODO: torna a get_current_user quando c'è il login
+from app.api.authentication import get_current_user
 from app.models.user import User
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
@@ -20,14 +20,14 @@ def read_documents(skip: int = 0, limit: int = 100, db: Session = Depends(get_db
 def update_document(
     document_id: UUID,
     document_in: DocumentUpdate,
-    current_user: Annotated[User, Depends(get_current_user_dev_bypass)],
+    current_user: Annotated[User, Depends(get_current_user)],
     db: Session = Depends(get_db),
 ):
     return document_service.update_document_category(db, document_id, document_in.category_id, current_user.id)
 
 @router.post("/upload", response_model=DocumentResponse)
 async def upload_document(
-    current_user: Annotated[User, Depends(get_current_user_dev_bypass)],
+    current_user: Annotated[User, Depends(get_current_user)],
     file: Optional[UploadFile] = File(None),
     url: Optional[str] = Form(None),
     category_id: Optional[UUID] = Form(None),

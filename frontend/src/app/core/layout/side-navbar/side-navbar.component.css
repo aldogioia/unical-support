@@ -83,3 +83,13 @@
 .nav-link-secondary {
   padding: 8px 16px;
 }
+
+.current-user {
+  margin-top: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--color-text-weak);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
