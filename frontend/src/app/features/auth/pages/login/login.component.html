@@ -1,36 +1,21 @@
 <div class="login-wrapper">
   <form class="login-card" (submit)="submit()">
     <h1 class="login-title">Unical Support</h1>
-    <p class="login-subtitle">Accedi per gestire email, template e documenti.</p>
 
     @if (error()) {
-      <p class="login-error">{{ error() }}</p>
+    <p class="login-error">{{ error() }}</p>
     }
 
     <div class="form-group">
       <label class="form-label">Email</label>
-      <input
-        type="email"
-        name="email"
-        [(ngModel)]="email"
-        class="form-control"
-        placeholder="nome@unical.it"
-        autocomplete="username"
-        [disabled]="loading()"
-        required>
+      <input type="email" name="email" [(ngModel)]="email" class="form-control" autocomplete="username"
+        [disabled]="loading()" required>
     </div>
 
     <div class="form-group">
       <label class="form-label">Password</label>
-      <input
-        type="password"
-        name="password"
-        [(ngModel)]="password"
-        class="form-control"
-        placeholder="••••••••"
-        autocomplete="current-password"
-        [disabled]="loading()"
-        required>
+      <input type="password" name="password" [(ngModel)]="password" class="form-control" autocomplete="current-password"
+        [disabled]="loading()" required>
     </div>
 
     <button type="submit" class="login-submit" [disabled]="loading() || !email || !password">

@@ -4,11 +4,15 @@
 @import '../public/styles/_forms.css';
 @import '../public/styles/_buttons.css';
 
-/* Base Application Styles */
-html, body {
-  height: 100%;
+* {
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+/* Base Application Styles */
+html,
+body {
   background-color: var(--color-fill, #f8fafc);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
