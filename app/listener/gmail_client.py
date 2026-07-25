@@ -4,8 +4,9 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+from email.mime.text import MIMEText
 
-SCOPES = ['https://www.googleapis.com/auth/gmail.modify']
+SCOPES = ['https://www.googleapis.com/auth/gmail.modify', 'https://www.googleapis.com/auth/gmail.send']
 
 class GmailClient:
     def __init__(self, credentials_path="credentials.json", token_path="token.json"):
@@ -79,5 +80,33 @@ class GmailClient:
             body={'removeLabelIds': ['UNREAD']}
         ).execute()
 
-# Per rinonvare il token di testing
+    def send_reply(self, original_gmail_id: str, reply_text: str, sender_email: str, subject: str):
+        """Invia una risposta all'email originale mantenendo il thread Gmail."""
+
+        # Recupera il thread ID e il Message-ID originale per il threading corretto
+        original = self.service.users().messages().get(
+            userId='me', id=original_gmail_id, format='metadata',
+            metadataHeaders=['From', 'Subject', 'Message-ID']
+        ).execute()
+
+        headers = original.get('payload', {}).get('headers', [])
+        message_id = next((h['value'] for h in headers if h['name'] == 'Message-ID'), None)
+        thread_id = original.get('threadId')
+
+        # Costruisce l'email di risposta
+        msg = MIMEText(reply_text, 'plain', 'utf-8')
+        msg['To'] = sender_email
+        msg['Subject'] = f"Re: {subject}" if not subject.startswith('Re:') else subject
+        if message_id:
+            msg['In-Reply-To'] = message_id
+            msg['References'] = message_id
+
+        raw = base64.urlsafe_b64encode(msg.as_bytes()).decode('utf-8')
+
+        self.service.users().messages().send(
+            userId='me',
+            body={'raw': raw, 'threadId': thread_id}
+        ).execute()
+
+# Per rinnovare il token di testing
 #GmailClient()

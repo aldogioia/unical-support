@@ -54,8 +54,8 @@ def index_langchain_documents(docs: list, category_name: str = "Generale"):
         doc.metadata["category"] = category_name
 
     splitter = RecursiveCharacterTextSplitter(
-        chunk_size=800,
-        chunk_overlap=150
+        chunk_size=1500,
+        chunk_overlap=300
     )
     chunks = splitter.split_documents(docs)
 
@@ -122,4 +122,10 @@ def retrieve_context(query: str, k: int = 4, category_name: str = None) -> str:
         print(f"Reranking fallito, uso candidati originali: {e}")
         final_docs = candidates[:k]
 
-    return "\n\n---\n\n".join([doc.page_content for doc in final_docs])
+    context_string = "\n\n---\n\n".join([doc.page_content for doc in final_docs])
+    
+    # FORZIAMO IL LOG CON UN ERRORE CONTROLLATO O UN WARNING DI SISTEMA
+    import logging
+    logging.warning(f"\n\n*** TEST DEBUG CONTENUTO RAG ***\n{context_string}\n********************************\n")
+
+    return context_string

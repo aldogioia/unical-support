@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.api.jwt_handler import decode_and_validate_access_token
 from app.services.blacklist_service import is_token_blacklisted
 from app.db.database import get_db
+import uuid
 
 bearer_scheme = HTTPBearer()
 
@@ -25,13 +26,17 @@ def get_current_user(
     if not payload:
         raise exc
 
-    email: str = payload.get("sub")
-    if not email:
+    user_id_str: str = payload.get("sub")
+    if not user_id_str:
+        raise exc
+
+    try:
+        user_id = uuid.UUID(user_id_str)
+    except ValueError:
         raise exc
 
     from app.models.user import User
-
-    user = db.query(User).filter(User.email == email).first()
+    user = db.query(User).filter(User.id == user_id).first()
     if not user or not user.is_active:
         raise exc
 

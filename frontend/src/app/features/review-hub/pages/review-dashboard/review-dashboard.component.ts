@@ -4,6 +4,7 @@ import { TaskCardComponent } from '../../../../shared/components/task-card/task-
 import { EditModalComponent } from '../../components/edit-modal/edit-modal.component';
 import { Api } from '../../../../core/api/api';
 import { readEmailsApiEmailsGet } from '../../../../core/api/fn/emails/read-emails-api-emails-get';
+import { updateEmailDraftApiEmailsEmailIdDraftPut } from '../../../../core/api/fn/emails/update-email-draft-api-emails-email-id-draft-put';
 import { EmailResponse } from '../../../../core/api/models/email-response';
 
 @Component({
@@ -56,13 +57,34 @@ export class ReviewDashboardComponent implements OnInit {
     modal.open(email);
   }
 
-  handleApprove(event: {email: EmailResponse, draft: string}) {
-    console.log('Approve', event);
-    this.emails.update(emails => emails.filter(e => e.id !== event.email.id));
+  async handleApprove(event: {email: EmailResponse, draft: string}) {
+    try {
+      await this.api.invoke(updateEmailDraftApiEmailsEmailIdDraftPut, {
+        email_id: event.email.id as any,
+        body: {
+          generated_draft: event.draft,
+          status: 'SENT' as any,
+        }
+      });
+      // Rimuovi dall'elenco corrente e ricarica
+      this.emails.update(emails => emails.filter(e => e.id !== event.email.id));
+    } catch (e) {
+      console.error('Errore durante l\'invio:', e);
+    }
   }
 
-  handleEscalate(email: EmailResponse) {
-    console.log('Escalate', email);
-    this.emails.update(emails => emails.filter(e => e.id !== email.id));
+  async handleEscalate(email: EmailResponse) {
+    try {
+      await this.api.invoke(updateEmailDraftApiEmailsEmailIdDraftPut, {
+        email_id: email.id as any,
+        body: {
+          generated_draft: email.generated_draft || '',
+          status: 'ESCALATED' as any,
+        }
+      });
+      this.emails.update(emails => emails.filter(e => e.id !== email.id));
+    } catch (e) {
+      console.error('Errore durante l\'escalation:', e);
+    }
   }
 }

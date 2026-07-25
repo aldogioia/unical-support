@@ -43,12 +43,28 @@ def update_email_draft(db: Session, email_id: UUID, update_data: EmailUpdateDraf
     db_email = db.query(Email).filter(Email.id == email_id).first()
     if not db_email:
         raise HTTPException(status_code=404, detail="Email non trovata")
-    
+
     db_email.generated_draft = update_data.generated_draft
     db_email.status = update_data.status
 
+    # Se lo status diventa SENT, invia davvero l'email tramite Gmail
+    if update_data.status == EmailStatus.SENT:
+        try:
+            from app.listener.gmail_client import GmailClient
+            client = GmailClient()
+            client.send_reply(
+                original_gmail_id=db_email.gmail_id,
+                reply_text=update_data.generated_draft,
+                sender_email=db_email.sender,
+                subject=db_email.subject or '',
+            )
+        except Exception as e:
+            # Se l'invio fallisce non blocchiamo il salvataggio del draft,
+            # ma segnaliamo l'errore e teniamo lo status su FAILED
+            print(f"[EMAIL_SERVICE] Errore invio Gmail: {e}")
+            db_email.status = EmailStatus.FAILED
+
     db_email.apply_audit_fields(user_id=user_id)
-    
     db.commit()
     db.refresh(db_email)
     return db_email
