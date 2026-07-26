@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     GOOGLE_API_KEY: str = ""
     GOOGLE_API_KEY_2: str = ""
     GROQ_API_KEY: str = ""
+    FEEDBACK_EMAIL_SENDER: str = ""
+    FEEDBACK_EMAIL_PASSWORD: str = ""
+    FEEDBACK_EMAIL_RECIPIENT: str = ""
 
     model_config = SettingsConfigDict(
         env_file=".env",
