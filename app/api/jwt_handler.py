@@ -6,7 +6,7 @@ from app.models.user import User
 from app.models.enumerators.enumerators import TokenType
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 15
-REFRESH_TOKEN_EXPIRE_MINUTES = 60 * 24 * 30 * 12 # 1 year
+REFRESH_TOKEN_EXPIRE_MINUTES = 60 * 24 * 30 # 1 month
 
 def _create_token(user: User, expires_delta: timedelta, token_type: TokenType) -> str:
     issued_at = datetime.now(timezone.utc).replace(microsecond=0)

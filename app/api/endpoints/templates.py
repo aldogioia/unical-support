@@ -13,15 +13,27 @@ from app.db.database import get_db
 router = APIRouter()
 
 @router.get("/", response_model=List[TemplateResponse])
-def read_templates(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def read_templates(
+    current_user: Annotated[User, Depends(get_current_user)],
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+):
     return template_service.get_templates(db, skip=skip, limit=limit)
 
 @router.get("/pending", response_model=List[TemplateResponse])
-def read_pending_templates(db: Session = Depends(get_db)):
+def read_pending_templates(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Session = Depends(get_db),
+):
     return template_service.get_pending_templates(db)
 
 @router.get("/category/{category_id}", response_model=List[TemplateResponse])
-def read_templates_by_category(category_id: UUID, db: Session = Depends(get_db)):
+def read_templates_by_category(
+    category_id: UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Session = Depends(get_db),
+):
     return template_service.get_templates_by_category(db, category_id=category_id)
 
 @router.post("/", response_model=TemplateResponse)
@@ -37,5 +49,9 @@ def update_template(template_id: UUID, template_in: TemplateUpdate, current_user
     return template_service.update_template(db, template_id, template_in, user_id=current_user.id)
 
 @router.delete("/{template_id}", status_code=204)
-def delete_template(template_id: UUID, db: Session = Depends(get_db)):
+def delete_template(
+    template_id: UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Session = Depends(get_db),
+):
     template_service.delete_template(db, template_id)

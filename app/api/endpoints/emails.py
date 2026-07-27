@@ -16,15 +16,26 @@ from app.tasks.email_tasks import classify_email_task
 router = APIRouter()
 
 @router.get("/", response_model=List[EmailResponse])
-def read_emails(status: Optional[EmailStatus] = None, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def read_emails(
+    current_user: Annotated[User, Depends(get_current_user)],
+    status: Optional[EmailStatus] = None,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+):
     return email_service.get_emails(db, status=status, skip=skip, limit=limit)
 
 @router.get("/{email_id}", response_model=EmailResponse)
-def read_email(email_id: UUID, db: Session = Depends(get_db)):
+def read_email(
+    email_id: UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Session = Depends(get_db),
+):
     email = email_service.get_email(db, email_id=email_id)
     if email is None:
         raise HTTPException(status_code=404, detail="Email non trovata")
     return email
+
 
 @router.post("/", response_model=EmailResponse)
 def create_new_email(email: EmailCreate, current_user: Annotated[User, Depends(get_current_user)], db: Session = Depends(get_db)):

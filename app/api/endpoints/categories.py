@@ -13,7 +13,12 @@ from app.api.authentication import get_current_user
 router = APIRouter()
 
 @router.get("/", response_model=List[CategoryResponse])
-def read_categories(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def read_categories(
+    current_user: Annotated[User, Depends(get_current_user)],
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+):
     return category_service.get_categories(db, skip=skip, limit=limit)
 
 @router.post("/", response_model=CategoryResponse)
@@ -34,5 +39,10 @@ def update_category(
     return category_service.update_category(db, category_id, category_in, current_user.id)
 
 @router.delete("/{category_id}", status_code=204)
-def delete_category(category_id: UUID, db: Session = Depends(get_db)):
+def delete_category(
+    category_id: UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Session = Depends(get_db),
+):
     category_service.delete_category(db, category_id)
+

@@ -12,7 +12,10 @@ router = APIRouter()
 
 
 @router.get("/", response_model=AISettingsResponse)
-def read_ai_settings(db: Session = Depends(get_db)):
+def read_ai_settings(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Session = Depends(get_db),
+):
     return ai_settings_service.get_settings(db)
 
 

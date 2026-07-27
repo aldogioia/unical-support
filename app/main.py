@@ -11,11 +11,14 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     description="API Gateway per Unical Support (Email Responder)",
     version="1.0.0",
+    docs_url=None,   # Disattivato in produzione
+    redoc_url=None   # Disattivato in produzione
 )
 
+origins = [origin.strip() for origin in settings.ALLOWED_ORIGINS.split(",") if origin.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:4200"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

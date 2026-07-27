@@ -13,7 +13,12 @@ from app.db.database import get_db
 router = APIRouter()
 
 @router.get("/", response_model=List[DocumentResponse])
-def read_documents(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def read_documents(
+    current_user: Annotated[User, Depends(get_current_user)],
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+):
     return document_service.get_documents(db, skip=skip, limit=limit)
 
 @router.put("/{document_id}", response_model=DocumentResponse)
@@ -44,5 +49,9 @@ async def upload_document(
         raise HTTPException(status_code=500, detail=f"Errore critico: {str(e)}")
 
 @router.delete("/{document_id}", status_code=204)
-def delete_document(document_id: UUID, db: Session = Depends(get_db)):
+def delete_document(
+    document_id: UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Session = Depends(get_db),
+):
     document_service.delete_document(db, document_id)

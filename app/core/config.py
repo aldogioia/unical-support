@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     FEEDBACK_EMAIL_SENDER: str = ""
     FEEDBACK_EMAIL_PASSWORD: str = ""
     FEEDBACK_EMAIL_RECIPIENT: str = ""
+    ALLOWED_ORIGINS: str = "http://localhost:4200,http://localhost"
 
     model_config = SettingsConfigDict(
         env_file=".env",
