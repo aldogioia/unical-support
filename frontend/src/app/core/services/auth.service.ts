@@ -72,7 +72,7 @@ export class AuthService {
     const rt = this.refreshToken;
     if (!rt) return null;
     try {
-      const tokens = await this.api.invoke(refreshAccessTokenApiAuthRefreshPost, { refresh_token: rt });
+      const tokens = await this.api.invoke(refreshAccessTokenApiAuthRefreshPost, { body: { refresh_token: rt } });
       this.setTokens(tokens.access_token, tokens.refresh_token);
       return tokens.access_token;
     } catch {

@@ -9,7 +9,7 @@ import { RequestBuilder } from '../../request-builder';
 
 
 export interface DeleteCategoryApiCategoriesCategoryIdDelete$Params {
-  category_id: number;
+  category_id: string;
 }
 
 export function deleteCategoryApiCategoriesCategoryIdDelete(http: HttpClient, rootUrl: string, params: DeleteCategoryApiCategoriesCategoryIdDelete$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {

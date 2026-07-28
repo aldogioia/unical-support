@@ -37,14 +37,13 @@ def create_feedback(
         content_type = (file.content_type or "").lower()
         ext = os.path.splitext(file.filename)[1].lower() if file.filename else ""
 
-        if content_type in ALLOWED_IMAGE_TYPES:
-            file_extension = ALLOWED_IMAGE_TYPES[content_type]
-        elif ext in ALLOWED_IMAGE_EXTENSIONS:
-            file_extension = ext
-        elif content_type.startswith("image/"):
-            file_extension = ".png"
-        else:
-            raise ValueError(f"Tipo di file '{content_type or ext}' non consentito per l'allegato del feedback. Sono ammesse solo immagini (PNG, JPG, WEBP, GIF).")
+        if content_type not in ALLOWED_IMAGE_TYPES:
+            raise ValueError("Tipo di file non consentito per l'allegato del feedback. Sono ammesse solo immagini (PNG, JPG, WEBP, GIF).")
+
+        if ext and ext not in ALLOWED_IMAGE_EXTENSIONS:
+            raise ValueError("Estensione del file non consentita per l'allegato del feedback. Sono ammesse solo immagini (PNG, JPG, WEBP, GIF).")
+
+        file_extension = ALLOWED_IMAGE_TYPES[content_type]
 
         file.file.seek(0, os.SEEK_END)
         file_size = file.file.tell()

@@ -2,7 +2,7 @@ from typing import Annotated
 from app.api.authorization import is_admin_user
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from app.schemas.user import UserCreate, UserResponse, UserLogin, TokenResponse
+from app.schemas.user import UserCreate, UserResponse, UserLogin, TokenResponse, TokenRefreshRequest
 from app.api.authentication import get_current_user
 from app.services.user_service import authenticate_user, create_user, refresh
 from app.db.database import get_db
@@ -26,5 +26,5 @@ def me(current_user=Depends(get_current_user)):
     return current_user
 
 @router.post("/refresh", response_model=TokenResponse)
-def refresh_access_token(refresh_token: str, db: Session = Depends(get_db)):
-    return refresh(db=db, refresh_token=refresh_token)
+def refresh_access_token(body: TokenRefreshRequest, db: Session = Depends(get_db)):
+    return refresh(db=db, refresh_token=body.refresh_token)

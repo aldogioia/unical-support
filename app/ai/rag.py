@@ -124,8 +124,4 @@ def retrieve_context(query: str, k: int = 4, category_name: str = None) -> str:
 
     context_string = "\n\n---\n\n".join([doc.page_content for doc in final_docs])
     
-    # FORZIAMO IL LOG CON UN ERRORE CONTROLLATO O UN WARNING DI SISTEMA
-    import logging
-    logging.warning(f"\n\n*** TEST DEBUG CONTENUTO RAG ***\n{context_string}\n********************************\n")
-
     return context_string

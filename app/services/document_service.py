@@ -103,8 +103,8 @@ def process_and_upload_document(db: Session, file: UploadFile | None, url: str |
         is_type_valid = content_type in ALLOWED_DOCUMENT_TYPES or content_type.startswith("text/")
         is_ext_valid = file_extension in ALLOWED_EXTENSIONS
 
-        if not is_type_valid and not is_ext_valid:
-            raise ValueError(f"Tipo di file '{content_type or file_extension}' non consentito. Formati supportati: PDF, DOCX, TXT, JSON, YAML, MD.")
+        if not is_type_valid or not is_ext_valid:
+            raise ValueError(f"Tipo di file o estensione non consentiti. Formati supportati: PDF, DOCX, TXT, JSON, YAML, MD.")
 
         # Determina l'estensione sicura da usare su disco
         if file_extension in ALLOWED_EXTENSIONS:

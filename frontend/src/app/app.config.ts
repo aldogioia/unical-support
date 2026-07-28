@@ -15,7 +15,7 @@ export const appConfig: ApplicationConfig = {
       provide: ApiConfiguration,
       useFactory: () => {
         const config = new ApiConfiguration();
-        config.rootUrl = '';
+        config.rootUrl = 'http://localhost:8000';
         return config;
       }
     }

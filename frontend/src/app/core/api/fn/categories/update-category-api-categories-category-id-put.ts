@@ -11,8 +11,7 @@ import { CategoryResponse } from '../../models/category-response';
 import { CategoryUpdate } from '../../models/category-update';
 
 export interface UpdateCategoryApiCategoriesCategoryIdPut$Params {
-  category_id: number;
-  current_user?: any;
+  category_id: string;
       body: CategoryUpdate
 }
 
@@ -20,7 +19,6 @@ export function updateCategoryApiCategoriesCategoryIdPut(http: HttpClient, rootU
   const rb = new RequestBuilder(rootUrl, updateCategoryApiCategoriesCategoryIdPut.PATH, 'put');
   if (params) {
     rb.path('category_id', params.category_id, {});
-    rb.query('current_user', params.current_user, {});
     rb.body(params.body, 'application/json');
   }
 

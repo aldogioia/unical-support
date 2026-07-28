@@ -21,6 +21,7 @@ export type { TemplateResponse } from './models/template-response';
 export type { TemplateReviewAction } from './models/template-review-action';
 export type { TemplateStatus } from './models/template-status';
 export type { TemplateUpdate } from './models/template-update';
+export type { TokenRefreshRequest } from './models/token-refresh-request';
 export type { TokenResponse } from './models/token-response';
 export type { UserCreate } from './models/user-create';
 export type { UserLogin } from './models/user-login';

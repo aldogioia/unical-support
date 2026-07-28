@@ -7,16 +7,17 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
+import { TokenRefreshRequest } from '../../models/token-refresh-request';
 import { TokenResponse } from '../../models/token-response';
 
 export interface RefreshAccessTokenApiAuthRefreshPost$Params {
-  refresh_token: string;
+      body: TokenRefreshRequest
 }
 
 export function refreshAccessTokenApiAuthRefreshPost(http: HttpClient, rootUrl: string, params: RefreshAccessTokenApiAuthRefreshPost$Params, context?: HttpContext): Observable<StrictHttpResponse<TokenResponse>> {
   const rb = new RequestBuilder(rootUrl, refreshAccessTokenApiAuthRefreshPost.PATH, 'post');
   if (params) {
-    rb.query('refresh_token', params.refresh_token, {});
+    rb.body(params.body, 'application/json');
   }
 
   return http.request(

@@ -11,14 +11,12 @@ import { CategoryCreate } from '../../models/category-create';
 import { CategoryResponse } from '../../models/category-response';
 
 export interface CreateCategoryApiCategoriesPost$Params {
-  current_user?: any;
       body: CategoryCreate
 }
 
 export function createCategoryApiCategoriesPost(http: HttpClient, rootUrl: string, params: CreateCategoryApiCategoriesPost$Params, context?: HttpContext): Observable<StrictHttpResponse<CategoryResponse>> {
   const rb = new RequestBuilder(rootUrl, createCategoryApiCategoriesPost.PATH, 'post');
   if (params) {
-    rb.query('current_user', params.current_user, {});
     rb.body(params.body, 'application/json');
   }
 
