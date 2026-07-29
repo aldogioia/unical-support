@@ -80,11 +80,9 @@ def refresh(db: Session, refresh_token: str):
 
 def logout_user(db: Session, access_token: Optional[str] = None, refresh_token: Optional[str] = None) -> dict:
     if access_token and access_token != "invalid":
-        print("Access TOKEN: ", access_token)
         add_token_to_blacklist(db, access_token)
         
     if refresh_token and refresh_token != "invalid":
-        print("Refresh TOKEN: ", refresh_token)
         add_token_to_blacklist(db, refresh_token)
         
     return {"message": "Logout effettuato con successo. Token invalidati."}

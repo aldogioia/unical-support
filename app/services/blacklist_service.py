@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.orm import Session
 from app.models.blacklist import Blacklist
 from app.api.jwt_handler import get_expiration_time, verify_token_format
@@ -29,3 +29,11 @@ def is_token_blacklisted(db: Session, token_str: str) -> bool:
     result = db.execute(stmt).scalar_one_or_none()
     
     return result is not None
+
+def remove_expired_tokens(db: Session):
+    now = datetime.now(timezone.utc)
+    
+    stmt = delete(Blacklist).where(Blacklist.expires_at < now)
+    db.execute(stmt)
+    db.commit()
+    

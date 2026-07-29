@@ -2,12 +2,45 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from apscheduler.schedulers.background import BackgroundScheduler
+from contextlib import asynccontextmanager
 from app.core.config import settings
 from app.api.endpoints import categories, templates, documents, emails, auth, ai_settings, feedback
 from app.db.database import engine, Base
+from app.services.blacklist_service import remove_expired_tokens
+from app.db.database import SessionLocal
 
 Base.metadata.create_all(bind=engine)
+
+scheduler = BackgroundScheduler()
+
+def scheduled_token_cleanup():
+    db = SessionLocal()
+    try:
+        remove_expired_tokens(db)
+    except Exception as e:
+        print(f"Errore durante la pulizia dei token: {e}")
+    finally:
+        db.close()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    scheduler.add_job(
+        scheduled_token_cleanup, 
+        trigger='cron', 
+        hour=2, 
+        minute=0,
+        day='*/3',
+    )
+    
+    scheduler.start()
+    
+    yield
+    
+    scheduler.shutdown()
+
 app = FastAPI(
+    lifespan=lifespan,
     title=settings.PROJECT_NAME,
     description="API Gateway per Unical Support (Email Responder)",
     version="1.0.0",
