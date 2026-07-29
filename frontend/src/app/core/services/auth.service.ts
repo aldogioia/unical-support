@@ -1,10 +1,12 @@
 import { Injectable, signal, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Api } from '../api/api';
+import { logoutApiAuthLogoutPost } from '../api/functions';
 import { loginApiAuthLoginPost } from '../api/fn/auth/login-api-auth-login-post';
 import { meApiAuthMeGet } from '../api/fn/auth/me-api-auth-me-get';
 import { refreshAccessTokenApiAuthRefreshPost } from '../api/fn/auth/refresh-access-token-api-auth-refresh-post';
 import { UserResponse } from '../api/models/user-response';
+import { HttpClient } from '@angular/common/http';
 
 const ACCESS_TOKEN_KEY = 'access_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
@@ -15,6 +17,7 @@ const REFRESH_TOKEN_KEY = 'refresh_token';
 export class AuthService {
   private api = inject(Api);
   private router = inject(Router);
+  private http = inject(HttpClient);
 
   currentUser = signal<UserResponse | null>(null);
 
@@ -82,9 +85,21 @@ export class AuthService {
     }
   }
 
-  logout(): void {
-    this.clearTokens();
-    this.currentUser.set(null);
-    this.router.navigate(['/login']);
+  async logout(): Promise<void> {
+    const rt = this.refreshToken;
+
+    try {
+      if (rt) {
+        await this.api.invoke(logoutApiAuthLogoutPost, {
+          'X-Refresh-Token': rt
+        });
+      }
+    } catch (error) {
+      console.error('Errore durante la revoca dei token sul server:', error);
+    } finally {
+      this.clearTokens();
+      this.currentUser.set(null);
+      this.router.navigate(['/login']);
+    }
   }
 }

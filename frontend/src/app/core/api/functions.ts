@@ -9,6 +9,8 @@ export type { MeApiAuthMeGet$Params as MeApiAuthMeGet$Params } from './fn/auth/m
 export { meApiAuthMeGet as meApiAuthMeGet } from './fn/auth/me-api-auth-me-get';
 export type { RefreshAccessTokenApiAuthRefreshPost$Params as RefreshAccessTokenApiAuthRefreshPost$Params } from './fn/auth/refresh-access-token-api-auth-refresh-post';
 export { refreshAccessTokenApiAuthRefreshPost as refreshAccessTokenApiAuthRefreshPost } from './fn/auth/refresh-access-token-api-auth-refresh-post';
+export type { LogoutApiAuthLogoutPost$Params as LogoutApiAuthLogoutPost$Params } from './fn/auth/logout-api-auth-logout-post';
+export { logoutApiAuthLogoutPost as logoutApiAuthLogoutPost } from './fn/auth/logout-api-auth-logout-post';
 export type { ReadCategoriesApiCategoriesGet$Params as ReadCategoriesApiCategoriesGet$Params } from './fn/categories/read-categories-api-categories-get';
 export { readCategoriesApiCategoriesGet as readCategoriesApiCategoriesGet } from './fn/categories/read-categories-api-categories-get';
 export type { CreateCategoryApiCategoriesPost$Params as CreateCategoryApiCategoriesPost$Params } from './fn/categories/create-category-api-categories-post';

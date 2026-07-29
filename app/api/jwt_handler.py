@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 import jwt
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, Request
 from app.core.config import settings
 from app.models.user import User
 from app.models.enumerators.enumerators import TokenType
@@ -106,3 +106,27 @@ def verify_token_format(token: str):
             detail="Token non valido o firma corrotta",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+def get_access_token_from_request(request: Request) -> str:
+    return _get_jwt_from_request(request, TokenType.ACCESS)
+
+def get_refresh_token_from_request(request: Request) -> str:
+    return _get_jwt_from_request(request, TokenType.REFRESH)
+
+def _get_jwt_from_request(request: Request, token: TokenType) -> str:
+    starts = ""
+    header_name = ""
+
+    if token == TokenType.ACCESS:
+        header_name = "Authorization"
+        starts = "Bearer "
+    elif token == TokenType.REFRESH:
+        header_name = "X-Refresh-Token"
+        # starts rimane stringa vuota come nel codice Java
+
+    header = request.headers.get(header_name)
+
+    if header and header.startswith(starts):
+        return header.replace(starts, "", 1)
+
+    return "invalid"

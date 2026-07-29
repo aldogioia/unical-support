@@ -1,3 +1,6 @@
+from typing import Optional
+from app.api.jwt_handler import get_refresh_token_from_request, get_access_token_from_request
+from app.services.blacklist_service import add_token_to_blacklist
 from uuid import UUID
 from sqlalchemy.orm import Session
 from app.models.user import User
@@ -5,7 +8,7 @@ from app.schemas.user import UserCreate
 from app.schemas.user import TokenResponse
 from app.api.jwt_handler import create_access_token, create_refresh_token, decode_and_validate_refresh_token
 from app.api.password_handler import verify_dummy_password, verify_password, get_password_hash
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, Request
 
 def get_user_by_email(db: Session, email: str):
     return db.query(User).filter(User.email == email).first()
@@ -73,3 +76,15 @@ def refresh(db: Session, refresh_token: str):
     new_access_token = create_access_token(user)
     new_refresh_token = create_refresh_token(user)
     return TokenResponse(access_token=new_access_token, refresh_token=new_refresh_token)
+
+
+def logout_user(db: Session, access_token: Optional[str] = None, refresh_token: Optional[str] = None) -> dict:
+    if access_token and access_token != "invalid":
+        print("Access TOKEN: ", access_token)
+        add_token_to_blacklist(db, access_token)
+        
+    if refresh_token and refresh_token != "invalid":
+        print("Refresh TOKEN: ", refresh_token)
+        add_token_to_blacklist(db, refresh_token)
+        
+    return {"message": "Logout effettuato con successo. Token invalidati."}
