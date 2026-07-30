@@ -94,28 +94,28 @@ volumes:
 
 secrets:
   postgres_user:
-    file: ./secrets/postgres_user
+    file: /home/operatore/secrets/postgres_user
   postgres_password:
-    file: ./secrets/postgres_password
+    file: /home/operatore/secrets/postgres_password
   postgres_db:
-    file: ./secrets/postgres_db
+    file: /home/operatore/secrets/postgres_db
   redis_password:
-    file: ./secrets/redis_password
+    file: /home/operatore/secrets/redis_password
   database_url:
-    file: ./secrets/database_url
+    file: /home/operatore/secrets/database_url
   redis_url:
-    file: ./secrets/redis_url
+    file: /home/operatore/secrets/redis_url
   secret_key:
-    file: ./secrets/secret_key
+    file: /home/operatore/secrets/secret_key
   groq_api_key:
-    file: ./secrets/groq_api_key
+    file: /home/operatore/secrets/groq_api_key
   google_api_key:
-    file: ./secrets/google_api_key
+    file: /home/operatore/secrets/google_api_key
   google_api_key_2:
-    file: ./secrets/google_api_key_2
+    file: /home/operatore/secrets/google_api_key_2
   feedback_email_sender:
-    file: ./secrets/feedback_email_sender
+    file: /home/operatore/secrets/feedback_email_sender
   feedback_email_password:
-    file: ./secrets/feedback_email_password
+    file: /home/operatore/secrets/feedback_email_password
   feedback_email_recipient:
-    file: ./secrets/feedback_email_recipient
+    file: /home/operatore/secrets/feedback_email_recipient
