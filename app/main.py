@@ -10,7 +10,7 @@ from app.db.database import engine, Base
 from app.services.blacklist_service import remove_expired_tokens
 from app.db.database import SessionLocal
 
-Base.metadata.create_all(bind=engine)
+# Base.metadata.create_all(bind=engine) # Rimosso in produzione
 
 scheduler = BackgroundScheduler()
 
