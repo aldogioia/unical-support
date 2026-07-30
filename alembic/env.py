@@ -10,6 +10,7 @@ from app.models.template import Template
 from app.models.blacklist import Blacklist
 from app.models.email import Email
 from app.models.feedback import Feedback
+from app.models.ai_settings import AISettings
 
 # ✅ importiamo settings per leggere DATABASE_URL dal .env
 from app.core.config import settings

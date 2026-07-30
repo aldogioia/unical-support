@@ -44,8 +44,8 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     description="API Gateway per Unical Support (Email Responder)",
     version="1.0.0",
-    docs_url=None,   # Disattivato in produzione
-    redoc_url=None   # Disattivato in produzione
+    docs_url="/docs" if settings.SHOW_DOCS else None,
+    redoc_url="/redoc" if settings.SHOW_DOCS else None
 )
 
 origins = [origin.strip() for origin in settings.ALLOWED_ORIGINS.split(",") if origin.strip()]

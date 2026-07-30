@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     FEEDBACK_EMAIL_PASSWORD: str = ""
     FEEDBACK_EMAIL_RECIPIENT: str = ""
     ALLOWED_ORIGINS: str = "http://localhost:4200,http://localhost"
+    SHOW_DOCS: bool = False
 
     @model_validator(mode='after')
     def validate_critical_settings(self) -> "Settings":
