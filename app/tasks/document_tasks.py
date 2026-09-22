@@ -31,7 +31,7 @@ def process_document_task(document_id: UUID, file_path: str | None, url: str | N
                 if db_category:
                     category_name = db_category.name
 
-        chunk_count = index_langchain_documents(docs, category_name=category_name)
+        chunk_count = index_langchain_documents(docs, category_name=category_name, document_id=str(document_id))
         preview_text = docs[0].page_content[:500] if docs else "Nessun testo estratto."
 
         with session_scope() as db:

@@ -3,6 +3,7 @@ from app.models.category import Category
 from app.schemas.category import CategoryCreate, CategoryUpdate
 from uuid import UUID
 from fastapi import HTTPException
+from app.services import document_service
 
 def get_category(db: Session, category_id: UUID):
     return db.query(Category).filter(Category.id == category_id).first()
@@ -47,6 +48,8 @@ def update_category(db: Session, category_id: UUID, category_data: CategoryUpdat
 def delete_category(db: Session, category_id: UUID):
     db_category = get_category(db, category_id)
     if db_category:
+        for doc in list(db_category.documents):
+            document_service.delete_document(db, doc.id)
         db.delete(db_category)
         db.commit()
     else:

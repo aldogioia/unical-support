@@ -49,9 +49,11 @@ def get_vector_store():
     return _vector_store
 
 
-def index_langchain_documents(docs: list, category_name: str = "Generale"):
+def index_langchain_documents(docs: list, category_name: str = "Generale", document_id: str | None = None):
     for doc in docs:
         doc.metadata["category"] = category_name
+        if document_id:
+            doc.metadata["document_id"] = str(document_id)
 
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=1500,

@@ -3,9 +3,11 @@ import shutil
 import uuid
 import socket
 import ipaddress
+import logging
 from urllib.parse import urlparse
 from uuid import UUID
 from fastapi import UploadFile, HTTPException
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 from app.models.document import Document
 from app.models.category import Category
@@ -150,6 +152,36 @@ def process_and_upload_document(db: Session, file: UploadFile | None, url: str |
 
     return db_document, 0
 
+logger = logging.getLogger(__name__)
+
+def delete_document_chunks(db: Session, document_id: UUID | str):
+    """
+    Elimina tutti i chunk associati al document_id dal Vector Store (tabella langchain_pg_embedding).
+    """
+    try:
+        db.execute(
+            text("DELETE FROM langchain_pg_embedding WHERE cmetadata->>'document_id' = :doc_id"),
+            {"doc_id": str(document_id)}
+        )
+    except Exception as e:
+        logger.warning(f"Impossibile eliminare i chunk per il documento {document_id}: {e}")
+
+def update_document_chunks_category(db: Session, document_id: UUID | str, category_name: str):
+    """
+    Aggiorna la categoria nei metadati JSONB dei chunk associati al document_id.
+    """
+    try:
+        db.execute(
+            text(
+                "UPDATE langchain_pg_embedding "
+                "SET cmetadata = jsonb_set(cmetadata, '{category}', to_jsonb(:category::text)) "
+                "WHERE cmetadata->>'document_id' = :doc_id"
+            ),
+            {"category": category_name, "doc_id": str(document_id)}
+        )
+    except Exception as e:
+        logger.warning(f"Impossibile aggiornare la categoria dei chunk per il documento {document_id}: {e}")
+
 def update_document_category(db: Session, document_id: UUID, category_id, user_id: UUID):
     db_document = get_document(db, document_id)
     if not db_document:
@@ -157,14 +189,23 @@ def update_document_category(db: Session, document_id: UUID, category_id, user_i
 
     db_document.category_id = category_id
     db_document.apply_audit_fields(user_id=user_id, is_create=False)
+
+    category_name = "Generale"
+    if category_id:
+        cat = db.query(Category).filter(Category.id == category_id).first()
+        if cat:
+            category_name = cat.name
+    update_document_chunks_category(db, document_id, category_name)
+
     db.commit()
     db.refresh(db_document)
     return db_document
 
 def delete_document(db: Session, document_id: UUID):
     db_document = get_document(db, document_id)
-    if db_document:
-        db.delete(db_document)
-        db.commit()
-    else:
-        raise HTTPException(status_code=404, detail="Categoria non trovata")
+    if not db_document:
+        raise HTTPException(status_code=404, detail="Documento non trovato")
+
+    delete_document_chunks(db, document_id)
+    db.delete(db_document)
+    db.commit()
