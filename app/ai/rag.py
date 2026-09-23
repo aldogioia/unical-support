@@ -100,9 +100,6 @@ def retrieve_context(query: str, k: int = 4, category_name: str = None) -> str:
         else:
             candidates = vector_store.similarity_search(query, k=candidate_count)
 
-        if not candidates and search_filter:
-            candidates = vector_store.similarity_search(query, k=candidate_count)
-
     except Exception as e:
         print(f"Errore similarity search: {e}")
         return ""

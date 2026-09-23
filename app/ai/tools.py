@@ -30,6 +30,15 @@ def assign_categories_and_route(email_id: UUID, category_names: list[str]) -> st
         if not email:
             return f"Email {email_id} non trovata."
         
+        # Regole di combinazione delle categorie:
+        # 1. Se la lista contiene "Altro", tieni solo quello
+        # 2. Se contiene "Generale" e almeno un'altra specifica, scarta "Generale"
+        names_lower = [n.lower() for n in category_names]
+        if any(n == "altro" for n in names_lower):
+            category_names = [n for n in category_names if n.lower() == "altro"][:1]
+        elif any(n == "generale" for n in names_lower) and len(category_names) > 1:
+            category_names = [n for n in category_names if n.lower() != "generale"]
+
         assigned = []
         all_categories = db.query(Category).all()
         for name in category_names:
