@@ -3,14 +3,14 @@ import uuid
 
 class CategoryBase(BaseModel):
     name: str = Field(..., min_length=2, max_length=50, description="Nome univoco della categoria")
-    description: str | None = Field(default=None, max_length=500)
+    description: str | None = Field(default=None, max_length=2000)
 
 class CategoryCreate(CategoryBase):
     pass
 
 class CategoryUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=2, max_length=50)
-    description: str | None = Field(default=None, max_length=500)
+    description: str | None = Field(default=None, max_length=2000)
 
 class CategoryResponse(CategoryBase):
     id: uuid.UUID
