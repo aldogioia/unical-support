@@ -15,3 +15,11 @@ class CategoryUpdate(BaseModel):
 class CategoryResponse(CategoryBase):
     id: uuid.UUID
     model_config = ConfigDict(from_attributes=True)
+
+class CategoryImportResult(BaseModel):
+    total_processed: int = Field(..., description="Totale elementi analizzati nel file o payload")
+    created_count: int = Field(..., description="Numero di categorie create con successo")
+    skipped_count: int = Field(..., description="Numero di categorie saltate (già esistenti o duplicate)")
+    created_categories: list[CategoryResponse] = Field(default_factory=list, description="Elenco delle categorie create")
+    skipped_categories: list[str] = Field(default_factory=list, description="Nomi delle categorie saltate")
+    errors: list[str] = Field(default_factory=list, description="Eventuali anomalie o errori riscontrati")
