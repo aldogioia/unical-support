@@ -44,8 +44,8 @@
   min-width: 0;
 }
 
-.upload-options-row select.form-control {
-  flex: 0 0 220px;
+.upload-options-row .upload-category-select {
+  flex: 0 0 280px;
 }
 
 .upload-options-row .btn {
@@ -269,10 +269,17 @@
 }
 
 .category-inline-select {
-  padding: 4px 8px;
+  width: 260px;
   font-size: 12px;
-  min-height: auto;
-  width: auto;
+}
+
+.doc-categories {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  max-width: 360px;
+  cursor: pointer;
 }
 
 .doc-actions {

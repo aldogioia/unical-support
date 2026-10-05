@@ -6,15 +6,16 @@
     </div>
   </div>
 
-  <!-- Categoria + Link: si applicano sia all'upload di file sia all'aggiunta di un link -->
+  <!-- Categorie + Link: si applicano sia all'upload di file sia all'aggiunta di un link -->
   <div class="upload-options">
     <div class="upload-options-row">
-      <select [(ngModel)]="selectedCategoryId" class="form-control" [disabled]="uploading()">
-        <option value="">Nessuna categoria</option>
-        @for (cat of categories(); track cat.id) {
-          <option [value]="cat.id">{{ cat.name }}</option>
-        }
-      </select>
+      <app-category-multi-select
+        class="upload-category-select"
+        [categories]="categories()"
+        [(selectedIds)]="selectedCategoryIds"
+        [disabled]="uploading()"
+        placeholder="Nessuna categoria">
+      </app-category-multi-select>
 
       <input
         type="text"
@@ -94,25 +95,30 @@
             <span class="badge">{{ doc.content_type }}</span>
 
             @if (editingCategoryDocId() === doc.id) {
-              <select
-                class="form-control category-inline-select"
+              <app-category-multi-select
+                class="category-inline-select"
+                [categories]="categories()"
+                [(selectedIds)]="editingCategoryIds"
                 [disabled]="savingCategoryDocId() === doc.id"
-                [ngModel]="doc.category?.id || ''"
-                (ngModelChange)="saveDocumentCategory(doc, $event)">
-                <option value="">Nessuna categoria</option>
-                @for (cat of categories(); track cat.id) {
-                  <option [value]="cat.id">{{ cat.name }}</option>
-                }
-              </select>
-              <button type="button" class="icon-btn" (click)="cancelEditCategory()" aria-label="Annulla">
+                [startOpen]="true"
+                placeholder="Nessuna categoria">
+              </app-category-multi-select>
+              <button type="button" class="icon-btn" (click)="saveDocumentCategories(doc)"
+                      [disabled]="savingCategoryDocId() === doc.id" aria-label="Salva">
+                <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+              </button>
+              <button type="button" class="icon-btn" (click)="cancelEditCategories()"
+                      [disabled]="savingCategoryDocId() === doc.id" aria-label="Annulla">
                 <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
               </button>
             } @else {
-              @if (doc.category?.name) {
-                <span class="badge badge-outline badge-clickable" (click)="startEditCategory(doc)">{{ doc.category?.name }}</span>
-              } @else {
-                <span class="badge badge-outline badge-clickable badge-muted" (click)="startEditCategory(doc)">+ Categoria</span>
-              }
+              <div class="doc-categories" (click)="startEditCategories(doc)" title="Modifica categorie">
+                @for (cat of doc.categories ?? []; track cat.id) {
+                  <span class="badge badge-outline badge-clickable">{{ cat.name }}</span>
+                } @empty {
+                  <span class="badge badge-outline badge-clickable badge-muted">+ Categoria</span>
+                }
+              </div>
             }
           </div>
           

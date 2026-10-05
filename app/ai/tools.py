@@ -57,12 +57,15 @@ def assign_categories_and_route(email_id: UUID, category_names: list[str]) -> st
     return f"Categorie {assigned} assegnate. Email passata al risponditore."
 
 @tool
-def search_knowledge_base(query: str, category_name: str = None) -> str:
+def search_knowledge_base(query: str, category_names: list[str] | None = None) -> str:
     """
     Esegue una ricerca nella base di conoscenza vettoriale (RAG) per trovare
     informazioni pertinenti per rispondere alla richiesta dell'utente.
+    `category_names` (opzionale) limita la ricerca ai documenti associati ad ALMENO UNA
+    delle categorie indicate (un documento può appartenere a più categorie).
+    Passa le categorie assegnate all'email; se omesso, cerca in tutta la base di conoscenza.
     """
-    return retrieve_context(query=query, k=4, category_name=category_name)
+    return retrieve_context(query=query, k=4, category_names=category_names)
 
 @tool
 def get_category_template(category_name: str) -> str:

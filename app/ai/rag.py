@@ -49,9 +49,15 @@ def get_vector_store():
     return _vector_store
 
 
-def index_langchain_documents(docs: list, category_name: str = "Generale", document_id: str | None = None):
+GENERAL_CATEGORY_NAME = "Generale"
+
+
+def index_langchain_documents(docs: list, category_names: list[str] | None = None, document_id: str | None = None):
+    sorted_names = sorted(set(category_names or []))
     for doc in docs:
-        doc.metadata["category"] = category_name
+        # Lista completa delle categorie del documento (informativa: il filtro in ricerca
+        # usa la relazione document_category come fonte di verità).
+        doc.metadata["categories"] = sorted_names
         if document_id:
             doc.metadata["document_id"] = str(document_id)
 
@@ -89,10 +95,50 @@ def index_langchain_documents(docs: list, category_name: str = "Generale", docum
     return len(chunks)
 
 
-def retrieve_context(query: str, k: int = 4, category_name: str = None) -> str:
+def _normalize_category_names(category_names) -> list[str]:
+    if not category_names:
+        return []
+    if isinstance(category_names, str):
+        category_names = [category_names]
+    return [n.strip() for n in category_names if n and n.strip()]
+
+
+def get_document_ids_for_categories(category_names) -> list[str]:
+    """
+    Restituisce gli ID dei documenti associati ad ALMENO UNA delle categorie indicate
+    (match case-insensitive sul nome), considerando tutte le categorie di ciascun documento.
+    La categoria "Generale" include anche i documenti senza alcuna categoria.
+    """
+    from sqlalchemy import func, or_
+    from app.db.database import session_scope
+    from app.models.document import Document
+    from app.models.category import Category
+
+    names = _normalize_category_names(category_names)
+    if not names:
+        return []
+    lowered = [n.lower() for n in names]
+
+    with session_scope() as db:
+        conditions = [Document.categories.any(func.lower(Category.name).in_(lowered))]
+        if GENERAL_CATEGORY_NAME.lower() in lowered:
+            conditions.append(~Document.categories.any())
+        rows = db.query(Document.id).filter(or_(*conditions)).all()
+        return [str(r[0]) for r in rows]
+
+
+def retrieve_context(query: str, k: int = 4, category_names: list[str] | str | None = None) -> str:
     vector_store = get_vector_store()
-    search_filter = {"category": category_name} if category_name else None
     candidate_count = k * 3
+
+    search_filter = None
+    names = _normalize_category_names(category_names)
+    if names:
+        document_ids = get_document_ids_for_categories(names)
+        if not document_ids:
+            print(f"[RAG] Nessun documento associato alle categorie {names}.")
+            return ""
+        search_filter = {"document_id": {"$in": document_ids}}
 
     try:
         if search_filter:

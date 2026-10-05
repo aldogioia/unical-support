@@ -19,6 +19,13 @@ email_category_association = Table(
     Column("category_id", UUID(as_uuid=True), ForeignKey("categories.id", ondelete="CASCADE"), primary_key=True),
 )
 
+document_category_association = Table(
+    "document_category",
+    Base.metadata,
+    Column("document_id", UUID(as_uuid=True), ForeignKey("documents.id", ondelete="CASCADE"), primary_key=True),
+    Column("category_id", UUID(as_uuid=True), ForeignKey("categories.id", ondelete="CASCADE"), primary_key=True),
+)
+
 class Category(Base, Auditable):
     __tablename__ = "categories"
 
@@ -45,6 +52,7 @@ class Category(Base, Auditable):
     )
 
     documents: Mapped[List["Document"]] = relationship(
-        "Document", 
-        back_populates="category"
+        "Document",
+        secondary=document_category_association,
+        back_populates="categories"
     )

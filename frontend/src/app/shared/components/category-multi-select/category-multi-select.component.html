@@ -1,0 +1,41 @@
+<div class="cms" [class.is-open]="open()" [class.is-disabled]="disabled">
+  <button type="button" class="cms-trigger form-control" [disabled]="disabled" (click)="toggleOpen()"
+          [attr.aria-expanded]="open()" aria-haspopup="listbox">
+    @if (selectedCategories().length === 0) {
+      <span class="cms-placeholder">{{ placeholder }}</span>
+    } @else {
+      <span class="cms-chips">
+        @for (cat of selectedCategories(); track cat.id) {
+          <span class="cms-chip">
+            {{ cat.name }}
+            <span class="cms-chip-remove" role="button" aria-label="Rimuovi" (click)="remove(cat.id, $event)">×</span>
+          </span>
+        }
+      </span>
+    }
+    <svg class="cms-caret" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+  </button>
+
+  @if (open()) {
+    <div class="cms-panel" role="listbox" aria-multiselectable="true">
+      <input type="text" class="form-control cms-search" placeholder="Cerca categoria..."
+             [ngModel]="search()" (ngModelChange)="search.set($event)">
+      <div class="cms-options">
+        @for (cat of filteredCategories(); track cat.id) {
+          <label class="cms-option" [class.is-selected]="isSelected(cat.id)">
+            <input type="checkbox" [checked]="isSelected(cat.id)" (change)="toggle(cat.id)">
+            <span>{{ cat.name }}</span>
+          </label>
+        } @empty {
+          <p class="cms-empty">Nessuna categoria trovata.</p>
+        }
+      </div>
+      @if (selectedCategories().length > 0) {
+        <div class="cms-footer">
+          <span>{{ selectedCategories().length }} selezionate</span>
+          <button type="button" class="cms-clear" (click)="clear()">Deseleziona tutte</button>
+        </div>
+      }
+    </div>
+  }
+</div>

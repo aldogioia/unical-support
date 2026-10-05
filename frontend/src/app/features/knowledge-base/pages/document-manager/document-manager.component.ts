@@ -9,11 +9,12 @@ import { deleteDocumentApiDocumentsDocumentIdDelete } from '../../../../core/api
 import { readCategoriesApiCategoriesGet } from '../../../../core/api/fn/categories/read-categories-api-categories-get';
 import { DocumentResponse } from '../../../../core/api/models/document-response';
 import { CategoryResponse } from '../../../../core/api/models/category-response';
+import { CategoryMultiSelectComponent } from '../../../../shared/components/category-multi-select/category-multi-select.component';
 
 @Component({
   selector: 'app-document-manager',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CategoryMultiSelectComponent],
   templateUrl: './document-manager.component.html',
   styleUrl: './document-manager.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -28,35 +29,38 @@ export class DocumentManagerComponent implements OnInit {
   uploading = signal<boolean>(false);
   uploadError = signal<string | null>(null);
 
-  // Categoria e link scelti nel form sopra la zona di drag & drop,
+  // Categorie e link scelti nel form sopra la zona di drag & drop,
   // usati sia per l'upload di file sia per l'aggiunta di un link.
-  selectedCategoryId = '';
+  selectedCategoryIds: string[] = [];
   linkUrl = '';
 
-  // Modifica inline della categoria su un documento già caricato
+  // Modifica inline delle categorie su un documento già caricato
   editingCategoryDocId = signal<string | null>(null);
   savingCategoryDocId = signal<string | null>(null);
+  editingCategoryIds: string[] = [];
 
-  startEditCategory(doc: DocumentResponse) {
+  startEditCategories(doc: DocumentResponse) {
+    this.editingCategoryIds = (doc.categories ?? []).map(c => c.id);
     this.editingCategoryDocId.set(doc.id);
   }
 
-  cancelEditCategory() {
+  cancelEditCategories() {
     this.editingCategoryDocId.set(null);
+    this.editingCategoryIds = [];
   }
 
-  async saveDocumentCategory(doc: DocumentResponse, newCategoryId: string) {
+  async saveDocumentCategories(doc: DocumentResponse) {
     this.savingCategoryDocId.set(doc.id);
     try {
       const updated = await this.api.invoke(updateDocumentApiDocumentsDocumentIdPut, {
         document_id: doc.id,
-        body: { category_id: newCategoryId || null }
+        body: { category_ids: [...this.editingCategoryIds] }
       });
       this.documents.update(docs => docs.map(d => d.id === doc.id ? updated : d));
-      this.editingCategoryDocId.set(null);
+      this.cancelEditCategories();
     } catch (e) {
       console.error(e);
-      alert('Errore durante l\'aggiornamento della categoria.');
+      alert('Errore durante l\'aggiornamento delle categorie.');
     } finally {
       this.savingCategoryDocId.set(null);
     }
@@ -128,7 +132,7 @@ export class DocumentManagerComponent implements OnInit {
             // Se è stato indicato un link, viene salvato come fonte del documento
             // (il testo viene comunque estratto dal file, non dal link).
             url: sourceLink as any,
-            category_id: (this.selectedCategoryId || null) as any,
+            category_ids: [...this.selectedCategoryIds],
           }
         });
         this.documents.update(docs => [created, ...docs]);
@@ -152,7 +156,7 @@ export class DocumentManagerComponent implements OnInit {
       const created = await this.api.invoke(uploadDocumentApiDocumentsUploadPost, {
         body: {
           url,
-          category_id: (this.selectedCategoryId || null) as any,
+          category_ids: [...this.selectedCategoryIds],
         }
       });
       this.documents.update(docs => [created, ...docs]);

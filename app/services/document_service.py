@@ -1,4 +1,5 @@
 import os
+import json
 import shutil
 import uuid
 import socket
@@ -90,7 +91,24 @@ def get_document(db: Session, document_id: UUID):
 def get_documents(db: Session, skip: int = 0, limit: int = 100):
     return db.query(Document).offset(skip).limit(limit).all()
 
-def process_and_upload_document(db: Session, file: UploadFile | None, url: str | None, category_id: UUID | None, user_id: UUID):
+def _resolve_categories(db: Session, category_ids: list[UUID] | None) -> list[Category]:
+    """
+    Converte una lista di ID in oggetti Category, eliminando i duplicati.
+    Solleva ValueError se uno o più ID non corrispondono a categorie esistenti.
+    """
+    unique_ids = list(dict.fromkeys(category_ids or []))
+    if not unique_ids:
+        return []
+    categories = db.query(Category).filter(Category.id.in_(unique_ids)).all()
+    found_ids = {c.id for c in categories}
+    missing = [str(cid) for cid in unique_ids if cid not in found_ids]
+    if missing:
+        raise ValueError(f"Categorie non trovate: {', '.join(missing)}")
+    return categories
+
+def process_and_upload_document(db: Session, file: UploadFile | None, url: str | None, category_ids: list[UUID] | None, user_id: UUID):
+    categories = _resolve_categories(db, category_ids)
+
     filename = "Link Web"
     content_type = "text/html"
     document_url = url
@@ -141,14 +159,14 @@ def process_and_upload_document(db: Session, file: UploadFile | None, url: str |
         content_type=content_type,
         link=document_url,
         extracted_text="Elaborazione in corso da parte dell'IA...",
-        category_id=category_id
     )
+    db_document.categories = categories
     db_document.apply_audit_fields(user_id=user_id, is_create=True)
     db.add(db_document)
     db.commit()
     db.refresh(db_document)
 
-    process_document_task.delay(db_document.id, file_path, url, category_id)
+    process_document_task.delay(str(db_document.id), file_path, url, [str(c.id) for c in categories])
 
     return db_document, 0
 
@@ -166,36 +184,37 @@ def delete_document_chunks(db: Session, document_id: UUID | str):
     except Exception as e:
         logger.warning(f"Impossibile eliminare i chunk per il documento {document_id}: {e}")
 
-def update_document_chunks_category(db: Session, document_id: UUID | str, category_name: str):
+def update_document_chunks_categories(db: Session, document_id: UUID | str, category_names: list[str]):
     """
-    Aggiorna la categoria nei metadati JSONB dei chunk associati al document_id.
+    Aggiorna la lista delle categorie nei metadati JSONB dei chunk associati al document_id.
+    Rimuove anche l'eventuale chiave legacy 'category' (singola).
     """
     try:
-        db.execute(
-            text(
-                "UPDATE langchain_pg_embedding "
-                "SET cmetadata = jsonb_set(cmetadata, '{category}', to_jsonb(:category::text)) "
-                "WHERE cmetadata->>'document_id' = :doc_id"
-            ),
-            {"category": category_name, "doc_id": str(document_id)}
-        )
+        # SAVEPOINT: un eventuale errore non invalida la transazione principale
+        with db.begin_nested():
+            db.execute(
+                text(
+                    "UPDATE langchain_pg_embedding "
+                    "SET cmetadata = jsonb_set(cmetadata - 'category', '{categories}', CAST(:categories AS jsonb)) "
+                    "WHERE cmetadata->>'document_id' = :doc_id"
+                ),
+                {"categories": json.dumps(sorted(category_names)), "doc_id": str(document_id)}
+            )
     except Exception as e:
-        logger.warning(f"Impossibile aggiornare la categoria dei chunk per il documento {document_id}: {e}")
+        logger.warning(f"Impossibile aggiornare le categorie dei chunk per il documento {document_id}: {e}")
 
-def update_document_category(db: Session, document_id: UUID, category_id, user_id: UUID):
+def update_document_categories(db: Session, document_id: UUID, category_ids: list[UUID], user_id: UUID):
     db_document = get_document(db, document_id)
     if not db_document:
         raise HTTPException(status_code=404, detail="Documento non trovato")
 
-    db_document.category_id = category_id
+    try:
+        db_document.categories = _resolve_categories(db, category_ids)
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
     db_document.apply_audit_fields(user_id=user_id, is_create=False)
 
-    category_name = "Generale"
-    if category_id:
-        cat = db.query(Category).filter(Category.id == category_id).first()
-        if cat:
-            category_name = cat.name
-    update_document_chunks_category(db, document_id, category_name)
+    update_document_chunks_categories(db, document_id, [c.name for c in db_document.categories])
 
     db.commit()
     db.refresh(db_document)

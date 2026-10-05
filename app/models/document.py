@@ -1,7 +1,9 @@
 import uuid
-from sqlalchemy import String, Text, ForeignKey, UUID
+from typing import List
+from sqlalchemy import String, Text, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.database import Base
+from app.models.category import document_category_association
 from app.core.audit_logging import Auditable
 
 class Document(Base, Auditable):
@@ -19,13 +21,9 @@ class Document(Base, Auditable):
     
     extracted_text: Mapped[str | None] = mapped_column(Text)
     link: Mapped[str | None] = mapped_column(String(500))
-    
-    category_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("categories.id", ondelete="CASCADE"), 
-        nullable=True
-    )
-    
-    category: Mapped["Category"] = relationship(
-        "Category", 
+
+    categories: Mapped[List["Category"]] = relationship(
+        "Category",
+        secondary=document_category_association,
         back_populates="documents"
     )

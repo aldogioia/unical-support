@@ -28,20 +28,20 @@ def update_document(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Session = Depends(get_db),
 ):
-    return document_service.update_document_category(db, document_id, document_in.category_id, current_user.id)
+    return document_service.update_document_categories(db, document_id, document_in.category_ids, current_user.id)
 
 @router.post("/upload", response_model=DocumentResponse)
 async def upload_document(
     current_user: Annotated[User, Depends(get_current_user)],
     file: Optional[UploadFile] = File(None),
     url: Optional[str] = Form(None),
-    category_id: Optional[UUID] = Form(None),
+    category_ids: Optional[List[UUID]] = Form(None),
     db: Session = Depends(get_db),
 ):
     if not file and not url:
         raise HTTPException(status_code=400, detail="Devi fornire un 'file' oppure un 'url'.")
     try:
-        db_document, chunks = document_service.process_and_upload_document(db=db, file=file, url=url, category_id=category_id, user_id=current_user.id)
+        db_document, chunks = document_service.process_and_upload_document(db=db, file=file, url=url, category_ids=category_ids, user_id=current_user.id)
         return db_document
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))

@@ -3,8 +3,7 @@
 
 import { CategoryResponse } from '../models/category-response';
 export interface DocumentResponse {
-  category?: (CategoryResponse | null);
-  category_id?: (string | null);
+  categories?: Array<CategoryResponse>;
   content_type: string;
   extracted_text?: (string | null);
   filename: string;

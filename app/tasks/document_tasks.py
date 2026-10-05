@@ -6,7 +6,7 @@ from app.models.document import Document
 from app.models.category import Category
 
 @celery_app.task(name="app.tasks.document_tasks.process_document_task")
-def process_document_task(document_id: UUID, file_path: str | None, url: str | None, category_id: str | None):
+def process_document_task(document_id: UUID | str, file_path: str | None, url: str | None, category_ids: list[str] | str | None = None):
 
     from langchain_unstructured import UnstructuredLoader
     from langchain_community.document_loaders import WebBaseLoader
@@ -24,14 +24,17 @@ def process_document_task(document_id: UUID, file_path: str | None, url: str | N
             loader = WebBaseLoader(url)
             docs = loader.load()
 
-        category_name = "Generale"
-        with session_scope() as db:
-            if category_id:
-                db_category = db.query(Category).filter(Category.id == category_id).first()
-                if db_category:
-                    category_name = db_category.name
+        # Retro-compatibilità con task accodati prima della migrazione (singolo category_id)
+        if isinstance(category_ids, str):
+            category_ids = [category_ids]
 
-        chunk_count = index_langchain_documents(docs, category_name=category_name, document_id=str(document_id))
+        category_names: list[str] = []
+        with session_scope() as db:
+            if category_ids:
+                db_categories = db.query(Category).filter(Category.id.in_(category_ids)).all()
+                category_names = [c.name for c in db_categories]
+
+        chunk_count = index_langchain_documents(docs, category_names=category_names, document_id=str(document_id))
         preview_text = docs[0].page_content[:500] if docs else "Nessun testo estratto."
 
         with session_scope() as db:

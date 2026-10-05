@@ -48,9 +48,15 @@ def update_category(db: Session, category_id: UUID, category_data: CategoryUpdat
         raise HTTPException(status_code=404, detail="Categoria non trovata")
     
     update_dict = category_data.model_dump(exclude_unset=True)
+    old_name = db_category.name
     for key, value in update_dict.items():
         setattr(db_category, key, value)
     db_category.apply_audit_fields(user_id=user_id)
+
+    # Se il nome cambia, riallinea i metadati dei chunk dei documenti associati
+    if db_category.name != old_name:
+        for doc in db_category.documents:
+            document_service.update_document_chunks_categories(db, doc.id, [c.name for c in doc.categories])
         
     db.commit()
     db.refresh(db_category)
@@ -59,8 +65,15 @@ def update_category(db: Session, category_id: UUID, category_data: CategoryUpdat
 def delete_category(db: Session, category_id: UUID):
     db_category = get_category(db, category_id)
     if db_category:
+        # Un documento associato solo a questa categoria viene eliminato (comportamento precedente);
+        # se ha altre categorie viene mantenuto e si rimuove solo l'associazione.
         for doc in list(db_category.documents):
-            document_service.delete_document(db, doc.id)
+            remaining = [c for c in doc.categories if c.id != db_category.id]
+            if not remaining:
+                document_service.delete_document(db, doc.id)
+            else:
+                doc.categories = remaining
+                document_service.update_document_chunks_categories(db, doc.id, [c.name for c in remaining])
         db.delete(db_category)
         db.commit()
     else:

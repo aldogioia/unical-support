@@ -1,0 +1,151 @@
+:host {
+  display: block;
+  position: relative;
+  min-width: 0;
+}
+
+.cms {
+  position: relative;
+}
+
+.cms-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  min-height: 38px;
+}
+
+.cms.is-disabled .cms-trigger {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.cms-placeholder {
+  flex: 1;
+  color: var(--color-text-weak);
+  font-size: 13px;
+}
+
+.cms-chips {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+
+.cms-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 500;
+  background-color: var(--color-fill);
+  border: 1px solid var(--color-stroke-strong);
+  color: var(--color-text-strong);
+  white-space: nowrap;
+}
+
+.cms-chip-remove {
+  cursor: pointer;
+  color: var(--color-text-weak);
+  line-height: 1;
+}
+
+.cms-chip-remove:hover {
+  color: var(--color-error);
+}
+
+.cms-caret {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--color-text-weak);
+  transition: transform 0.2s ease;
+}
+
+.cms.is-open .cms-caret {
+  transform: rotate(180deg);
+}
+
+.cms-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 50;
+  width: 100%;
+  min-width: 240px;
+  padding: 8px;
+  background-color: var(--surface-overlay, #fff);
+  border: 1px solid var(--color-stroke-strong);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px hsla(0, 0%, 0%, 0.12);
+}
+
+.cms-search {
+  width: 100%;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.cms-options {
+  max-height: 240px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.cms-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--color-text-strong);
+  cursor: pointer;
+}
+
+.cms-option:hover {
+  background-color: var(--color-fill);
+}
+
+.cms-option.is-selected {
+  font-weight: 600;
+}
+
+.cms-option input {
+  accent-color: var(--color-brand);
+}
+
+.cms-empty {
+  font-size: 13px;
+  color: var(--color-text-weak);
+  padding: 6px 8px;
+  margin: 0;
+}
+
+.cms-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--color-stroke-weak);
+  font-size: 12px;
+  color: var(--color-text-weak);
+}
+
+.cms-clear {
+  background: none;
+  border: none;
+  color: var(--color-brand);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0;
+}
