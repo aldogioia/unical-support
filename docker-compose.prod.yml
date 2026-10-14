@@ -50,6 +50,9 @@ services:
       target: worker
     restart: always
     command: celery -A app.core.celery_app worker -Q polling_queue,classify_queue,respond_queue,document_queue -l INFO --concurrency=2
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    network_mode: host
     volumes:
       - shared_uploads:/app/uploads
     secrets:
@@ -68,6 +71,7 @@ services:
       context: .
       target: backend
     restart: always
+    network_mode: host
     command: celery -A app.core.celery_app beat --loglevel=info
     secrets:
       - database_url
