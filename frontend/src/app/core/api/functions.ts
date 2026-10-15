@@ -15,6 +15,10 @@ export type { ReadCategoriesApiCategoriesGet$Params as ReadCategoriesApiCategori
 export { readCategoriesApiCategoriesGet as readCategoriesApiCategoriesGet } from './fn/categories/read-categories-api-categories-get';
 export type { CreateCategoryApiCategoriesPost$Params as CreateCategoryApiCategoriesPost$Params } from './fn/categories/create-category-api-categories-post';
 export { createCategoryApiCategoriesPost as createCategoryApiCategoriesPost } from './fn/categories/create-category-api-categories-post';
+export type { ImportCategoriesFromJsonApiCategoriesImportPost$Params as ImportCategoriesFromJsonApiCategoriesImportPost$Params } from './fn/categories/import-categories-from-json-api-categories-import-post';
+export { importCategoriesFromJsonApiCategoriesImportPost as importCategoriesFromJsonApiCategoriesImportPost } from './fn/categories/import-categories-from-json-api-categories-import-post';
+export type { BulkCreateCategoriesApiCategoriesBulkPost$Params as BulkCreateCategoriesApiCategoriesBulkPost$Params } from './fn/categories/bulk-create-categories-api-categories-bulk-post';
+export { bulkCreateCategoriesApiCategoriesBulkPost as bulkCreateCategoriesApiCategoriesBulkPost } from './fn/categories/bulk-create-categories-api-categories-bulk-post';
 export type { UpdateCategoryApiCategoriesCategoryIdPut$Params as UpdateCategoryApiCategoriesCategoryIdPut$Params } from './fn/categories/update-category-api-categories-category-id-put';
 export { updateCategoryApiCategoriesCategoryIdPut as updateCategoryApiCategoriesCategoryIdPut } from './fn/categories/update-category-api-categories-category-id-put';
 export type { DeleteCategoryApiCategoriesCategoryIdDelete$Params as DeleteCategoryApiCategoriesCategoryIdDelete$Params } from './fn/categories/delete-category-api-categories-category-id-delete';
@@ -41,6 +45,10 @@ export type { DeleteDocumentApiDocumentsDocumentIdDelete$Params as DeleteDocumen
 export { deleteDocumentApiDocumentsDocumentIdDelete as deleteDocumentApiDocumentsDocumentIdDelete } from './fn/documents/delete-document-api-documents-document-id-delete';
 export type { UploadDocumentApiDocumentsUploadPost$Params as UploadDocumentApiDocumentsUploadPost$Params } from './fn/documents/upload-document-api-documents-upload-post';
 export { uploadDocumentApiDocumentsUploadPost as uploadDocumentApiDocumentsUploadPost } from './fn/documents/upload-document-api-documents-upload-post';
+export type { FetchEmailsNowApiEmailsFetchNowPost$Params as FetchEmailsNowApiEmailsFetchNowPost$Params } from './fn/emails/fetch-emails-now-api-emails-fetch-now-post';
+export { fetchEmailsNowApiEmailsFetchNowPost as fetchEmailsNowApiEmailsFetchNowPost } from './fn/emails/fetch-emails-now-api-emails-fetch-now-post';
+export type { ReadEmailFetchStatusApiEmailsFetchStatusJobIdGet$Params as ReadEmailFetchStatusApiEmailsFetchStatusJobIdGet$Params } from './fn/emails/read-email-fetch-status-api-emails-fetch-status-job-id-get';
+export { readEmailFetchStatusApiEmailsFetchStatusJobIdGet as readEmailFetchStatusApiEmailsFetchStatusJobIdGet } from './fn/emails/read-email-fetch-status-api-emails-fetch-status-job-id-get';
 export type { ReadEmailsApiEmailsGet$Params as ReadEmailsApiEmailsGet$Params } from './fn/emails/read-emails-api-emails-get';
 export { readEmailsApiEmailsGet as readEmailsApiEmailsGet } from './fn/emails/read-emails-api-emails-get';
 export type { CreateNewEmailApiEmailsPost$Params as CreateNewEmailApiEmailsPost$Params } from './fn/emails/create-new-email-api-emails-post';

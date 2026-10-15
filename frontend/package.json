@@ -7,7 +7,8 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "generate-api": "npx ng-openapi-gen --input http://localhost:8000/openapi.json --output src/app/core/api"
+    "generate-api": "npx ng-openapi-gen --input http://localhost:8000/openapi.json --output src/app/core/api",
+    "generate-api:docker": "npx ng-openapi-gen --input http://backend:8000/openapi.json --output src/app/core/api"
   },
   "private": true,
   "dependencies": {

@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import model_validator
+from pydantic import Field, model_validator
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Unical Support MVP"
@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     FEEDBACK_EMAIL_RECIPIENT: str = ""
     ALLOWED_ORIGINS: str = "http://localhost:4200,http://localhost"
     SHOW_DOCS: bool = False
+    AI_RESPONSE_FALLBACK_LANGUAGE: str = "it"
+    # JSON environment variables, e.g. {"en":"it"}; empty means mirror the sender.
+    AI_RESPONSE_LANGUAGE_OVERRIDES: dict[str, str] = Field(default_factory=dict)
+    AI_DISCLAIMER_TRANSLATIONS: dict[str, str] = Field(default_factory=dict)
 
     @model_validator(mode='after')
     def validate_critical_settings(self) -> "Settings":

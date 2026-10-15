@@ -1,41 +1,261 @@
-<div class="page-container">
-  <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
-    <div class="page-title-group">
-      <h1>Review Hub</h1>
-      <p class="page-subtitle">Manage and review AI-generated email responses.</p>
-    </div>
-    <div class="header-actions">
-      <div class="pill-group">
-        @for (status of statuses; track status.value) {
-          <button 
-            (click)="setStatus(status.value)"
-            class="pill" 
-            [class.active]="selectedStatus() === status.value">
-            {{ status.label }}
-          </button>
-        }
-      </div>
-    </div>
-  </div>
-
-  @if (loading()) {
-    <div class="loading-container">
-      <div class="spinner"></div>
-    </div>
-  } @else {
-    <div class="grid-container">
-      @for (email of emails(); track email.id) {
-        <app-task-card [email]="email" (cardClick)="openModal($event, modal)"></app-task-card>
-      } @empty {
-        <div class="empty-state-full">
-          <p class="empty-state-text">No emails pending review.</p>
+<div class="workspace-page">
+  <app-workspace-header
+    title="Revisione email"
+    [subtitle]="emails().length + ' email nella vista'"
+    [search]="search()"
+    (searchChange)="search.set($event)"
+    placeholder="Mittente, oggetto o contenuto…"
+    actionLabel="Controlla nuove email"
+    actionIcon="mail"
+    [busy]="fetching()"
+    busyLabel="Controllo in corso…"
+    (action)="fetchEmails()"
+  />
+  <div class="master-detail" [class.has-detail]="selectedEmail()">
+    <div class="master-pane" aria-label="Elenco email">
+      @if (loading()) {
+        <div class="loading-state" role="status">
+          <span class="spinner" aria-hidden="true"></span>Caricamento email…
         </div>
+      } @else {
+        @for (email of filteredEmails(); track email.id) {
+          <button
+            type="button"
+            class="list-row email-row"
+            [class.selected]="selectedId() === email.id"
+            [attr.aria-pressed]="selectedId() === email.id"
+            (click)="selectEmail(email)"
+          >
+            <span
+              class="email-avatar"
+              [class.lilac]="tone(email.status) === 'danger'"
+              [class.sage]="email.status === 'SENT'"
+              >{{ initials(email.sender) }}</span
+            >
+            <span class="email-content">
+              <span class="email-sender"
+                ><strong [title]="email.sender">{{ email.sender }}</strong>
+                @if (needsAttention(email.status)) {
+                  <i class="attention-dot" aria-label="Richiede attenzione"></i>
+                }
+              </span>
+              <span class="email-subject-row"
+                ><strong class="email-subject">{{
+                  email.subject || "(Senza oggetto)"
+                }}</strong
+                ><span [class]="'badge badge-' + tone(email.status)"
+                  ><ds-icon
+                    [name]="
+                      email.status === 'SENT'
+                        ? 'check'
+                        : needsAttention(email.status)
+                          ? 'warning'
+                          : 'file'
+                    "
+                  />{{ listStatusLabel(email.status) }}</span
+                ></span
+              >
+              <span class="email-preview">{{
+                email.body || "Nessun contenuto disponibile"
+              }}</span>
+              <span class="email-tags">
+                @for (category of email.categories; track category.id) {
+                  <span class="chip">{{ category.name }}</span>
+                }
+                @if (email.gmail_id || email.id) {
+                  <code>{{ email.gmail_id || email.id }}</code>
+                }
+              </span>
+            </span>
+          </button>
+        } @empty {
+          <div class="empty-state">
+            <ds-icon name="mail" />
+            <h2>
+              {{ search() ? "Nessuna corrispondenza" : "Nessuna email" }}
+            </h2>
+            <p>
+              {{
+                search()
+                  ? "Prova un altro mittente o una parola diversa."
+                  : "Le email di questa vista compariranno qui."
+              }}
+            </p>
+            @if (search()) {
+              <button class="btn btn-outline btn-sm" (click)="search.set('')">
+                Cancella ricerca
+              </button>
+            }
+          </div>
+        }
       }
     </div>
+    @if (selectedEmail(); as email) {
+      <section
+        class="detail-pane"
+        appDetailPanel
+        detailLabel="Dettaglio email e revisione AI"
+        (detailClose)="closeDetail()"
+      >
+        <header class="detail-header">
+          <button
+            class="icon-btn panel-back"
+            aria-label="Torna all’elenco"
+            (click)="closeDetail()"
+          >
+            <ds-icon name="back" />
+          </button>
+          <div>
+            <div class="eyebrow">
+              CONVERSAZIONE / {{ statusLabels[email.status] }}
+            </div>
+            <h2>{{ email.subject || "(Senza oggetto)" }}</h2>
+            <p>{{ email.sender }}</p>
+            <div class="chips detail-tags">
+              @for (category of email.categories; track category.id) {
+                <span class="chip">{{ category.name }}</span>
+              }
+            </div>
+          </div>
+          <button
+            class="icon-btn panel-close"
+            data-panel-close
+            aria-label="Chiudi dettaglio email"
+            [disabled]="acting()"
+            (click)="closeDetail()"
+          >
+            <ds-icon name="close" />
+          </button>
+        </header>
+        <div class="detail-body">
+          <section class="detail-section">
+            <h3>
+              <ds-icon name="mail" /> Email ricevuta
+              <span class="row-id">{{ email.gmail_id }}</span>
+            </h3>
+            <div class="reading-box">
+              {{ email.body || "Nessun testo disponibile." }}
+            </div>
+          </section>
+          <section class="detail-section">
+            <h3>
+              <ds-icon name="sparkle" /> Diagnostica AI
+              <span [class]="'badge badge-' + tone(email.status)">{{
+                statusLabels[email.status]
+              }}</span>
+            </h3>
+            @if (email.status === "ESCALATED") {
+              <div class="callout callout-warning">
+                <ds-icon name="warning" />
+                <div>
+                  <strong>È necessario un intervento umano</strong>Esamina la
+                  richiesta e verifica le fonti prima di rispondere. La
+                  motivazione specifica non è disponibile.
+                </div>
+              </div>
+            }
+            @if (email.status === "FAILED") {
+              <div class="callout callout-danger">
+                <ds-icon name="warning" />
+                <div>
+                  <strong>La risposta richiede attenzione</strong>Verifica la
+                  connessione Gmail e il contenuto della bozza prima di
+                  riprovare l’invio.
+                </div>
+              </div>
+            }
+            <details class="ai-sources">
+              <summary>
+                <ds-icon name="book" /><span>Fonti e rilevanza</span
+                ><span class="badge">Non disponibili</span
+                ><ds-icon name="down" />
+              </summary>
+              <p>
+                Per questa email non sono disponibili frammenti documentali,
+                template o punteggi di confidence. Controlla i riferimenti nella
+                risposta e consulta la base documentale.
+              </p>
+            </details>
+          </section>
+          <section class="detail-section">
+            <div class="draft-heading">
+              <h3>
+                <ds-icon name="file" />
+                {{
+                  email.status === "SENT"
+                    ? "Risposta inviata"
+                    : "Bozza di risposta"
+                }}
+              </h3>
+              <span class="badge badge-info"
+                ><ds-icon name="sparkle" /> AI assisted</span
+              >
+            </div>
+            <label for="email-draft" class="sr-only"
+              >Modifica bozza della risposta</label
+            ><textarea
+              id="email-draft"
+              class="form-control email-draft"
+              [value]="editableDraft()"
+              (input)="editableDraft.set($any($event.target).value)"
+              [readOnly]="!canReview() || acting()"
+              placeholder="Scrivi la risposta allo studente…"
+            ></textarea>
+            <div class="draft-caption">
+              <span>Verifica contenuti e riferimenti prima dell’invio.</span
+              ><span>{{ editableDraft().length }} caratteri</span>
+            </div>
+          </section>
+        </div>
+        <footer class="detail-footer">
+          @if (canReview()) {
+            <button
+              class="btn btn-ghost"
+              [disabled]="acting()"
+              (click)="escalateSelected()"
+            >
+              <ds-icon name="warning" />Gestione manuale</button
+            ><button
+              class="btn btn-outline"
+              [disabled]="acting() || !editableDraft().trim()"
+              (click)="saveDraft()"
+            >
+              Salva bozza</button
+            ><button
+              class="btn btn-primary"
+              [disabled]="acting() || !editableDraft().trim()"
+              (click)="approveSelected()"
+            >
+              @if (acting()) {
+                <span class="spinner" aria-hidden="true"></span>
+              } @else {
+                <ds-icon name="check" />
+              }
+              Approva e invia
+            </button>
+          } @else {
+            <span class="toolbar-copy">{{
+              email.status === "SENT"
+                ? "La risposta è stata inviata."
+                : "L’email non è ancora pronta per la revisione."
+            }}</span>
+          }
+        </footer>
+      </section>
+    }
+  </div>
+  @if (toast(); as notification) {
+    <div class="ui-toast" [class.error]="notification.error" role="status">
+      <ds-icon [name]="notification.error ? 'warning' : 'check'" /><span>{{
+        notification.message
+      }}</span
+      ><button
+        class="icon-btn"
+        aria-label="Chiudi notifica"
+        (click)="toast.set(null)"
+      >
+        <ds-icon name="close" />
+      </button>
+    </div>
   }
-
-  <app-edit-modal #modal 
-    (approve)="handleApprove($event)" 
-    (escalate)="handleEscalate($event)">
-  </app-edit-modal>
 </div>

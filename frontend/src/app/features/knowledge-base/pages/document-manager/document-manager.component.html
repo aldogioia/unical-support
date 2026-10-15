@@ -1,138 +1,306 @@
-<div class="page-container">
-  <div class="page-header">
-    <div class="page-title-group">
-      <h1>Knowledge Base</h1>
-      <p class="page-subtitle">Manage documents and URLs used for Retrieval-Augmented Generation (RAG).</p>
-    </div>
-  </div>
-
-  <!-- Categorie + Link: si applicano sia all'upload di file sia all'aggiunta di un link -->
-  <div class="upload-options">
-    <div class="upload-options-row">
-      <app-category-multi-select
-        class="upload-category-select"
-        [categories]="categories()"
-        [(selectedIds)]="selectedCategoryIds"
-        [disabled]="uploading()"
-        placeholder="Nessuna categoria">
-      </app-category-multi-select>
-
-      <input
-        type="text"
-        [(ngModel)]="linkUrl"
-        placeholder="Link (fonte del file, oppure incollalo e clicca 'Aggiungi link' per un URL da solo)"
+<div class="workspace-page">
+  <app-workspace-header
+    title="Base documentale"
+    [subtitle]="documents().length + ' fonti'"
+    [search]="search()"
+    (searchChange)="search.set($event)"
+    placeholder="Nome, URL, testo o categoria…"
+    actionLabel="Aggiungi fonte"
+    (action)="openCreate()"
+  >
+    <label class="category-filter"
+      ><span class="sr-only">Filtra documenti per categoria</span
+      ><select
         class="form-control"
-        [disabled]="uploading()"
-        (keydown.enter)="addLink()">
-
-      <button
-        type="button"
-        class="btn btn-secondary"
-        [disabled]="!linkUrl.trim() || uploading()"
-        (click)="addLink()">
-        Aggiungi link
-      </button>
-    </div>
-
-    @if (uploadError()) {
-      <p class="upload-error">{{ uploadError() }}</p>
-    }
-    @if (uploading()) {
-      <p class="upload-hint">Caricamento in corso...</p>
-    }
-  </div>
-
-  <!-- Drag & Drop Upload Zone -->
-  <div class="upload-zone"
-       [ngClass]="{'is-dragging': isDragging(), 'is-uploading': uploading()}"
-       (dragover)="onDragOver($event)"
-       (dragleave)="onDragLeave($event)"
-       (drop)="onDrop($event)">
-    <input type="file" multiple class="upload-input" (change)="onFileSelected($event)" [disabled]="uploading()">
-    
-    <div class="upload-content">
-      <div class="upload-icon-container" [ngClass]="{'is-dragging': isDragging()}">
-        <svg class="upload-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-      </div>
-      <div class="upload-text">
-        <span class="upload-text-primary">Click to upload</span>
-        <span class="upload-text-secondary"> or drag and drop</span>
-      </div>
-      <p class="upload-hint">PDF, TXT, DOCX up to 10MB</p>
-    </div>
-  </div>
-
-  <!-- Document List -->
-  @if (loading()) {
-    <div class="loading-container">
-      <div class="spinner"></div>
-    </div>
-  } @else {
-    <div class="document-list">
-      @for (doc of documents(); track doc.id) {
-        <div class="document-list-item group">
-          <div class="doc-icon-wrapper">
-            <svg class="doc-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10l6 6v10a2 2 0 01-2 2z"></path>
-            </svg>
-          </div>
-          
-          <div class="doc-main-info">
-            @if (doc.link) {
-              <a [href]="doc.link" target="_blank" class="doc-title-link">
-                {{ doc.filename || doc.link }}
-                <svg class="icon-xs ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-              </a>
-            } @else {
-              <span class="doc-title">{{ doc.filename }}</span>
-            }
-            <p class="doc-preview" [title]="doc.extracted_text">
-              {{ (doc.extracted_text || 'No text extracted') | slice:0:80 }}{{ (doc.extracted_text?.length ?? 0) > 80 ? '...' : '' }}
+        [value]="categoryFilter()"
+        (change)="categoryFilter.set($any($event.target).value)"
+      >
+        <option value="">Tutte le categorie</option>
+        @for (category of categories(); track category.id) {
+          <option [value]="category.id">{{ category.name }}</option>
+        }
+      </select></label
+    >
+  </app-workspace-header>
+  <div
+    class="master-detail"
+    [class.has-detail]="creating() || selectedDocument()"
+  >
+    <div class="master-pane" aria-label="Elenco documenti">
+      @if (loading()) {
+        <div class="loading-state" role="status">
+          <span class="spinner" aria-hidden="true"></span>Caricamento fonti…
+        </div>
+      } @else if (loadError()) {
+        <div class="empty-state">
+          <ds-icon name="warning" />
+          <p role="alert">{{ loadError() }}</p>
+          <button class="btn btn-outline" (click)="loadDocuments()">
+            Riprova
+          </button>
+        </div>
+      } @else {
+        @for (doc of filteredDocuments(); track doc.id) {
+          <button
+            type="button"
+            class="list-row"
+            [class.selected]="selectedDocumentId() === doc.id"
+            [attr.aria-pressed]="selectedDocumentId() === doc.id"
+            (click)="selectDocument(doc)"
+          >
+            <span class="row-main"
+              ><span class="row-top"
+                ><strong>{{ doc.filename || "Documento" }}</strong
+                ><span class="badge">{{ doc.content_type }}</span></span
+              ><span class="row-preview">{{
+                doc.extracted_text ||
+                  doc.reference_url ||
+                  "Nessun testo estratto"
+              }}</span
+              ><span class="row-meta">
+                @for (category of doc.categories; track category.id) {
+                  <span class="chip">{{ category.name }}</span>
+                }
+              </span></span
+            ><span class="row-end"><ds-icon name="chevron" /></span>
+          </button>
+        } @empty {
+          <div class="empty-state">
+            <ds-icon name="book" />
+            <h2>
+              {{
+                search() || categoryFilter()
+                  ? "Nessuna fonte corrispondente"
+                  : "Nessun documento"
+              }}
+            </h2>
+            <p>
+              {{
+                search() || categoryFilter()
+                  ? "Modifica la ricerca o il filtro per categoria."
+                  : "Carica un documento per aiutare l’AI a rispondere agli studenti."
+              }}
             </p>
+            <button class="btn btn-outline" (click)="openCreate()">
+              <ds-icon name="plus" />Aggiungi una fonte
+            </button>
           </div>
-          
-          <div class="doc-meta">
-            <span class="badge">{{ doc.content_type }}</span>
-
-            @if (editingCategoryDocId() === doc.id) {
+        }
+      }
+    </div>
+    @if (creating()) {
+      <section
+        class="detail-pane"
+        appDetailPanel
+        detailLabel="Aggiungi fonte documentale"
+        (detailClose)="closeDetail()"
+      >
+        <header class="detail-header">
+          <div>
+            <div class="eyebrow">KNOWLEDGE BASE / NUOVA FONTE</div>
+            <h2>Aggiungi fonte</h2>
+            <p>Carica un file locale per la base documentale.</p>
+          </div>
+          <button
+            class="icon-btn panel-close"
+            data-panel-close
+            aria-label="Chiudi aggiunta fonte"
+            [disabled]="uploading()"
+            (click)="closeDetail()"
+          >
+            <ds-icon name="close" />
+          </button>
+        </header>
+        <div class="detail-body">
+          @if (uploadError()) {
+            <div class="callout callout-danger upload-notice" role="alert">
+              <ds-icon name="warning" /><span>{{ uploadError() }}</span>
+            </div>
+          }
+          @if (uploadNotice()) {
+            <div class="callout callout-success upload-notice" role="status">
+              <ds-icon name="check" />{{ uploadNotice() }}
+            </div>
+          }
+          <div class="field-stack">
+            <div>
+              <label class="form-label">Categorie della fonte</label
+              ><app-category-multi-select
+                [categories]="categories()"
+                [(selectedIds)]="selectedCategoryIds"
+                [disabled]="uploading()"
+                placeholder="Seleziona una o più categorie"
+              />
+              <p class="field-hint">
+                Associa la fonte agli argomenti su cui l’AI dovrà rispondere.
+              </p>
+            </div>
+            <div>
+              <label for="public-source-url" class="form-label"
+                >Link della fonte (facoltativo)</label
+              ><input
+                id="public-source-url"
+                class="form-control"
+                type="url"
+                [(ngModel)]="referenceUrl"
+                placeholder="https://www.unical.it/..."
+                maxlength="2048"
+                [disabled]="uploading()"
+              />
+              <p class="field-hint">
+                Puoi inserirlo ora o aggiungerlo/modificarlo in seguito. Verrà
+                citato dall'AI nelle risposte.
+              </p>
+            </div>
+            <div
+              class="upload-zone"
+              [class.is-dragging]="isDragging()"
+              [class.is-uploading]="uploading()"
+              (dragover)="onDragOver($event)"
+              (dragleave)="onDragLeave($event)"
+              (drop)="onDrop($event)"
+            >
+              <span class="upload-symbol"><ds-icon name="upload" /></span
+              ><strong>Trascina i documenti qui</strong
+              ><span
+                >oppure
+                <button
+                  class="text-link"
+                  [disabled]="uploading()"
+                  (click)="fileInput.click()"
+                >
+                  scegli i file
+                </button></span
+              ><small>PDF, DOCX, TXT, JSON, YAML, MD · Fino a 50 MB</small
+              ><input
+                #fileInput
+                class="sr-only"
+                type="file"
+                multiple
+                accept=".pdf,.docx,.txt,.json,.yaml,.yml,.md"
+                aria-label="Carica documenti"
+                (change)="onFileSelected($event)"
+                [disabled]="uploading()"
+              />
+            </div>
+          </div>
+        </div>
+        <footer class="detail-footer">
+          <span class="toolbar-copy" role="status">{{
+            uploading()
+              ? "Importazione in corso…"
+              : "Il caricamento inizia alla selezione dei file."
+          }}</span
+          ><button
+            class="btn btn-outline"
+            [disabled]="uploading()"
+            (click)="closeDetail()"
+          >
+            Chiudi
+          </button>
+        </footer>
+      </section>
+    } @else {
+      @if (selectedDocument(); as doc) {
+        <section
+          class="detail-pane"
+          appDetailPanel
+          detailLabel="Dettaglio documento"
+          (detailClose)="closeDetail()"
+        >
+          <header class="detail-header">
+            <div>
+              <div class="eyebrow">FONTE DOCUMENTALE / {{ format(doc) }}</div>
+              <h2>{{ doc.filename || "Documento" }}</h2>
+              <p>{{ doc.content_type }}</p>
+            </div>
+            <button
+              class="icon-btn panel-close"
+              data-panel-close
+              aria-label="Chiudi dettaglio documento"
+              [disabled]="savingCategoryDocId() === doc.id"
+              (click)="closeDetail()"
+            >
+              <ds-icon name="close" />
+            </button>
+          </header>
+          <div class="detail-body">
+            @if (editError()) {
+              <div class="callout callout-danger" role="alert">
+                {{ editError() }}
+              </div>
+            }
+            @if (editNotice()) {
+              <div class="callout callout-success" role="status">
+                {{ editNotice() }}
+              </div>
+            }
+            <section class="detail-section">
+              <label for="document-reference-url" class="form-label"
+                >Link della fonte</label
+              >
+              <input
+                id="document-reference-url"
+                class="form-control"
+                type="url"
+                [(ngModel)]="editingReferenceUrl"
+                maxlength="2048"
+                placeholder="https://www.unical.it/..."
+                [disabled]="savingCategoryDocId() === doc.id"
+              />
+              <p class="field-hint">
+                Puoi inserirlo ora o aggiungerlo/modificarlo in seguito. Verrà
+                citato dall'AI nelle risposte.
+              </p>
+            </section>
+            <section class="detail-section">
+              <h3><ds-icon name="tag" /> Categorie associate</h3>
               <app-category-multi-select
-                class="category-inline-select"
                 [categories]="categories()"
                 [(selectedIds)]="editingCategoryIds"
                 [disabled]="savingCategoryDocId() === doc.id"
-                [startOpen]="true"
-                placeholder="Nessuna categoria">
-              </app-category-multi-select>
-              <button type="button" class="icon-btn" (click)="saveDocumentCategories(doc)"
-                      [disabled]="savingCategoryDocId() === doc.id" aria-label="Salva">
-                <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-              </button>
-              <button type="button" class="icon-btn" (click)="cancelEditCategories()"
-                      [disabled]="savingCategoryDocId() === doc.id" aria-label="Annulla">
-                <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-              </button>
-            } @else {
-              <div class="doc-categories" (click)="startEditCategories(doc)" title="Modifica categorie">
-                @for (cat of doc.categories ?? []; track cat.id) {
-                  <span class="badge badge-outline badge-clickable">{{ cat.name }}</span>
-                } @empty {
-                  <span class="badge badge-outline badge-clickable badge-muted">+ Categoria</span>
-                }
+                placeholder="Seleziona categorie"
+              />
+            </section>
+            <section class="detail-section">
+              <h3><ds-icon name="file" /> Contenuto estratto</h3>
+              <div class="reading-box document-content">
+                {{
+                  doc.extracted_text ||
+                    "Il testo estratto non è ancora disponibile."
+                }}
               </div>
-            }
+            </section>
+            <div class="row-id">ID documento · {{ doc.id }}</div>
           </div>
-          
-          <div class="doc-actions">
-            <button (click)="deleteDocument(doc.id)" class="icon-btn text-danger fade-in-hover" aria-label="Delete">
-              <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+          <footer class="detail-footer">
+            <button
+              type="button"
+              class="btn btn-primary"
+              [disabled]="savingCategoryDocId() === doc.id"
+              (click)="saveDocumentCategories(doc)"
+            >
+              @if (savingCategoryDocId() === doc.id) {
+                <span class="spinner" aria-hidden="true"></span>
+              } @else {
+                <ds-icon name="check" />
+              }
+              {{
+                savingCategoryDocId() === doc.id
+                  ? "Salvataggio…"
+                  : "Salva modifiche"
+              }}
             </button>
-          </div>
-        </div>
-      } @empty {
-        <div class="empty-state-full">
-          <p class="empty-state-text">No documents in the knowledge base yet. Upload some files above.</p>
-        </div>
+            <button
+              class="btn btn-danger"
+              [disabled]="savingCategoryDocId() === doc.id"
+              (click)="deleteDocument(doc.id)"
+            >
+              <ds-icon name="trash" />Elimina documento
+            </button>
+          </footer>
+        </section>
       }
-    </div>
-  }
+    }
+  </div>
 </div>

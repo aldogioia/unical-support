@@ -6,7 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
-from app.schemas.email import EmailResponse, EmailUpdateDraft, EmailCreate
+from app.schemas.email import EmailResponse, EmailUpdateDraft, EmailCreate, EmailFetchResponse
+from app.services.email_polling_service import enqueue_email_poll, PollCoordinator
 from app.models.enumerators.enumerators import EmailStatus
 from app.models.email import Email
 from app.services import email_service
@@ -14,6 +15,25 @@ from app.db.database import get_db
 from app.tasks.email_tasks import classify_email_task
 
 router = APIRouter()
+
+
+@router.post('/fetch-now', response_model=EmailFetchResponse, status_code=202)
+def fetch_emails_now(current_user: Annotated[User, Depends(get_current_user)]):
+    try:
+        return enqueue_email_poll()
+    except Exception:
+        raise HTTPException(status_code=503, detail='Controllo email non disponibile. Riprova tra poco.')
+
+
+@router.get('/fetch-status/{job_id}', response_model=EmailFetchResponse)
+def read_email_fetch_status(job_id: UUID, current_user: Annotated[User, Depends(get_current_user)]):
+    try:
+        result = PollCoordinator().status(str(job_id))
+    except Exception:
+        raise HTTPException(status_code=503, detail='Impossibile verificare lo stato del controllo email.')
+    if not result:
+        raise HTTPException(status_code=404, detail='Controllo email non trovato o scaduto.')
+    return result
 
 @router.get("/", response_model=List[EmailResponse])
 def read_emails(

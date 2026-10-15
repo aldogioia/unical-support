@@ -6,6 +6,8 @@ from app.models.category import Category
 from app.models.email import Email, EmailStatus
 from app.core.celery_app import celery_app
 from app.ai.rag import retrieve_context
+from app.core.email_formatting import prepare_draft
+from app.models.enumerators.enumerators import TemplateStatus
 
 @tool
 def get_available_categories() -> str:
@@ -76,23 +78,33 @@ def get_category_template(category_name: str) -> str:
         category = db.query(Category).filter(Category.name.ilike(category_name)).first()
         if not category:
             return f"Categoria {category_name} non trovata."
-        if not category.templates:
+        templates = [t for t in category.templates if t.status == TemplateStatus.ACTIVE]
+        if not templates:
             return f"Nessun template disponibile per {category_name}."
         
-        return category.templates[0].body_template
+        return templates[0].body_template
 
 @tool
-def save_draft_response(email_id: UUID, draft_text: str) -> str:
+def save_draft_response(email_id: UUID, draft_text: str, response_language: str | None = None, ai_disclaimer: str | None = None) -> str:
     """
     Salva la bozza finale sull'email indicata.
-    Obbligatorio chiamare questo tool alla fine del processo di risposta se è stata creata una bozza.
+    Passa response_language con il codice ISO della lingua rilevata (it, en, es, ecc.).
+    Il sistema aggiunge il disclaimer IA prima del saluto. Per lingue diverse da
+    it/en/es/fr/de/pt, passa anche ai_disclaimer: la traduzione nella lingua della
+    risposta di "Questa risposta è stata generata con l'intelligenza artificiale e
+    potrebbe contenere errori. Verifica le informazioni nelle fonti indicate."
+    Obbligatorio chiamare questo tool alla fine del processo di risposta.
     """
+    try:
+        formatted_draft = prepare_draft(draft_text, response_language, ai_disclaimer)
+    except ValueError as exc:
+        return str(exc)
     with session_scope() as db:
         email = db.query(Email).filter(Email.id == email_id).first()
         if not email:
             return f"Email {email_id} non trovata."
         
-        email.generated_draft = draft_text
+        email.generated_draft = formatted_draft
         email.status = EmailStatus.DRAFT
         return "Bozza salvata con successo."
 
@@ -108,5 +120,5 @@ def escalate_to_human(email_id: UUID, reason: str) -> str:
             return f"Email {email_id} non trovata."
         
         email.status = EmailStatus.ESCALATED
-        email.generated_draft = f"ESCALATION REQUIRED:\n{reason}"
+        email.generated_draft = f"GESTIONE MANUALE RICHIESTA:\n{reason}"
         return "Email marcata per escalation."

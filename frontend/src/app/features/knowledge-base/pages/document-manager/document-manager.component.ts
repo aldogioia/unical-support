@@ -1,6 +1,16 @@
-import { Component, OnInit, ChangeDetectionStrategy, signal, inject } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  ChangeDetectionStrategy,
+  signal,
+  inject,
+  computed,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { DsIconComponent } from '../../../../shared/components/ds-icon/ds-icon.component';
+import { WorkspaceHeaderComponent } from '../../../../shared/components/workspace-header/workspace-header.component';
+import { DetailPanelDirective } from '../../../../shared/components/detail-panel.directive';
 import { Api } from '../../../../core/api/api';
 import { readDocumentsApiDocumentsGet } from '../../../../core/api/fn/documents/read-documents-api-documents-get';
 import { uploadDocumentApiDocumentsUploadPost } from '../../../../core/api/fn/documents/upload-document-api-documents-upload-post';
@@ -14,13 +24,76 @@ import { CategoryMultiSelectComponent } from '../../../../shared/components/cate
 @Component({
   selector: 'app-document-manager',
   standalone: true,
-  imports: [CommonModule, FormsModule, CategoryMultiSelectComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    CategoryMultiSelectComponent,
+    DsIconComponent,
+    WorkspaceHeaderComponent,
+    DetailPanelDirective,
+  ],
   templateUrl: './document-manager.component.html',
   styleUrl: './document-manager.component.css',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DocumentManagerComponent implements OnInit {
   private api = inject(Api);
+  readonly search = signal('');
+  readonly categoryFilter = signal('');
+  readonly selectedDocumentId = signal<string | null>(null);
+  readonly creating = signal(false);
+  readonly loadError = signal('');
+  readonly uploadNotice = signal('');
+  readonly selectedDocument = computed(
+    () =>
+      this.documents().find(
+        (document) => document.id === this.selectedDocumentId(),
+      ) ?? null,
+  );
+  readonly filteredDocuments = computed(() => {
+    const query = this.search().trim().toLocaleLowerCase('it');
+    const category = this.categoryFilter();
+    return this.documents().filter(
+      (document) =>
+        (!category || document.categories?.some((c) => c.id === category)) &&
+        (!query ||
+          [
+            document.filename,
+            document.reference_url,
+            document.extracted_text,
+            ...(document.categories ?? []).map((c) => c.name),
+          ]
+            .join(' ')
+            .toLocaleLowerCase('it')
+            .includes(query)),
+    );
+  });
+  openCreate(): void {
+    if (this.uploading()) return;
+    this.cancelEditCategories();
+    this.selectedDocumentId.set(null);
+    this.creating.set(true);
+    this.uploadError.set(null);
+    this.uploadNotice.set('');
+  }
+  selectDocument(document: DocumentResponse): void {
+    if (this.uploading() || this.savingCategoryDocId()) return;
+    this.cancelEditCategories();
+    this.creating.set(false);
+    this.selectedDocumentId.set(document.id);
+    this.startEditCategories(document);
+  }
+  closeDetail(): void {
+    if (this.uploading() || this.savingCategoryDocId()) return;
+    this.cancelEditCategories();
+    this.creating.set(false);
+    this.selectedDocumentId.set(null);
+  }
+  format(document: DocumentResponse): string {
+    return (
+      document.filename.split('.').pop()?.toUpperCase().slice(0, 5) || 'FILE'
+    );
+  }
 
   documents = signal<DocumentResponse[]>([]);
   categories = signal<CategoryResponse[]>([]);
@@ -29,38 +102,82 @@ export class DocumentManagerComponent implements OnInit {
   uploading = signal<boolean>(false);
   uploadError = signal<string | null>(null);
 
-  // Categorie e link scelti nel form sopra la zona di drag & drop,
-  // usati sia per l'upload di file sia per l'aggiunta di un link.
+  // Metadata for local file uploads. The source link is never downloaded.
   selectedCategoryIds: string[] = [];
-  linkUrl = '';
+  referenceUrl = '';
+
+  private validatePublicUrl(value: string, editing = false): boolean {
+    if (!value.trim()) return true;
+    try {
+      const url = new URL(value.trim());
+      if (
+        !['http:', 'https:'].includes(url.protocol) ||
+        url.username ||
+        url.password ||
+        value.trim().length > 2048
+      )
+        throw new Error();
+      return true;
+    } catch {
+      (editing ? this.editError : this.uploadError).set(
+        'Inserisci un URL valido che inizi con http:// o https://, senza credenziali.',
+      );
+      return false;
+    }
+  }
 
   // Modifica inline delle categorie su un documento già caricato
   editingCategoryDocId = signal<string | null>(null);
   savingCategoryDocId = signal<string | null>(null);
   editingCategoryIds: string[] = [];
+  editingReferenceUrl = '';
+  readonly editError = signal<string | null>(null);
+  readonly editNotice = signal('');
 
   startEditCategories(doc: DocumentResponse) {
-    this.editingCategoryIds = (doc.categories ?? []).map(c => c.id);
+    this.editingCategoryIds = (doc.categories ?? []).map((c) => c.id);
+    this.editingReferenceUrl = doc.reference_url ?? '';
+    this.editError.set(null);
+    this.editNotice.set('');
     this.editingCategoryDocId.set(doc.id);
   }
 
   cancelEditCategories() {
     this.editingCategoryDocId.set(null);
     this.editingCategoryIds = [];
+    this.editingReferenceUrl = '';
+    this.editError.set(null);
+    this.editNotice.set('');
   }
 
   async saveDocumentCategories(doc: DocumentResponse) {
+    if (
+      this.savingCategoryDocId() ||
+      !this.validatePublicUrl(this.editingReferenceUrl, true)
+    )
+      return;
+    this.editError.set(null);
+    this.editNotice.set('');
     this.savingCategoryDocId.set(doc.id);
     try {
-      const updated = await this.api.invoke(updateDocumentApiDocumentsDocumentIdPut, {
-        document_id: doc.id,
-        body: { category_ids: [...this.editingCategoryIds] }
-      });
-      this.documents.update(docs => docs.map(d => d.id === doc.id ? updated : d));
-      this.cancelEditCategories();
+      const updated = await this.api.invoke(
+        updateDocumentApiDocumentsDocumentIdPut,
+        {
+          document_id: doc.id,
+          body: {
+            category_ids: [...this.editingCategoryIds],
+            reference_url: this.editingReferenceUrl.trim() || null,
+          },
+        },
+      );
+      this.documents.update((docs) =>
+        docs.map((d) => (d.id === doc.id ? updated : d)),
+      );
+      this.startEditCategories(updated);
+      this.editNotice.set('Modifiche salvate.');
     } catch (e) {
       console.error(e);
-      alert('Errore durante l\'aggiornamento delle categorie.');
+      this.editError.set('Impossibile salvare le modifiche. Riprova.');
     } finally {
       this.savingCategoryDocId.set(null);
     }
@@ -73,10 +190,12 @@ export class DocumentManagerComponent implements OnInit {
 
   async loadDocuments() {
     this.loading.set(true);
+    this.loadError.set('');
     try {
       const data = await this.api.invoke(readDocumentsApiDocumentsGet, {});
       this.documents.set(data);
     } catch (e) {
+      this.loadError.set('Impossibile caricare i documenti. Riprova.');
       console.error(e);
     } finally {
       this.loading.set(false);
@@ -121,49 +240,30 @@ export class DocumentManagerComponent implements OnInit {
   }
 
   async handleFiles(files: FileList) {
+    if (this.uploading()) return;
+    this.uploadNotice.set('');
     this.uploadError.set(null);
+    if (!this.validatePublicUrl(this.referenceUrl)) return;
     this.uploading.set(true);
-    const sourceLink = this.linkUrl.trim() || null;
     try {
       for (const file of Array.from(files)) {
-        const created = await this.api.invoke(uploadDocumentApiDocumentsUploadPost, {
-          body: {
-            file: file as any,
-            // Se è stato indicato un link, viene salvato come fonte del documento
-            // (il testo viene comunque estratto dal file, non dal link).
-            url: sourceLink as any,
-            category_ids: [...this.selectedCategoryIds],
-          }
-        });
-        this.documents.update(docs => [created, ...docs]);
+        const created = await this.api.invoke(
+          uploadDocumentApiDocumentsUploadPost,
+          {
+            body: {
+              file: file as any,
+              reference_url: this.referenceUrl.trim() || null,
+              category_ids: [...this.selectedCategoryIds],
+            },
+          },
+        );
+        this.documents.update((docs) => [created, ...docs]);
       }
-      this.linkUrl = '';
+      this.referenceUrl = '';
+      this.uploadNotice.set('Fonte aggiunta alla base documentale.');
     } catch (e) {
       console.error(e);
-      this.uploadError.set("Errore durante il caricamento del file. Riprova.");
-    } finally {
-      this.uploading.set(false);
-    }
-  }
-
-  async addLink() {
-    const url = this.linkUrl.trim();
-    if (!url) return;
-
-    this.uploadError.set(null);
-    this.uploading.set(true);
-    try {
-      const created = await this.api.invoke(uploadDocumentApiDocumentsUploadPost, {
-        body: {
-          url,
-          category_ids: [...this.selectedCategoryIds],
-        }
-      });
-      this.documents.update(docs => [created, ...docs]);
-      this.linkUrl = '';
-    } catch (e) {
-      console.error(e);
-      this.uploadError.set("Errore durante l'aggiunta del link. Verifica che sia raggiungibile.");
+      this.uploadError.set('Errore durante il caricamento del file. Riprova.');
     } finally {
       this.uploading.set(false);
     }
@@ -172,8 +272,10 @@ export class DocumentManagerComponent implements OnInit {
   async deleteDocument(id: string) {
     if (!confirm('Sei sicuro di voler eliminare questo documento?')) return;
     try {
-      await this.api.invoke(deleteDocumentApiDocumentsDocumentIdDelete, { document_id: id as any });
-      this.documents.update(docs => docs.filter(d => d.id !== id));
+      await this.api.invoke(deleteDocumentApiDocumentsDocumentIdDelete, {
+        document_id: id as any,
+      });
+      this.documents.update((docs) => docs.filter((d) => d.id !== id));
     } catch (e) {
       console.error(e);
     }

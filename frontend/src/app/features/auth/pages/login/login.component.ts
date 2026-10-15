@@ -36,7 +36,7 @@ export class LoginComponent {
       } else if (e?.status === 403) {
         this.error.set('Utente non autorizzato o disattivato.');
       } else {
-        this.error.set('Errore durante il login. Riprova.');
+        this.error.set('Errore durante l’accesso. Riprova.');
       }
     } finally {
       this.loading.set(false);

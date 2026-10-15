@@ -119,7 +119,7 @@ def respond_email_task(self, email_id: UUID):
                     email = db.query(Email).filter(Email.id == email_id).first()
                     if email:
                         email.status = EmailStatus.ESCALATED
-                        email.draft_response = f"Errore interno di sistema dopo 3 tentativi: {str(e)}"
+                        email.generated_draft = f"Errore interno di sistema dopo 3 tentativi: {str(e)}"
                 
             except Exception as inner_e:
                 print(f"Errore critico durante la marcatura di ESCALATED: {inner_e}")

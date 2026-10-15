@@ -1,54 +1,148 @@
-<nav class="side-navbar">
-  <!-- Logo Area -->
-  <div class="logo-area">
-    <span class="logo-text">Support Hub</span>
+<nav
+  class="side-navbar"
+  [attr.role]="shell.mobileOpen() ? 'dialog' : null"
+  [attr.aria-modal]="shell.mobileOpen() ? 'true' : null"
+  aria-label="Navigazione principale"
+  (keydown.escape)="shell.closeNavigation()"
+>
+  <a class="logo-area" routerLink="/review" aria-label="Unical Support"
+    ><img
+      src="/design-system/logo-symbol.png"
+      alt=""
+      width="34"
+      height="34"
+    /><span class="brand-name expanded"
+      >Unical <b>Support</b><small>STUDENT SERVICES</small></span
+    ></a
+  >
+  <button
+    type="button"
+    class="icon-btn mobile-nav-close"
+    aria-label="Chiudi navigazione"
+    (click)="shell.closeNavigation()"
+  >
+    <ds-icon name="close" />
+  </button>
+  <div class="nav-section-label expanded">
+    <span>WORKSPACE</span><span class="sidebar-version">v0.1</span>
   </div>
-
-  <!-- Navigation Links -->
   <div class="nav-links">
-    <a routerLink="/review-hub" routerLinkActive="active" 
-       class="nav-link">
-      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-      </svg>
-      <span>Review Hub</span>
-    </a>
-    
-    <a routerLink="/knowledge-base" routerLinkActive="active" 
-       class="nav-link">
-      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-      </svg>
-      <span>Knowledge Base</span>
-    </a>
-
-    <a routerLink="/taxonomy" routerLinkActive="active" 
-       class="nav-link">
-      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-      </svg>
-      <span>Taxonomy</span>
-    </a>
+    <div
+      class="email-navigation"
+      routerLinkActive="section-active"
+      [routerLinkActiveOptions]="{
+        paths: 'exact',
+        queryParams: 'ignored',
+        matrixParams: 'ignored',
+        fragment: 'ignored',
+      }"
+      #emailSection="routerLinkActive"
+    >
+      <a
+        routerLink="/review"
+        [queryParams]="{ status: 'ALL' }"
+        class="nav-link"
+        [class.active]="emailSection.isActive"
+        [attr.aria-current]="
+          emailSection.isActive && shell.emailStatus() === 'ALL' ? 'page' : null
+        "
+        title="Revisione email"
+        (click)="openReview(emailSection.isActive)"
+      >
+        <ds-icon name="mail" /><span class="expanded">Revisione email</span>
+        @if (shell.emailCounts()["ALL"] !== undefined) {
+          <small class="review-total expanded">{{
+            shell.emailCounts()["ALL"]
+          }}</small>
+        }
+      </a>
+      <button
+        type="button"
+        class="email-menu-toggle expanded"
+        [attr.aria-label]="
+          shell.emailMenuExpanded()
+            ? 'Comprimi filtri email'
+            : 'Espandi filtri email'
+        "
+        [attr.aria-expanded]="shell.emailMenuExpanded()"
+        aria-controls="email-status-menu"
+        (click)="shell.emailMenuExpanded.set(!shell.emailMenuExpanded())"
+      >
+        <ds-icon
+          name="chevron"
+          [class.is-expanded]="shell.emailMenuExpanded()"
+        />
+      </button>
+    </div>
+    <nav
+      id="email-status-menu"
+      class="email-submenu expanded"
+      aria-label="Filtra email per stato"
+      [hidden]="!shell.emailMenuExpanded()"
+    >
+      @for (filter of shell.emailFilters; track filter.value) {
+        <a
+          routerLink="/review"
+          [queryParams]="{ status: filter.value }"
+          [class.sub-current]="
+            emailSection.isActive && shell.emailStatus() === filter.value
+          "
+          [attr.aria-current]="
+            emailSection.isActive && shell.emailStatus() === filter.value
+              ? 'page'
+              : null
+          "
+          ><span class="submenu-dot"></span><span>{{ filter.label }}</span
+          ><small>{{ shell.emailCounts()[filter.value] ?? "—" }}</small></a
+        >
+      }
+    </nav>
+    <a
+      routerLink="/knowledge-base"
+      routerLinkActive="active"
+      ariaCurrentWhenActive="page"
+      class="nav-link"
+      title="Base documentale"
+      ><ds-icon name="book" /><span class="expanded">Base documentale</span></a
+    >
+    <a
+      routerLink="/taxonomy"
+      routerLinkActive="active"
+      ariaCurrentWhenActive="page"
+      class="nav-link"
+      title="Categorie"
+      ><ds-icon name="tag" /><span class="expanded">Categorie</span></a
+    >
   </div>
-
-  <!-- Footer Links (Settings, Logout) -->
   <div class="footer-links">
-    <a routerLink="/ai-settings" routerLinkActive="active" class="nav-link nav-link-secondary">
-      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
-      <span>Settings</span>
-    </a>
-    <a href="#" (click)="logout(); $event.preventDefault()" class="nav-link nav-link-secondary">
-      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-      </svg>
-      <span>Logout</span>
-    </a>
-
-    @if (authService.currentUser(); as user) {
-      <div class="current-user">{{ user.email }}</div>
-    }
+    <a
+      routerLink="/ai-settings"
+      routerLinkActive="active"
+      ariaCurrentWhenActive="page"
+      class="nav-link"
+      title="Impostazioni"
+      ><ds-icon name="sliders" /><span class="expanded">Impostazioni</span></a
+    >
+    <div class="operator">
+      <span class="operator-avatar" [title]="email()">{{ initials() }}</span>
+      <div class="expanded">
+        <strong>Operatore</strong
+        ><span class="operator-address" [title]="email()"
+          ><span>{{ email().split("@")[0] }}</span>
+          @if (email().includes("@")) {
+            <small>&#64;{{ email().split("@")[1] }}</small>
+          }
+        </span>
+      </div>
+      <button
+        type="button"
+        class="icon-btn"
+        aria-label="Esci"
+        title="Esci dall’account"
+        (click)="logout()"
+      >
+        <ds-icon name="logout" />
+      </button>
+    </div>
   </div>
 </nav>

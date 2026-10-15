@@ -1,9 +1,16 @@
-import { Component, ViewChild, ElementRef, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
+import {
+  Component,
+  ViewChild,
+  ElementRef,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  inject,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ShellUiService } from '../../../core/services/shell-ui.service';
 import { Api } from '../../../core/api/api';
 import { createUserFeedbackApiFeedbackPost } from '../../../core/api/fn/feedback/create-user-feedback-api-feedback-post';
-import html2canvas from 'html2canvas';
 
 @Component({
   selector: 'app-feedback-button',
@@ -11,9 +18,10 @@ import html2canvas from 'html2canvas';
   imports: [CommonModule, FormsModule],
   templateUrl: './feedback-button.component.html',
   styleUrl: './feedback-button.component.css',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FeedbackButtonComponent {
+  readonly shell = inject(ShellUiService);
   private api = inject(Api);
   private cdr = inject(ChangeDetectorRef);
 
@@ -49,13 +57,18 @@ export class FeedbackButtonComponent {
     // Allow time for the button to disappear from the DOM before rendering the canvas
     setTimeout(async () => {
       try {
+        // Load the screenshot renderer only when preparing a report.
+        const { default: html2canvas } = await import('html2canvas');
         const canvas = await html2canvas(document.body, {
           useCORS: true,
           logging: false,
           ignoreElements: (element) => {
             // Explicitly ignore feedback dialog if it's somehow in the DOM
-            return element.tagName.toLowerCase() === 'dialog' || element.classList.contains('feedback-widget-container');
-          }
+            return (
+              element.tagName.toLowerCase() === 'dialog' ||
+              element.classList.contains('feedback-widget-container')
+            );
+          },
         });
 
         this.screenshotUrl = canvas.toDataURL('image/png');
@@ -65,9 +78,8 @@ export class FeedbackButtonComponent {
           this.screenshotBlob = blob;
           this.cdr.markForCheck();
         }, 'image/png');
-
       } catch (error) {
-        console.error('Failed to capture screenshot', error);
+        console.error('Impossibile acquisire la schermata', error);
         this.screenshotUrl = null;
         this.screenshotBlob = null;
       } finally {
@@ -114,16 +126,17 @@ export class FeedbackButtonComponent {
     this.cdr.markForCheck();
 
     try {
-      const imageFile = (this.attachScreenshot && this.screenshotBlob)
-        ? this.screenshotBlob
-        : null;
+      const imageFile =
+        this.attachScreenshot && this.screenshotBlob
+          ? this.screenshotBlob
+          : null;
 
       // Create parameters for the api call
       const params = {
         body: {
           description: this.description,
-          image: imageFile as any // cast to any to satisfy TS compiler (requires string | null, but RequestBuilder accepts Blob)
-        }
+          image: imageFile as any, // cast to any to satisfy TS compiler (requires string | null, but RequestBuilder accepts Blob)
+        },
       };
 
       await this.api.invoke(createUserFeedbackApiFeedbackPost, params);
@@ -138,10 +151,9 @@ export class FeedbackButtonComponent {
           this.closeDialog();
         }
       }, 2000);
-
     } catch (error: any) {
       console.error('Error submitting feedback', error);
-      this.errorMsg = 'Errore durante l\'invio del feedback. Riprova più tardi.';
+      this.errorMsg = "Errore durante l'invio del feedback. Riprova più tardi.";
       this.loading = false;
       this.cdr.markForCheck();
     }

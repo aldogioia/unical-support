@@ -28,7 +28,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 # Torch in versione CPU: unstructured[pdf] lo richiede, ma la build CUDA di default
 # aggiunge diversi GB di librerie NVIDIA inutili su un server senza GPU.
-RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
+RUN pip install --no-cache-dir torch torchvision --extra-index-url https://download.pytorch.org/whl/cpu
 COPY requirements-base.txt requirements-worker.txt ./
 RUN pip install --no-cache-dir -r requirements-base.txt -r requirements-worker.txt
 COPY . .

@@ -11,10 +11,10 @@ import { BodyUploadDocumentApiDocumentsUploadPost } from '../../models/body-uplo
 import { DocumentResponse } from '../../models/document-response';
 
 export interface UploadDocumentApiDocumentsUploadPost$Params {
-      body?: BodyUploadDocumentApiDocumentsUploadPost
+      body: BodyUploadDocumentApiDocumentsUploadPost
 }
 
-export function uploadDocumentApiDocumentsUploadPost(http: HttpClient, rootUrl: string, params?: UploadDocumentApiDocumentsUploadPost$Params, context?: HttpContext): Observable<StrictHttpResponse<DocumentResponse>> {
+export function uploadDocumentApiDocumentsUploadPost(http: HttpClient, rootUrl: string, params: UploadDocumentApiDocumentsUploadPost$Params, context?: HttpContext): Observable<StrictHttpResponse<DocumentResponse>> {
   const rb = new RequestBuilder(rootUrl, uploadDocumentApiDocumentsUploadPost.PATH, 'post');
   if (params) {
     rb.body(params.body, 'multipart/form-data');

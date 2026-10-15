@@ -8,5 +8,5 @@ export interface DocumentResponse {
   extracted_text?: (string | null);
   filename: string;
   id: string;
-  link?: (string | null);
+  reference_url?: (string | null);
 }

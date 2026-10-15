@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { EmailResponse } from '../../../core/api/models/email-response';
+import { EMAIL_STATUS_LABELS } from '../../email-status-labels';
 
 @Component({
   selector: 'app-task-card',
@@ -11,6 +12,7 @@ import { EmailResponse } from '../../../core/api/models/email-response';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TaskCardComponent {
+  readonly statusLabels = EMAIL_STATUS_LABELS;
   @Input({ required: true }) email!: EmailResponse;
   @Output() cardClick = new EventEmitter<EmailResponse>();
 }

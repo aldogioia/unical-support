@@ -4,10 +4,10 @@
       <!-- Header -->
       <div class="modal-header">
         <div>
-          <h2 class="modal-title">Review Draft</h2>
-          <p class="modal-subtitle">From: {{email.sender}}</p>
+          <h2 class="modal-title">Rivedi la risposta</h2>
+          <p class="modal-subtitle">Mittente: {{email.sender}}</p>
         </div>
-        <button (click)="close()" class="icon-btn" aria-label="Close">
+        <button (click)="close()" class="icon-btn" aria-label="Chiudi">
           <svg class="icon-md" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
       </div>
@@ -17,22 +17,22 @@
         <!-- Context Area (Read Only) -->
         <div class="modal-context">
           <div class="info-group">
-            <h3 class="info-label">Subject</h3>
+            <h3 class="info-label">Oggetto</h3>
             <p class="info-value">{{ email.subject }}</p>
           </div>
           <div class="info-group">
-            <h3 class="info-label">Original Request</h3>
+            <h3 class="info-label">Richiesta originale</h3>
             <div class="info-value pre-wrap">{{ email.body }}</div>
           </div>
         </div>
 
         <!-- Edit Area -->
         <div class="modal-edit">
-          <h3 class="info-label">Generated Draft</h3>
+          <h3 class="info-label">Bozza della risposta</h3>
           <textarea 
             [(ngModel)]="editableDraft" 
             class="form-control flex-1 resize-none"
-            placeholder="Write your response here..."
+            placeholder="Scrivi qui la risposta..."
           ></textarea>
         </div>
       </div>
@@ -40,10 +40,10 @@
       <!-- Footer Actions -->
       <div class="modal-footer">
         <button (click)="onEscalate()" class="btn btn-danger">
-          Reject / Escalate
+          Richiedi gestione manuale
         </button>
         <button (click)="onApprove()" class="btn btn-primary shadow-sm">
-          Approve & Send
+          Approva e invia
         </button>
       </div>
     </div>

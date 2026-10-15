@@ -7,14 +7,14 @@
     }
 
     <div class="form-group">
-      <label class="form-label">Email</label>
-      <input type="email" name="email" [(ngModel)]="email" class="form-control" autocomplete="username"
+      <label for="login-email" class="form-label">Email</label>
+      <input id="login-email" type="email" name="email" [(ngModel)]="email" class="form-control" autocomplete="username"
         [disabled]="loading()" required>
     </div>
 
     <div class="form-group">
-      <label class="form-label">Password</label>
-      <input type="password" name="password" [(ngModel)]="password" class="form-control" autocomplete="current-password"
+      <label for="login-password" class="form-label">Password</label>
+      <input id="login-password" type="password" name="password" [(ngModel)]="password" class="form-control" autocomplete="current-password"
         [disabled]="loading()" required>
     </div>
 

@@ -1,0 +1,70 @@
+<a class="skip-link" href="/design-system#foundations" (click)="navigate($event, 'foundations')">Vai al contenuto</a>
+<div class="ds-shell">
+  <aside class="sidebar" aria-label="Navigazione del Design System">
+    <a class="brand-lockup" href="/design-system" aria-label="Unical Support Design System">
+      <img src="/design-system/logo-symbol.png" alt="" width="34" height="34">
+      <span>Unical <b>Support</b><small>DESIGN WORKSPACE</small></span>
+    </a>
+    <div class="sidebar-heading">LIBRERIA <span>v0.1</span></div>
+    <nav aria-label="Sezioni dello showcase">
+      @for (section of filteredSections(); track section.id) {
+        <a [href]="'/design-system#' + section.id" (click)="navigate($event, section.id)" [class.current]="activeSection() === section.id" [attr.aria-current]="activeSection() === section.id ? 'location' : null">
+          <ds-icon [name]="section.icon" /><span>{{ section.label }}</span><small>{{ section.number }}</small>
+        </a>
+      } @empty { <p class="nav-empty">Nessuna sezione trovata.</p> }
+    </nav>
+    <div class="sidebar-note"><span class="status-dot"></span> Uno spazio per sperimentare<p>Componenti e token per una segreteria più semplice, accessibile e connessa.</p></div>
+    <div class="sidebar-footer">
+      <button class="settings-link" (click)="openPreferences()"><ds-icon name="accessibility" />Aspetto e accessibilità<ds-icon name="chevron" /></button>
+      <a class="back-link" href="/review-hub">Torna all’app <ds-icon name="arrow" /></a>
+    </div>
+  </aside>
+  <main #content class="ds-content" (scroll)="updateActiveSection()" aria-label="Catalogo dei componenti">
+    <header class="topbar"><div><ds-icon name="grid" /><span>Workspace</span><span class="slash">/</span><strong>Design System</strong></div><label class="section-search"><ds-icon name="search" /><input aria-label="Cerca una sezione" placeholder="Cerca una sezione…" [value]="search()" (input)="search.set($any($event.target).value)"><kbd>⌕</kbd></label></header>
+    <div class="page-content">
+      <div class="hero">
+        <div class="eyebrow"><span class="red-line"></span> UNICAL SUPPORT / UI LIBRARY</div>
+        <div class="hero-title"><h1>Design System<span> & UI Kit</span></h1><span class="version">v0.1 <span>In progress</span></span></div>
+        <p>Chiarezza in ogni interazione.<br>Le fondamenta di un’esperienza progettata per chi supporta gli studenti.</p>
+        <div class="hero-meta"><span><span class="status-dot"></span> Living style guide</span><span><ds-icon name="code" /> Angular 18 · Signals</span><button (click)="openPreferences()"><ds-icon name="sliders" /> Personalizza l’anteprima <ds-icon name="arrow" /></button></div>
+      </div>
+
+      <section id="foundations" tabindex="-1" class="catalog-section">
+        <div class="section-title"><span class="section-index">01</span><div><h2>Foundations</h2><p>Un’identità riconoscibile. Una base coerente per ogni schermata.</p></div><span class="section-label">IDENTITÀ & TOKEN</span></div>
+        <div class="block-heading"><h3>Brand & logo</h3><span>Un’identità istituzionale, un’interfaccia contemporanea.</span></div>
+        <div class="logo-grid">
+          <div class="logo-panel light"><div class="panel-label">01 / LOGOTIPO <span>Su chiaro</span></div><img class="horizontal-logo" src="/design-system/logo-horizontal.png" alt="Università della Calabria" width="585" height="523"><div class="logo-caption">Il segno originale. La nostra origine.<span>UNICAL</span></div></div>
+          <div class="logo-panel dark"><div class="panel-label">02 / SIMBOLO <span>Su scuro</span></div><div class="dark-logo"><img src="/design-system/logo-symbol.png" alt="Simbolo rosso e grigio dell’Università della Calabria" width="340" height="330"><span>Unical<br><b>Support</b></span></div><div class="logo-caption">Rosso, grigio, nero. Essenziale per natura.<span>AI ASSISTED</span></div></div>
+        </div>
+        <div class="block-heading"><h3>Color palette</h3><span>Clicca un colore per copiare il codice HEX.</span></div>
+        <div class="brand-palette">
+          @for (color of brand; track color.token; let i = $index) {
+            <article class="brand-color"><button class="brand-swatch" [style.background]="color.hex" [style.color]="i === 1 ? '#20242C' : '#FFFFFF'" (click)="copy(color.hex)" [attr.aria-label]="'Copia ' + color.name + ' ' + color.hex"><span>{{ color.name.split(' · ')[0] }}</span><ds-icon name="copy" /><strong>{{ color.hex }}</strong></button><div class="color-description"><h4>{{ color.name }}</h4><code>{{ color.token }}</code><p>{{ color.description }}</p></div><div class="shade-scale">@for (shade of color.shades; track $index) {<button [style.background]="shade" [style.color]="$index > (i === 1 ? 5 : 4) ? '#FFFFFF' : '#20242C'" (click)="copy(shade)" [attr.aria-label]="'Copia ' + color.name + ' ' + shadeLabels[$index] + ' ' + shade" [title]="color.token + '-' + shadeLabels[$index] + ': ' + shade">{{ shadeLabels[$index] }}</button>}</div></article>
+          }
+        </div>
+        <div class="subheading"><h4>Neutrals & surfaces</h4><span>Una scala fredda e discreta, al servizio del contenuto.</span></div>
+        <div class="neutral-grid">@for (color of neutrals; track color.token) {<button class="neutral-color" (click)="copy(color.hex)"><span class="neutral-swatch" [style.background]="color.hex"></span><strong>{{ color.name }}</strong><code>{{ color.token }}</code><span>{{ color.hex }}</span></button>}</div>
+        <div class="subheading"><h4>Semantic & AI workflow</h4><span>Il colore dà un’indicazione. L’etichetta racconta lo stato.</span></div>
+        <div class="semantic-grid">@for (color of semantics; track color.token) {<button class="semantic-color" (click)="copy(color.hex)"><span class="semantic-icon" [style.background]="color.soft" [style.color]="color.hex"><ds-icon [name]="color.icon" /></span><strong>{{ color.name }}</strong><span>{{ color.use }}</span><code>{{ color.token }}</code><span class="semantic-hex"><i [style.background]="color.hex"></i>{{ color.hex }}</span></button>}</div>
+
+        <div class="block-heading"><h3>Typography</h3><span>System sans · Nativa, veloce, familiare.</span></div>
+        <div class="type-table">@for (sample of typeSamples; track sample.name) {<div class="type-row"><div><strong>{{ sample.name }}</strong><code>{{ sample.size }}</code><code>{{ sample.token }}</code></div><span [class]="sample.css">{{ sample.text }}</span></div>}</div>
+        <div class="email-specimen"><div class="eyebrow"><ds-icon name="mail" /> LEGGIBILITÀ / EMAIL RICEVUTA DALLO STUDENTE</div><h4>Informazioni sulla procedura di immatricolazione</h4><p>Buongiorno, sono una futura studentessa del corso di Laurea in Informatica. Vorrei sapere quali documenti sono necessari per completare l’immatricolazione e se è possibile presentare la certificazione ISEE in un secondo momento. Ho già effettuato la registrazione sul portale, ma non riesco a trovare la sezione dedicata al pagamento della prima rata.</p><p>Grazie per il vostro supporto e per il tempo dedicato alla mia richiesta.<br>Un cordiale saluto, Giulia</p><div class="specimen-note">14 px / 22 px · Larghezza di lettura: 68 caratteri · Contrasto testo: oltre 12:1</div></div>
+        <div class="block-heading"><h3>Spacing, radius & shadows</h3><span>Ritmo di 4 px. Gerarchie leggere.</span></div>
+        <div class="spacing-card"><h4>Spacing scale <code>--ds-space-*</code></h4><div class="spacing-scale">@for (space of spacing; track space) {<div><span class="spacing-bar" [style.height.px]="space"></span><strong>{{ space }}</strong><code>--ds-space-{{ space }}</code></div>}</div></div>
+        <div class="geometry-grid"><div class="geometry-card"><h4>Border radius</h4><div class="radius-scale">@for (radius of radii; track radius.name) {<div><span [style.border-radius]="radius.value">Aa</span><strong>{{ radius.name }} · {{ radius.value }}</strong><code>--ds-radius-{{ radius.name }}</code></div>}</div></div><div class="geometry-card"><h4>Elevation</h4><div class="shadow-scale">@for (shadow of ['sm', 'md', 'lg']; track shadow) {<div><span [style.box-shadow]="'var(--ds-shadow-' + shadow + ')' "><ds-icon name="layers" /></span><strong>shadow-{{ shadow }}</strong><code>--ds-shadow-{{ shadow }}</code></div>}</div></div></div>
+      </section>
+      <ds-playground />
+      <footer class="page-footer"><span><img src="/design-system/logo-symbol.png" width="21" height="21" alt=""> Unical Support <span>/ Design System</span></span><span>Progettato per le persone, assistito dall’AI.</span></footer>
+    </div>
+  </main>
+</div>
+<div class="copy-toast" role="status" aria-live="polite">@if (copied()) {<span><ds-icon name="check" />{{ copied() }}</span>}</div>
+<dialog #preferences class="preferences" aria-labelledby="preferences-title" (click)="closePreferencesOnBackdrop($event)">
+  <div class="preferences-head"><span class="eyebrow">PERSONALIZZA IL LABORATORIO</span><button class="icon-button" aria-label="Chiudi impostazioni" (click)="closePreferences()"><ds-icon name="close" /></button></div>
+  <div class="preference-symbol"><ds-icon name="accessibility" /></div><h2 id="preferences-title">Aspetto e accessibilità</h2><p>Trova il tuo equilibrio tra essenzialità e leggibilità. Le preferenze si applicano all’anteprima corrente.</p>
+  <label class="preference-option"><span><strong>Contrasto elevato</strong><small>Bordi evidenti, testo più scuro e colori più incisivi.</small></span><input type="checkbox" role="switch" [checked]="highContrast()" (change)="highContrast.set($any($event.target).checked)"></label>
+  <label class="preference-option"><span><strong>Spaziatura confortevole</strong><small>Più spazio tra i controlli e aree di interazione più ampie.</small></span><input type="checkbox" role="switch" [checked]="comfortable()" (change)="comfortable.set($any($event.target).checked)"></label>
+  <label class="preference-option"><span><strong>Riduci le animazioni</strong><small>Disattiva transizioni, skeleton animati e spinner in movimento.</small></span><input type="checkbox" role="switch" [checked]="reduceMotion()" (change)="reduceMotion.set($any($event.target).checked)"></label>
+  <div class="preference-preview"><span class="status-dot"></span>{{ highContrast() ? 'Contrasto elevato' : 'Stile raffinato' }}<span>Anteprima in tempo reale</span></div><button class="settings-done" (click)="closePreferences()">Fine <ds-icon name="check" /></button><button class="reset-preferences" (click)="resetPreferences()">Ripristina valori iniziali</button>
+</dialog>

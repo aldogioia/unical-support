@@ -3,6 +3,6 @@
 
 export interface BodyUploadDocumentApiDocumentsUploadPost {
   category_ids?: (Array<string> | null);
-  file?: (string | null);
-  url?: (string | null);
+  file: string;
+  reference_url?: (string | null);
 }

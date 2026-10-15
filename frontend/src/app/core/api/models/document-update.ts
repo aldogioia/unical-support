@@ -3,4 +3,5 @@
 
 export interface DocumentUpdate {
   category_ids?: Array<string>;
+  reference_url?: (string | null);
 }

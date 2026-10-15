@@ -1,5 +1,6 @@
 import time
 import random
+import json
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from flashrank import Ranker, RerankRequest
@@ -52,12 +53,14 @@ def get_vector_store():
 GENERAL_CATEGORY_NAME = "Generale"
 
 
-def index_langchain_documents(docs: list, category_names: list[str] | None = None, document_id: str | None = None):
+def index_langchain_documents(docs: list, category_names: list[str] | None = None, document_id: str | None = None, reference_url: str | None = None, source_name: str | None = None):
     sorted_names = sorted(set(category_names or []))
     for doc in docs:
         # Lista completa delle categorie del documento (informativa: il filtro in ricerca
         # usa la relazione document_category come fonte di verità).
         doc.metadata["categories"] = sorted_names
+        doc.metadata["reference_url"] = reference_url
+        doc.metadata["source_name"] = source_name
         if document_id:
             doc.metadata["document_id"] = str(document_id)
 
@@ -167,6 +170,37 @@ def retrieve_context(query: str, k: int = 4, category_names: list[str] | str | N
         print(f"Reranking fallito, uso candidati originali: {e}")
         final_docs = candidates[:k]
 
-    context_string = "\n\n---\n\n".join([doc.page_content for doc in final_docs])
-    
-    return context_string
+    return format_source_context(final_docs)
+
+
+def format_source_context(docs: list) -> str:
+    """Keep source attribution with every passage, including legacy chunks."""
+    from uuid import UUID
+    from app.db.database import session_scope
+    from app.models.document import Document
+
+    document_ids = set()
+    for doc in docs:
+        try:
+            document_ids.add(UUID(str(doc.metadata.get("document_id"))))
+        except (ValueError, TypeError):
+            pass
+    sources = {}
+    if document_ids:
+        with session_scope() as db:
+            for source in db.query(Document).filter(Document.id.in_(document_ids)).all():
+                sources[str(source.id)] = {
+                    "name": source.filename,
+                    "reference_url": source.reference_url,
+                }
+
+    passages = []
+    for doc in docs:
+        source = sources.get(str(doc.metadata.get("document_id")), {})
+        passages.append(json.dumps({
+            "source_name": source.get("name") or doc.metadata.get("source_name") or doc.metadata.get("filename") or "Documento",
+            "reference_url": source.get("reference_url", doc.metadata.get("reference_url")),
+            "page": doc.metadata.get("page_number", doc.metadata.get("page")),
+            "content": doc.page_content,
+        }, ensure_ascii=False))
+    return "\n\n---\n\n".join(passages)

@@ -6,10 +6,9 @@ from app.models.document import Document
 from app.models.category import Category
 
 @celery_app.task(name="app.tasks.document_tasks.process_document_task")
-def process_document_task(document_id: UUID | str, file_path: str | None, url: str | None, category_ids: list[str] | str | None = None):
+def process_document_task(document_id: UUID | str, file_path: str, category_ids: list[str] | str | None = None, *legacy_args):
 
     from langchain_unstructured import UnstructuredLoader
-    from langchain_community.document_loaders import WebBaseLoader
     from app.ai.rag import index_langchain_documents
 
     try:
@@ -19,10 +18,12 @@ def process_document_task(document_id: UUID | str, file_path: str | None, url: s
             loader = UnstructuredLoader(file_path)
             docs = loader.load()
             os.remove(file_path)
-        elif url:
-            print(f"[WORKER] Estrazione dati da URL: {url}")
-            loader = WebBaseLoader(url)
-            docs = loader.load()
+        else:
+            raise ValueError("File locale non disponibile per l'elaborazione.")
+
+        # Old file tasks had a separate third URL argument. Ignore it; never fetch it.
+        if legacy_args:
+            category_ids = legacy_args[0]
 
         # Retro-compatibilità con task accodati prima della migrazione (singolo category_id)
         if isinstance(category_ids, str):
@@ -30,11 +31,19 @@ def process_document_task(document_id: UUID | str, file_path: str | None, url: s
 
         category_names: list[str] = []
         with session_scope() as db:
+            source = db.query(Document).filter(Document.id == document_id).first()
+            if not source:
+                return
+            reference_url = source.reference_url
+            source_name = source.filename
             if category_ids:
                 db_categories = db.query(Category).filter(Category.id.in_(category_ids)).all()
                 category_names = [c.name for c in db_categories]
 
-        chunk_count = index_langchain_documents(docs, category_names=category_names, document_id=str(document_id))
+        chunk_count = index_langchain_documents(
+            docs, category_names=category_names, document_id=str(document_id),
+            reference_url=reference_url, source_name=source_name,
+        )
         preview_text = docs[0].page_content[:500] if docs else "Nessun testo estratto."
 
         with session_scope() as db:

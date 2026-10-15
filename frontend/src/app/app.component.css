@@ -1,13 +1,52 @@
 .app-layout {
   display: flex;
-  height: 100vh;
-  width: 100vw;
-  overflow: hidden;
-  background-color: var(--color-fill, #f8fafc);
-  color: var(--color-text-strong);
+  height: 100dvh;
+  width: 100%;
+  overflow: clip;
+  background: var(--ds-bg);
+  color: var(--ds-text);
 }
-
 .app-main {
   flex: 1;
-  overflow-y: auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+app-side-navbar {
+  display: block;
+  width: 238px;
+  flex-shrink: 0;
+  transition: width var(--ds-motion);
+}
+.sidebar-collapsed app-side-navbar {
+  width: 76px;
+}
+.navigation-backdrop {
+  display: none;
+}
+@media (max-width: 1023px) {
+  app-side-navbar,
+  .sidebar-collapsed app-side-navbar {
+    position: fixed;
+    z-index: 70;
+    inset: 0 auto 0 0;
+    width: 260px;
+    visibility: hidden;
+    transform: translateX(-100%);
+    transition:
+      transform var(--ds-motion),
+      visibility var(--ds-motion);
+  }
+  .mobile-nav-open app-side-navbar {
+    visibility: visible;
+    transform: translateX(0);
+  }
+  .navigation-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    border: 0;
+    background: #171c2a66;
+  }
 }

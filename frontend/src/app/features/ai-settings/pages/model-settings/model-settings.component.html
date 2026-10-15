@@ -1,89 +1,357 @@
-<div class="page-container">
-  <div class="page-header">
-    <div class="page-title-group">
-      <h1>Modelli AI</h1>
-      <p class="page-subtitle">Scegli quali modelli LLM usare per classificazione e generazione delle risposte.</p>
+<div class="workspace-page">
+  <app-workspace-header
+    title="Impostazioni"
+    subtitle="Il tuo spazio di lavoro"
+    [searchable]="false"
+    ><span class="settings-header-note"
+      ><ds-icon name="sliders" />Preferenze & agenti</span
+    ></app-workspace-header
+  >
+  <div class="workspace-toolbar settings-tabs">
+    <div class="filter-tabs" role="group" aria-label="Aree delle impostazioni">
+      <button
+        [class.active]="tab() === 'appearance'"
+        [attr.aria-pressed]="tab() === 'appearance'"
+        (click)="tab.set('appearance')"
+      >
+        <ds-icon name="accessibility" />Aspetto e accessibilità</button
+      ><button
+        [class.active]="tab() === 'ai'"
+        [attr.aria-pressed]="tab() === 'ai'"
+        (click)="tab.set('ai')"
+      >
+        <ds-icon name="sparkle" />Modelli AI
+      </button>
     </div>
   </div>
-
-  @if (loading()) {
-    <div class="loading-container">
-      <div class="spinner"></div>
-    </div>
-  } @else {
-    <div class="card" style="max-width: 640px;">
-
-      @if (error()) {
-        <p class="text-danger mb-16">{{ error() }}</p>
-      }
-
-      <h3 class="card-title mb-16">Classificazione email</h3>
-      <div class="form-row mb-16">
-        <div class="form-col-1">
-          <label class="form-label">Provider</label>
-          <select [(ngModel)]="form.classifier_provider" class="form-control">
-            @for (p of providers; track p.value) {
-              <option [value]="p.value">{{ p.label }}</option>
-            }
-          </select>
+  <div class="settings-scroll">
+    @if (tab() === "appearance") {
+      <div class="settings-content">
+        <div class="settings-intro">
+          <span class="eyebrow">PROGETTATO INTORNO A TE</span>
+          <h2>Il comfort fa la differenza.</h2>
+          <p>
+            Adatta contrasto, densità e lettura al tuo modo di lavorare. Le
+            preferenze vengono salvate automaticamente su questo dispositivo.
+          </p>
         </div>
-        <div class="form-col-2">
-          <label class="form-label">Modello</label>
-          <input type="text" [(ngModel)]="form.classifier_model" placeholder="openai/gpt-oss-20b" class="form-control">
+        <section class="preference-section">
+          <div class="preference-description">
+            <span class="preference-number">01</span>
+            <div>
+              <h3>Tema e contrasto</h3>
+              <p>Gerarchie leggere o contorni più evidenti.</p>
+            </div>
+          </div>
+          <fieldset class="option-grid">
+            <legend class="sr-only">Tema e contrasto</legend>
+            <label
+              class="preference-card"
+              [class.selected]="theme.preferences().contrast === 'standard'"
+              ><input
+                type="radio"
+                name="contrast"
+                value="standard"
+                [checked]="theme.preferences().contrast === 'standard'"
+                (change)="theme.update({ contrast: 'standard' })"
+              />
+              <div class="theme-mini standard-mini">
+                <i></i>
+                <div><b></b><span></span><span></span></div>
+              </div>
+              <strong>Standard</strong
+              ><small>Essenziale e raffinato</small></label
+            ><label
+              class="preference-card"
+              [class.selected]="theme.preferences().contrast === 'high'"
+              ><input
+                type="radio"
+                name="contrast"
+                value="high"
+                [checked]="theme.preferences().contrast === 'high'"
+                (change)="theme.update({ contrast: 'high' })"
+              />
+              <div class="theme-mini contrast-mini">
+                <i></i>
+                <div><b></b><span></span><span></span></div>
+              </div>
+              <strong>Alto contrasto</strong
+              ><small>Bordi netti e testo più incisivo</small></label
+            >
+          </fieldset>
+        </section>
+        <section class="preference-section">
+          <div class="preference-description">
+            <span class="preference-number">02</span>
+            <div>
+              <h3>Densità dell’interfaccia</h3>
+              <p>Trova il ritmo giusto per le tue liste.</p>
+            </div>
+          </div>
+          <fieldset class="option-grid">
+            <legend class="sr-only">Densità dell’interfaccia</legend>
+            <label
+              class="preference-card density-card"
+              [class.selected]="theme.preferences().density === 'compact'"
+              ><input
+                type="radio"
+                name="density"
+                value="compact"
+                [checked]="theme.preferences().density === 'compact'"
+                (change)="theme.update({ density: 'compact' })"
+              />
+              <div class="density-mini compact-mini">
+                <span></span><span></span><span></span><span></span>
+              </div>
+              <strong>Compatta</strong
+              ><small>Più informazioni a colpo d’occhio</small></label
+            ><label
+              class="preference-card density-card"
+              [class.selected]="theme.preferences().density === 'comfortable'"
+              ><input
+                type="radio"
+                name="density"
+                value="comfortable"
+                [checked]="theme.preferences().density === 'comfortable'"
+                (change)="theme.update({ density: 'comfortable' })"
+              />
+              <div class="density-mini comfortable-mini">
+                <span></span><span></span><span></span>
+              </div>
+              <strong>Confortevole</strong
+              ><small>Più spazio per ogni elemento</small></label
+            >
+          </fieldset>
+        </section>
+        <section class="preference-section reading-preference">
+          <div class="preference-description">
+            <span class="preference-number">03</span>
+            <div>
+              <h3>Dimensione testo email</h3>
+              <p>Un aiuto alla lettura, nelle conversazioni e nelle bozze.</p>
+            </div>
+          </div>
+          <div class="reading-options">
+            <div
+              class="segmented"
+              role="group"
+              aria-label="Dimensione testo lettura email"
+            >
+              <button
+                [class.active]="theme.preferences().reading === 'normal'"
+                [attr.aria-pressed]="theme.preferences().reading === 'normal'"
+                (click)="theme.update({ reading: 'normal' })"
+              >
+                Normale · 14 px</button
+              ><button
+                [class.active]="theme.preferences().reading === 'large'"
+                [attr.aria-pressed]="theme.preferences().reading === 'large'"
+                (click)="theme.update({ reading: 'large' })"
+              >
+                Grande · 18 px
+              </button>
+            </div>
+            <div class="reading-box reading-preview">
+              Gentile studente,<br />siamo qui per aiutarti a trovare la
+              risposta giusta. Ogni dettaglio conta, anche il comfort di
+              lettura.
+            </div>
+          </div>
+        </section>
+        <section class="preference-section motion-section">
+          <div class="preference-description">
+            <span class="preference-number">04</span>
+            <div>
+              <h3>Animazioni ridotte</h3>
+              <p>
+                Riduci movimento, transizioni e indicatori animati. Le
+                preferenze di movimento del sistema vengono sempre rispettate.
+              </p>
+            </div>
+          </div>
+          <label class="motion-control"
+            ><span>{{
+              theme.preferences().motion === "reduced" ? "Ridotte" : "Attive"
+            }}</span
+            ><input
+              type="checkbox"
+              class="ui-switch"
+              role="switch"
+              aria-label="Riduci animazioni"
+              [checked]="theme.preferences().motion === 'reduced'"
+              (change)="
+                theme.update({
+                  motion: $any($event.target).checked ? 'reduced' : 'full',
+                })
+              "
+          /></label>
+        </section>
+        <div class="settings-bottom">
+          <a routerLink="/design-system" class="catalog-card"
+            ><span class="catalog-icon"><ds-icon name="palette" /></span
+            ><span
+              ><strong>Esplora il Design System</strong
+              ><small
+                >Colori, componenti e dettagli dell’interfaccia.</small
+              ></span
+            ><ds-icon name="arrow" /></a
+          ><button class="btn btn-ghost btn-sm" (click)="theme.reset()">
+            Ripristina preferenze
+          </button>
         </div>
       </div>
-      @if (form.classifier_provider === 'local') {
-        <div class="form-row mb-16">
-          <div class="form-col-1"></div>
-          <div class="form-col-2">
-            <label class="form-label">URL server locale</label>
-            <input type="text" [(ngModel)]="form.classifier_base_url" placeholder="http://host.docker.internal:11434/v1" class="form-control">
+    } @else {
+      <div class="settings-content ai-content">
+        <div class="settings-intro">
+          <span class="eyebrow">INTELLIGENZA AL SERVIZIO DELLE PERSONE</span>
+          <h2>Due agenti, un flusso coerente.</h2>
+          <p>
+            Configura i modelli per classificare le richieste e preparare
+            risposte pertinenti.
+          </p>
+        </div>
+        @if (loading()) {
+          <div class="loading-state" role="status">
+            <span class="spinner" aria-hidden="true"></span>Caricamento
+            configurazione…
           </div>
-        </div>
-      }
-
-      <h3 class="card-title mb-16">Generazione risposte</h3>
-      <div class="form-row mb-16">
-        <div class="form-col-1">
-          <label class="form-label">Provider</label>
-          <select [(ngModel)]="form.responder_provider" class="form-control">
-            @for (p of providers; track p.value) {
-              <option [value]="p.value">{{ p.label }}</option>
-            }
-          </select>
-        </div>
-        <div class="form-col-2">
-          <label class="form-label">Modello</label>
-          <input type="text" [(ngModel)]="form.responder_model" placeholder="gemini-3.1-flash-lite" class="form-control">
-        </div>
-      </div>
-      @if (form.responder_provider === 'local') {
-        <div class="form-row mb-16">
-          <div class="form-col-1"></div>
-          <div class="form-col-2">
-            <label class="form-label">URL server locale</label>
-            <input type="text" [(ngModel)]="form.responder_base_url" placeholder="http://host.docker.internal:11434/v1" class="form-control">
-          </div>
-        </div>
-      }
-
-      <div class="form-actions-end mt-8">
-        @if (saved()) {
-          <span class="text-success" style="margin-right: 12px; align-self: center;">Salvato ✓</span>
+        } @else {
+          @if (error()) {
+            <div class="callout callout-danger settings-alert" role="alert">
+              <ds-icon name="warning" /><span>{{ error() }}</span
+              ><button class="btn btn-outline btn-sm" (click)="load()">
+                Ricarica
+              </button>
+            </div>
+          }
+          <form (ngSubmit)="save()">
+            <div class="agent-grid">
+              @for (agent of agents; track agent.id) {
+                <section class="agent-card">
+                  <div class="agent-card-header">
+                    <span class="agent-symbol"
+                      ><ds-icon [name]="agent.icon" /></span
+                    ><span class="badge badge-info"
+                      ><ds-icon name="sparkle" /> AI AGENT</span
+                    >
+                  </div>
+                  <h3>{{ agent.title }}</h3>
+                  <span class="agent-subtitle">{{ agent.subtitle }}</span>
+                  <p>{{ agent.description }}</p>
+                  <div class="agent-fields">
+                    <div>
+                      <label [for]="agent.id + '-provider'" class="form-label"
+                        >Provider</label
+                      ><select
+                        [id]="agent.id + '-provider'"
+                        [name]="agent.id + 'Provider'"
+                        class="form-control"
+                        [(ngModel)]="form[agent.provider]"
+                        [disabled]="saving()"
+                      >
+                        @for (provider of providers; track provider.value) {
+                          <option [value]="provider.value">
+                            {{ provider.label }}
+                          </option>
+                        }
+                      </select>
+                    </div>
+                    <div>
+                      <label [for]="agent.id + '-model'" class="form-label"
+                        >Nome del modello</label
+                      ><input
+                        [id]="agent.id + '-model'"
+                        [name]="agent.id + 'Model'"
+                        class="form-control"
+                        [(ngModel)]="form[agent.model]"
+                        placeholder="Identificativo del modello"
+                        required
+                        [disabled]="saving()"
+                      />
+                    </div>
+                    @if (form[agent.provider] === "local") {
+                      <div>
+                        <label [for]="agent.id + '-url'" class="form-label"
+                          >URL server / API compatibile</label
+                        ><input
+                          [id]="agent.id + '-url'"
+                          [name]="agent.id + 'Url'"
+                          class="form-control"
+                          [(ngModel)]="form[agent.url]"
+                          placeholder="http://host.docker.internal:11434/v1"
+                          [disabled]="saving()"
+                        />
+                        <p class="field-hint">
+                          Endpoint compatibile con OpenAI, ad esempio Ollama, LM
+                          Studio o vLLM.
+                        </p>
+                      </div>
+                    }
+                  </div>
+                  <div class="agent-status">
+                    <span class="status-point"></span
+                    >{{
+                      error()
+                        ? "Configurazione da verificare"
+                        : "Configurazione caricata"
+                    }}<span>Connessione non verificata</span>
+                  </div>
+                </section>
+              }
+            </div>
+            <div class="callout callout-info embedding-note">
+              <ds-icon name="info" />
+              <div>
+                <strong>Il retrieval usa embedding dedicati.</strong>Il modello
+                che cerca i documenti è distinto dagli agenti configurati qui.
+                Le modifiche si applicano alle prossime email elaborate.
+              </div>
+            </div>
+            <details class="configuration-help">
+              <summary>
+                Indicazioni per provider e server locali <ds-icon name="down" />
+              </summary>
+              <p>
+                Il nome del modello deve corrispondere a un identificativo
+                valido del provider. Se il server gira sul tuo host fuori da
+                Docker, usa
+                <code>http://host.docker.internal:PORTA/v1</code> invece di
+                <code>localhost</code>, così il worker può raggiungerlo. Le
+                credenziali dei provider continuano a essere gestite dalla
+                configurazione del servizio.
+              </p>
+            </details>
+            <div class="settings-save-bar">
+              <span role="status">
+                @if (saved()) {
+                  <span class="saved-indicator"
+                    ><ds-icon name="check" />Configurazione salvata</span
+                  >
+                } @else {
+                  <span class="muted"
+                    >Le modifiche ai modelli richiedono il salvataggio.</span
+                  >
+                }</span
+              ><button
+                type="submit"
+                class="btn btn-primary"
+                [disabled]="
+                  saving() ||
+                  !form.classifier_model.trim() ||
+                  !form.responder_model.trim()
+                "
+              >
+                @if (saving()) {
+                  <span class="spinner" aria-hidden="true"></span>
+                } @else {
+                  <ds-icon name="check" />
+                }
+                {{ saving() ? "Salvataggio…" : "Salva configurazione" }}
+              </button>
+            </div>
+          </form>
         }
-        <button (click)="save()" class="btn btn-primary" [disabled]="saving()">
-          {{ saving() ? 'Salvataggio...' : 'Salva' }}
-        </button>
       </div>
-    </div>
-
-    <p class="page-subtitle mt-16" style="max-width: 640px;">
-      Il nome del modello deve corrispondere esattamente a un identificativo valido per il provider scelto
-      (es. per Groq: "openai/gpt-oss-20b"; per Google: "gemini-3.1-flash-lite"). Per un modello che gira
-      in locale (Ollama, LM Studio, vLLM...), seleziona "Server locale" e indica l'URL — se il server gira
-      sul tuo host (fuori Docker), usa <code>http://host.docker.internal:PORTA/v1</code> invece di
-      <code>localhost</code>, altrimenti il worker non riuscirà a raggiungerlo. Le modifiche si applicano
-      alla prossima email classificata o risposta generata — non serve riavviare nulla.
-    </p>
-  }
+    }
+  </div>
 </div>

@@ -87,6 +87,8 @@ services:
       - /app/node_modules
     ports:
       - "4200:4200"
+    environment:
+      - API_PROXY_TARGET=http://backend:8000
     depends_on:
       - backend
 

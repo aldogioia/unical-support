@@ -20,7 +20,7 @@ class Document(Base, Auditable):
     content_type: Mapped[str] = mapped_column(String(100))
     
     extracted_text: Mapped[str | None] = mapped_column(Text)
-    link: Mapped[str | None] = mapped_column(String(500))
+    reference_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
 
     categories: Mapped[List["Category"]] = relationship(
         "Category",

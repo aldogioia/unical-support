@@ -1,49 +1,150 @@
 :root {
-  /* Azzurro scuro pastello */
-  --brand-hue: 212;
-
-  /* Colore brand */
-  --color-brand: hsl(var(--brand-hue), 55%, 50%);
-  
-  /* Sfondi eleganti: bianco puro per i componenti, bianco sporco/grigio chiarissimo per la base */
-  --surface-base: #f7f7f9;
-  --surface-raised: #ffffff;
-  --surface-overlay: #ffffff;
-  
-  --color-surface: var(--surface-raised);
-
-  /* Colori neutri, nessuna sfumatura di colore */
-  --color-text-strong: hsla(0, 0%, 10%, 0.90);
-  --color-text-weak: hsla(0, 0%, 10%, 0.65);
-  --color-stroke-strong: hsla(0, 0%, 0%, 0.15);
-  --color-stroke-weak: hsla(0, 0%, 0%, 0.05);
-  
-  /* Usato come sfondo base in app.component e per gli hover (es. sidebar) */
-  --color-fill: var(--surface-base);
-
-  --color-error: #D32F2F;
-  --color-warning: #FFA000;
-  --color-success: #388E3C;
-
-  --alpha-hover: 0.8;
-  --alpha-disabled: 0.2;
+  --ds-color-primary: #b61918;
+  --ds-color-primary-hover: #981513;
+  --ds-color-primary-active: #7c1715;
+  --ds-color-primary-50: #fff5f4;
+  --ds-color-primary-100: #fde8e7;
+  --ds-color-primary-200: #f9cecc;
+  --ds-color-primary-300: #f1a4a1;
+  --ds-color-primary-400: #e56b65;
+  --ds-color-primary-500: #d33d35;
+  --ds-color-primary-600: #b61918;
+  --ds-color-primary-700: #981513;
+  --ds-color-primary-800: #7c1715;
+  --ds-color-primary-900: #651916;
+  --ds-color-secondary: #9e9e9d;
+  --ds-color-secondary-50: #fafafa;
+  --ds-color-secondary-100: #f4f4f4;
+  --ds-color-secondary-200: #e7e7e7;
+  --ds-color-secondary-300: #d4d4d3;
+  --ds-color-secondary-400: #b8b8b7;
+  --ds-color-secondary-500: #9e9e9d;
+  --ds-color-secondary-600: #737372;
+  --ds-color-secondary-700: #535352;
+  --ds-color-secondary-800: #3a3a39;
+  --ds-color-secondary-900: #242423;
+  --ds-color-accent: #000;
+  --ds-color-accent-50: #f8f8f8;
+  --ds-color-accent-100: #efefef;
+  --ds-color-accent-200: #dcdcdc;
+  --ds-color-accent-300: #bdbdbd;
+  --ds-color-accent-400: #959595;
+  --ds-color-accent-500: #727272;
+  --ds-color-accent-600: #555;
+  --ds-color-accent-700: #383838;
+  --ds-color-accent-800: #1b1b1b;
+  --ds-color-accent-900: #000;
+  --ds-bg: #f7f8fa;
+  --ds-surface: #fff;
+  --ds-elevated: #fff;
+  --ds-border: #e2e5ea;
+  --ds-control-border: #e2e8f0;
+  --ds-container-stroke: 0px;
+  --ds-divider: #f1f5f9;
+  --ds-search-border: transparent;
+  --ds-hover: #f0f2f5;
+  --ds-text: #20242c;
+  --ds-text-secondary: #535c6b;
+  --ds-text-muted: #667080;
+  --ds-on-solid: #fff;
+  --ds-success: #197149;
+  --ds-success-soft: #edf8f1;
+  --ds-warning: #946200;
+  --ds-warning-soft: #fff8e6;
+  --ds-danger: #b42332;
+  --ds-danger-soft: #fff0f1;
+  --ds-info: #6352b9;
+  --ds-info-soft: #f2effe;
+  --ds-font-sans:
+    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  --ds-font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+  --ds-type-h1: 36px;
+  --ds-type-h2: 24px;
+  --ds-type-h3: 18px;
+  --ds-type-h4: 15px;
+  --ds-type-large: 16px;
+  --ds-type-regular: 14px;
+  --ds-type-caption: 12px;
+  --ds-type-mono: 12px;
+  --ds-space-4: 4px;
+  --ds-space-8: 8px;
+  --ds-space-12: 12px;
+  --ds-space-16: 16px;
+  --ds-space-24: 24px;
+  --ds-space-32: 32px;
+  --ds-space-48: 48px;
+  --ds-space-64: 64px;
+  --ds-radius-sm: 4px;
+  --ds-radius-md: 8px;
+  --ds-radius-lg: 12px;
+  --ds-radius-full: 999px;
+  --ds-shadow-sm: 0 1px 3px #20242c0a, 0 1px 2px #20242c05;
+  --ds-shadow-md: 0 4px 12px #20242c0c, 0 1px 3px #20242c08;
+  --ds-shadow-lg: 0 12px 32px #20242c16, 0 2px 8px #20242c08;
+  --ds-stroke: 1px;
+  --ds-control-height: 38px;
+  --ds-control-padding: 10px;
+  --ds-row-padding: 16px;
+  --ds-motion: 160ms;
+}
+:root[data-contrast="high"] {
+  --ds-border: #626b78;
+  --ds-control-border: #3b4553;
+  --ds-text: #10141a;
+  --ds-text-secondary: #303947;
+  --ds-text-muted: #414b5a;
+  --ds-stroke: 2px;
+  --ds-container-stroke: 2px;
+  --ds-divider: var(--ds-border);
+  --ds-search-border: var(--ds-control-border);
+  --ds-color-primary: #981513;
+  --ds-success: #115631;
+  --ds-warning: #704900;
+  --ds-danger: #941b29;
+  --ds-info: #47358f;
+  --ds-bg: #f2f3f5;
+  --ds-shadow-sm: none;
+  --ds-shadow-md: none;
+  --ds-shadow-lg: none;
+}
+:root[data-density="comfortable"] {
+  --ds-control-height: 46px;
+  --ds-control-padding: 14px;
+  --ds-row-padding: 24px;
+}
+:root[data-motion="reduced"] {
+  --ds-motion: 0ms;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root,
-  .dark-theme {
-    /* Nero/grigio scuro elegante */
-    --surface-base: #121212;
-    --surface-raised: #1c1c1c;
-    --surface-overlay: #242424;
-    
-    --color-surface: var(--surface-raised);
-
-    --color-text-strong: hsla(0, 0%, 100%, 0.95);
-    --color-text-weak: hsla(0, 0%, 100%, 0.70);
-    --color-stroke-strong: hsla(0, 0%, 100%, 0.15);
-    --color-stroke-weak: hsla(0, 0%, 100%, 0.05);
-    
-    --color-fill: var(--surface-base);
-  }
+:root {
+  color-scheme: light;
+  --ds-reading-size: 14px;
+  --ds-reading-line: 1.8;
+  --brand-hue: 0;
+  --color-brand: var(--ds-color-primary);
+  --surface-base: var(--ds-bg);
+  --surface-raised: var(--ds-surface);
+  --surface-overlay: var(--ds-elevated);
+  --color-surface: var(--ds-surface);
+  --color-fill: var(--ds-bg);
+  --color-text-strong: var(--ds-text);
+  --color-text-weak: var(--ds-text-secondary);
+  --color-stroke-strong: var(--ds-control-border);
+  --color-stroke-weak: var(--ds-border);
+  --color-error: var(--ds-danger);
+  --color-warning: var(--ds-warning);
+  --color-success: var(--ds-success);
+  --font-family-sans: var(--ds-font-sans);
+  --font-size-base: 14px;
+  --alpha-hover: 0.9;
+  --alpha-disabled: 0.45;
+}
+:root[data-density="compact"] {
+  --ds-row-padding: 12px;
+  --ds-control-height: 36px;
+}
+:root[data-reading="large"] {
+  --ds-reading-size: 18px;
+  --ds-reading-line: 1.85;
 }

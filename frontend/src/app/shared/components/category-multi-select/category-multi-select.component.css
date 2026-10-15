@@ -149,3 +149,30 @@
   font-size: 12px;
   padding: 0;
 }
+.selected-chips {
+  margin-top: 10px;
+}
+.cms-chip {
+  border-radius: 4px;
+  background: var(--ds-info-soft);
+  color: var(--ds-info);
+  border: var(--ds-stroke) solid var(--ds-border);
+}
+.cms-chip-remove {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin: -2px -6px -2px 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 17px;
+}
+.cms-panel {
+  border-width: var(--ds-stroke);
+  box-shadow: var(--ds-shadow-md);
+}
+.cms-trigger {
+  min-height: var(--ds-control-height);
+}

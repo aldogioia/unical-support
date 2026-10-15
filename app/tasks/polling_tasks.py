@@ -9,63 +9,59 @@ from app.services import email_service
 from app.models.email import Email, EmailStatus
 from sqlalchemy.exc import IntegrityError
 
-@celery_app.task(name="app.tasks.polling_tasks.poll_gmail")
-def poll_gmail():
-    print("[BEAT] Controllo nuove email Gmail...")
+@celery_app.task(bind=True, name="app.tasks.polling_tasks.poll_gmail", soft_time_limit=540, time_limit=600)
+def poll_gmail(self, reservation_id: str | None = None):
+    from uuid import uuid4
+    from app.services.email_polling_service import PollCoordinator
 
-    try:
-        client = GmailClient()
-    except Exception as e:
-        print(f"[BEAT] Autenticazione Gmail fallita: {e}")
-        return False
+    coordinator = PollCoordinator()
+    job_id = reservation_id or self.request.id or str(uuid4())
+    if reservation_id is None and not coordinator.reserve(job_id):
+        return {"status": "skipped", "message": "Un controllo è già in corso."}
+    if not coordinator.begin(job_id):
+        return {"status": "skipped", "message": "Prenotazione scaduta o controllo già in corso."}
 
+    fetched_count = 0
     try:
+        print("[BEAT] Controllo nuove email Gmail...")
+        try:
+            client = GmailClient()
+        except Exception as exc:
+            print(f"[BEAT] Autenticazione Gmail fallita: {exc}")
+            return coordinator.update(job_id, "failed", "Impossibile accedere a Gmail. Verifica le credenziali OAuth.")
+
+        unread_emails = client.fetch_unread_emails()
         with session_scope() as db:
-            unread_emails = client.fetch_unread_emails()
-
-            if not unread_emails:
-                print("[BEAT] Nessuna nuova email.")
-                return True
-
-            print(f"[BEAT] Trovate {len(unread_emails)} nuove email.")
-
             for email_data in unread_emails:
                 gmail_id = email_data["gmail_id"]
-                email_create = EmailCreate(
-                    gmail_id=gmail_id,
-                    sender=email_data["sender"],
-                    subject=email_data["subject"],
-                    body=email_data["body"]
-                )
-
+                if db.query(Email).filter(Email.gmail_id == gmail_id).first():
+                    client.mark_as_read(gmail_id)
+                    continue
                 try:
-                    db_email = email_service.create_email(db=db, email=email_create, user_id=None)
-                    db.commit() 
-                    
-                    print(f"[BEAT] Salvata: {db_email.subject}")
-
-                    try:
-                        client.mark_as_read(gmail_id)
-                        print(f"[BEAT] Etichetta UNREAD rimossa per {gmail_id}")
-                    except Exception as api_err:
-                        print(f"[BEAT] Avviso: Errore API Gmail per {gmail_id}: {api_err}")
-
+                    db_email = email_service.create_email(
+                        db=db, user_id=None, email=EmailCreate(**email_data),
+                    )
+                    fetched_count += 1
                     celery_app.send_task(
                         "app.tasks.email_tasks.classify_email_task",
-                        args=[db_email.id],
-                        queue="classify_queue"
+                        args=[str(db_email.id)], queue="classify_queue",
                     )
-                    print(f"[BEAT] Lanciata in coda di classificazione.")
-
+                    client.mark_as_read(gmail_id)
                 except IntegrityError:
                     db.rollback()
                     client.mark_as_read(gmail_id)
-
-            return True
-
-    except Exception as e:
-        print(f"[BEAT] Errore durante il polling: {e}")
-        return False
+        return coordinator.update(
+            job_id, "completed",
+            f"Controllo completato: {fetched_count} nuove email acquisite e accodate per l'elaborazione AI.",
+            fetched_count,
+        )
+    except Exception as exc:
+        print(f"[BEAT] Errore durante il polling: {exc}")
+        return coordinator.update(
+            job_id, "failed", "Errore durante il recupero delle email. Verifica Gmail e riprova.", fetched_count,
+        )
+    finally:
+        coordinator.release(job_id)
 
 
 @celery_app.task(name="app.tasks.polling_tasks.sweep_stuck_emails")

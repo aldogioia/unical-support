@@ -1,14 +1,20 @@
 @if (showChrome()) {
-  <div class="app-layout">
-    <app-side-navbar></app-side-navbar>
-
-    <main class="app-main">
-      <router-outlet></router-outlet>
-    </main>
-
-    <!-- Global Feedback Widget -->
-    <app-feedback-button></app-feedback-button>
+  <div
+    class="app-layout"
+    [class.sidebar-collapsed]="shell.collapsed()"
+    [class.mobile-nav-open]="shell.mobileOpen()"
+  >
+    @if (shell.mobileOpen()) {
+      <button
+        class="navigation-backdrop"
+        aria-label="Chiudi navigazione"
+        (click)="shell.closeNavigation()"
+      ></button>
+    }
+    <app-side-navbar />
+    <main class="app-main" [inert]="shell.mobileOpen()"><router-outlet /></main>
+    <app-feedback-button [inert]="shell.mobileOpen()" />
   </div>
 } @else {
-  <router-outlet></router-outlet>
+  <router-outlet />
 }

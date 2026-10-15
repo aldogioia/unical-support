@@ -8,7 +8,7 @@
             'status-success': email.status === 'SENT',
             'status-default': email.status === 'UNREAD' || email.status === 'TO_CLASSIFY' || email.status === 'TO_RESPOND'
           }">
-      {{ email.status }}
+      {{ statusLabels[email.status] }}
     </span>
   </div>
   

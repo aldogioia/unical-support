@@ -1,72 +1,197 @@
-<div class="page-container">
-  <div class="page-header">
-    <div class="page-title-group">
-      <h1>Taxonomy</h1>
-      <p class="page-subtitle">Manage categories used for classifying emails and documents.</p>
-    </div>
-    <button (click)="isAdding.set(true)" class="btn btn-primary shadow-sm">
-      + New Category
-    </button>
-  </div>
-
-  <!-- Add New Category Form (Slide-down) -->
-  @if (isAdding()) {
-    <div class="card add-category-card fade-in slide-in">
-      <h3 class="card-title mb-16">Create New Category</h3>
-      <div class="form-row">
-        <div class="form-col-1">
-          <input type="text" [(ngModel)]="newCategory.name" placeholder="Category Name" class="form-control">
+<div class="workspace-page">
+  <app-workspace-header
+    title="Categorie"
+    [subtitle]="categories().length + ' argomenti'"
+    [search]="search()"
+    (searchChange)="search.set($event)"
+    placeholder="Nome o descrizione…"
+    actionLabel="Nuova categoria"
+    (action)="openCreate()"
+  />
+  <div
+    class="master-detail"
+    [class.has-detail]="isAdding() || selectedCategory()"
+  >
+    <div class="master-pane" aria-label="Elenco categorie">
+      @if (loading()) {
+        <div class="loading-state" role="status">
+          <span class="spinner" aria-hidden="true"></span>Caricamento categorie…
         </div>
-        <div class="form-col-2">
-          <input type="text" [(ngModel)]="newCategory.description" placeholder="Description (Optional)" class="form-control">
-        </div>
-        <div class="form-actions-inline">
-          <button (click)="cancelAdd()" class="btn btn-secondary">Cancel</button>
-          <button (click)="saveNewCategory()" class="btn btn-primary" [disabled]="!newCategory.name">Save</button>
-        </div>
-      </div>
-    </div>
-  }
-
-  @if (loading()) {
-    <div class="loading-container">
-      <div class="spinner"></div>
-    </div>
-  } @else {
-    <div class="grid-container auto-rows-max">
-      @for (cat of categories(); track cat.id) {
-        <div class="card category-card group">
-          @if (editingId() === cat.id) {
-            <div class="edit-category-form">
-              <input type="text" [(ngModel)]="editCategory.name" class="form-control input-sm font-semibold">
-              <textarea [(ngModel)]="editCategory.description" class="form-control input-sm resize-none" rows="2"></textarea>
-              <div class="form-actions-end mt-8">
-                <button (click)="cancelEdit()" class="btn btn-secondary btn-sm">Cancel</button>
-                <button (click)="saveEdit(cat.id)" class="btn btn-primary btn-sm">Save</button>
-              </div>
-            </div>
-          } @else {
-            <div class="category-header mb-8">
-              <h3 class="category-name">{{ cat.name }}</h3>
-              
-              <!-- Actions (appear on hover) -->
-              <div class="category-actions fade-in-hover">
-                <button (click)="startEdit(cat)" class="icon-btn" aria-label="Edit">
-                  <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                </button>
-                <button (click)="deleteCategory(cat.id)" class="icon-btn text-danger" aria-label="Delete">
-                  <svg class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                </button>
-              </div>
-            </div>
-            <p class="category-description pr-32">{{ cat.description || 'No description provided.' }}</p>
-          }
-        </div>
-      } @empty {
-        <div class="empty-state-full">
-          <p class="empty-state-text">No categories found.</p>
-        </div>
+      } @else {
+        @for (category of filteredCategories(); track category.id) {
+          <button
+            type="button"
+            class="list-row"
+            [class.selected]="editingId() === category.id"
+            [attr.aria-pressed]="editingId() === category.id"
+            (click)="startEdit(category)"
+          >
+            <span class="row-main"
+              ><strong class="row-title">{{ category.name }}</strong
+              ><span class="row-preview">{{
+                category.description || "Nessuna descrizione aggiunta."
+              }}</span></span
+            ><span class="row-end"><ds-icon name="chevron" /></span>
+          </button>
+        } @empty {
+          <div class="empty-state">
+            <ds-icon name="tag" />
+            <h2>
+              {{ search() ? "Nessuna categoria trovata" : "Nessuna categoria" }}
+            </h2>
+            <p>
+              {{
+                search()
+                  ? "Prova un altro nome o una parola della descrizione."
+                  : "Le categorie guidano la classificazione delle email e collegano le fonti documentali."
+              }}
+            </p>
+            <button class="btn btn-outline" (click)="openCreate()">
+              <ds-icon name="plus" />Nuova categoria
+            </button>
+          </div>
+        }
       }
+    </div>
+    @if (isAdding() || selectedCategory()) {
+      <section
+        class="detail-pane"
+        appDetailPanel
+        detailLabel="Modifica categoria"
+        (detailClose)="closeDetail()"
+      >
+        <header class="detail-header">
+          <div>
+            <div class="eyebrow">
+              TASSONOMIA / {{ isAdding() ? "CREAZIONE" : "MODIFICA" }}
+            </div>
+            <h2>
+              {{ isAdding() ? "Nuova categoria" : selectedCategory()?.name }}
+            </h2>
+            <p>Definisci l’argomento e aiuta l’AI a riconoscerlo.</p>
+          </div>
+          <button
+            class="icon-btn panel-close"
+            data-panel-close
+            aria-label="Chiudi dettaglio categoria"
+            [disabled]="saving()"
+            (click)="closeDetail()"
+          >
+            <ds-icon name="close" />
+          </button>
+        </header>
+        <form
+          class="category-form"
+          (ngSubmit)="isAdding() ? saveNewCategory() : saveEdit(editingId()!)"
+        >
+          <div class="detail-body">
+            @if (error()) {
+              <div class="callout callout-danger category-notice" role="alert">
+                <ds-icon name="warning" />{{ error() }}
+              </div>
+            }
+            <div class="field-stack">
+              <div>
+                <label for="category-name" class="form-label"
+                  >Nome della categoria <span class="required">*</span></label
+                ><input
+                  id="category-name"
+                  name="categoryName"
+                  class="form-control"
+                  [ngModel]="isAdding() ? newCategory.name : editCategory.name"
+                  (ngModelChange)="
+                    isAdding()
+                      ? (newCategory.name = $event)
+                      : (editCategory.name = $event)
+                  "
+                  placeholder="Es. Tirocini e Stage"
+                  required
+                  [disabled]="saving()"
+                />
+                <p class="field-hint">
+                  Un nome breve, riconoscibile dagli operatori.
+                </p>
+              </div>
+              <div>
+                <label for="category-description" class="form-label"
+                  >Descrizione per il classificatore AI</label
+                ><textarea
+                  id="category-description"
+                  name="categoryDescription"
+                  class="form-control category-description"
+                  [ngModel]="
+                    isAdding()
+                      ? newCategory.description
+                      : editCategory.description
+                  "
+                  (ngModelChange)="
+                    isAdding()
+                      ? (newCategory.description = $event)
+                      : (editCategory.description = $event)
+                  "
+                  placeholder="Descrivi quali richieste appartengono a questa categoria. Includi esempi ed eventuali esclusioni…"
+                  [disabled]="saving()"
+                ></textarea>
+                <p class="field-hint">
+                  Descrivi il perimetro dell’argomento: una descrizione precisa
+                  migliora la classificazione automatica.
+                </p>
+              </div>
+            </div>
+            @if (!isAdding()) {
+              <div class="row-id category-id">
+                ID categoria · {{ editingId() }}
+              </div>
+            }
+          </div>
+          <footer class="detail-footer">
+            @if (!isAdding()) {
+              <button
+                type="button"
+                class="btn btn-danger"
+                [disabled]="saving()"
+                (click)="deleteCategory(editingId()!)"
+              >
+                <ds-icon name="trash" />Elimina
+              </button>
+            }
+            <button
+              type="button"
+              class="btn btn-outline"
+              [disabled]="saving()"
+              (click)="closeDetail()"
+            >
+              Annulla</button
+            ><button
+              type="submit"
+              class="btn btn-primary"
+              [disabled]="
+                saving() ||
+                !(isAdding() ? newCategory.name : editCategory.name).trim()
+              "
+            >
+              @if (saving()) {
+                <span class="spinner" aria-hidden="true"></span>
+              } @else {
+                <ds-icon name="check" />
+              }
+              {{ isAdding() ? "Crea categoria" : "Salva modifiche" }}
+            </button>
+          </footer>
+        </form>
+      </section>
+    }
+  </div>
+  @if (notice()) {
+    <div class="ui-toast" role="status">
+      <ds-icon name="check" /><span>{{ notice() }}</span
+      ><button
+        class="icon-btn"
+        aria-label="Chiudi notifica"
+        (click)="notice.set('')"
+      >
+        <ds-icon name="close" />
+      </button>
     </div>
   }
 </div>

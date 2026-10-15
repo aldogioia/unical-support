@@ -98,7 +98,7 @@ export class AuthService {
         });
       }
     } catch (error) {
-      console.error('Errore durante la revoca dei token sul server:', error);
+      console.error('Errore durante la chiusura della sessione:', error);
     } finally {
       this.clearTokens();
       this.currentUser.set(null);

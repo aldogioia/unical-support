@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict, Field
-from typing import List
+from typing import List, Literal
 from app.models.enumerators.enumerators import EmailStatus
 from app.schemas.category import CategoryResponse
 import uuid
@@ -25,3 +25,11 @@ class EmailResponse(EmailBase):
 class EmailUpdateDraft(BaseModel):
     generated_draft: str = Field(..., min_length=1)
     status: EmailStatus
+
+
+class EmailFetchResponse(BaseModel):
+    job_id: uuid.UUID
+    status: Literal['queued', 'running', 'completed', 'failed', 'expired']
+    message: str
+    fetched_count: int = 0
+    already_running: bool = False
