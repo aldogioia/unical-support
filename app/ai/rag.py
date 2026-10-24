@@ -1,11 +1,16 @@
 import time
 import random
 import json
+import re
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.documents import Document as LangchainDocument
 from flashrank import Ranker, RerankRequest
 from app.core.config import settings
 from langchain_postgres import PGVector
+
+PARAGRAPH_CHUNK_SIZE = 1500
+PARAGRAPH_SPLIT_SAFETY_THRESHOLD = 2000
 
 embeddings_model = GoogleGenerativeAIEmbeddings(
     model="models/gemini-embedding-2",
@@ -53,6 +58,29 @@ def get_vector_store():
 GENERAL_CATEGORY_NAME = "Generale"
 
 
+def _split_into_paragraph_chunks(docs: list) -> list:
+    """
+    Un paragrafo (blocco separato da riga vuota) = un chunk. Il markdown normalizzato
+    prodotto da app.ai.md_formatter è già composto da paragrafi atomici e autosufficienti,
+    quindi tagliare sui confini di paragrafo preserva quell'unità invece di troncarla
+    a una lunghezza di caratteri arbitraria.
+    """
+    fallback_splitter = RecursiveCharacterTextSplitter(chunk_size=PARAGRAPH_CHUNK_SIZE, chunk_overlap=300)
+    chunks = []
+    for doc in docs:
+        paragraphs = re.split(r"\n\s*\n", doc.page_content)
+        for paragraph in paragraphs:
+            paragraph = paragraph.strip()
+            if not paragraph:
+                continue
+            if len(paragraph) > PARAGRAPH_SPLIT_SAFETY_THRESHOLD:
+                for sub_chunk in fallback_splitter.split_text(paragraph):
+                    chunks.append(LangchainDocument(page_content=sub_chunk, metadata=dict(doc.metadata)))
+            else:
+                chunks.append(LangchainDocument(page_content=paragraph, metadata=dict(doc.metadata)))
+    return chunks
+
+
 def index_langchain_documents(docs: list, category_names: list[str] | None = None, document_id: str | None = None, reference_url: str | None = None, source_name: str | None = None):
     sorted_names = sorted(set(category_names or []))
     for doc in docs:
@@ -64,11 +92,7 @@ def index_langchain_documents(docs: list, category_names: list[str] | None = Non
         if document_id:
             doc.metadata["document_id"] = str(document_id)
 
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1500,
-        chunk_overlap=300
-    )
-    chunks = splitter.split_documents(docs)
+    chunks = _split_into_paragraph_chunks(docs)
 
     print(f"Indicizzazione di {len(chunks)} frammenti nel Vector DB...")
 

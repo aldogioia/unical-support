@@ -24,4 +24,6 @@ class DocumentUpdate(BaseModel):
 class DocumentResponse(DocumentBase):
     id: uuid.UUID
     categories: List[CategoryResponse] = []
+    processing_status: str = "pending"
+    review_notes: str | None = None
     model_config = ConfigDict(from_attributes=True)

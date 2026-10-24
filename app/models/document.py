@@ -22,6 +22,9 @@ class Document(Base, Auditable):
     extracted_text: Mapped[str | None] = mapped_column(Text)
     reference_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
 
+    processing_status: Mapped[str] = mapped_column(String(20), default="pending", server_default="pending")
+    review_notes: Mapped[str | None] = mapped_column(Text)
+
     categories: Mapped[List["Category"]] = relationship(
         "Category",
         secondary=document_category_association,

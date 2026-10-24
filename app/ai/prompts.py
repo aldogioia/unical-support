@@ -21,3 +21,10 @@ def get_responder_system_prompt() -> str:
         "disclaimer_translations": settings.AI_DISCLAIMER_TRANSLATIONS,
     }, ensure_ascii=False)
     return load_prompt_text("responder.txt") + "\n\nPOLITICA LINGUISTICA CONFIGURATA:\n" + policy
+
+def get_md_formatter_system_prompt(source_name: str, reference_url: str | None) -> str:
+    metadata = json.dumps({
+        "source_name": source_name,
+        "reference_url": reference_url,
+    }, ensure_ascii=False)
+    return load_prompt_text("md_formatter.txt") + "\n\nMETADATI DEL DOCUMENTO:\n" + metadata

@@ -96,3 +96,19 @@ def get_responder_llm():
         base_url=cfg["responder_base_url"],
         temperature=0.2,
     )
+
+def get_formatter_llm():
+    """
+    Stesso provider/modello del responder (nessuna configurazione separata in
+    ai_settings), ma temperature=0: la normalizzazione dei documenti in
+    app/ai/md_formatter.py è un compito di trascrizione letterale (non deve
+    alterare numeri/date/importi), non una generazione di testo naturale, quindi
+    va reso quanto piu' deterministico possibile.
+    """
+    cfg = _get_current_settings()
+    return _build_llm(
+        provider=cfg["responder_provider"],
+        model=cfg["responder_model"],
+        base_url=cfg["responder_base_url"],
+        temperature=0,
+    )

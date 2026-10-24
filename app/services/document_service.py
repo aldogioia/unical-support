@@ -98,6 +98,7 @@ def process_and_upload_document(db: Session, file: UploadFile, category_ids: lis
         content_type=content_type,
         reference_url=reference_url,
         extracted_text="Elaborazione in corso da parte dell'IA...",
+        processing_status="pending",
     )
     db_document.categories = categories
     db_document.apply_audit_fields(user_id=user_id, is_create=True)
