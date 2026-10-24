@@ -12,20 +12,7 @@
         ? selectedCategories().length + " categorie selezionate"
         : placeholder
     }}</span
-    ><svg
-      class="cms-caret"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      aria-hidden="true"
-    >
-      <path
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        d="M19 9l-7 7-7-7"
-      ></path>
-    </svg>
+    ><ds-icon name="down" class="cms-caret" />
   </button>
   @if (selectedCategories().length) {
     <div class="cms-chips selected-chips">
@@ -39,7 +26,7 @@
             [disabled]="disabled"
             (click)="remove(category.id, $event)"
           >
-            ×
+            <ds-icon name="close" />
           </button></span
         >
       }

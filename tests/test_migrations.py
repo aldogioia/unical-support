@@ -82,6 +82,42 @@ class MigrationTests(unittest.TestCase):
         self.migrate('downgrade', 'b7e2f6c8d901')
         self.assertIn('link', [column['name'] for column in inspect(self.engine).get_columns('documents')])
 
+    def test_canned_response_removal_keeps_existing_emails_and_supports_schema_rollback(self):
+        self.migrate('upgrade', 'c8f4a1e6d203')
+        email_id, template_id = uuid4(), uuid4()
+        with self.engine.begin() as connection:
+            connection.execute(text("INSERT INTO emails (id, gmail_id, sender, status, generated_draft, created_by, last_updated_by) VALUES (:id, 'migration-test', 'student@example.org', 'DRAFT', 'Risposta già revisionata', 'test', 'test')"), {'id': email_id})
+            connection.execute(text("INSERT INTO templates (id, name, body_template, status, usage_count, created_by, last_updated_by) VALUES (:id, 'Vecchia risposta', 'Testo preconfezionato', 'ACTIVE', 0, 'test', 'test')"), {'id': template_id})
+        self.migrate('upgrade', 'head')
+        tables = inspect(self.engine).get_table_names()
+        self.assertNotIn('templates', tables)
+        self.assertNotIn('template_category', tables)
+        with self.engine.connect() as connection:
+            email = connection.execute(text('SELECT generated_draft, response_language, ai_disclaimer FROM emails WHERE id=:id'), {'id': email_id}).mappings().one()
+            self.assertEqual(email['generated_draft'], 'Risposta già revisionata')
+            self.assertIsNone(email['response_language'])
+            self.assertIsNone(email['ai_disclaimer'])
+            self.assertIsNone(connection.execute(text("SELECT typname FROM pg_type WHERE typname='templatestatus'")).scalar())
+        self.migrate('downgrade', 'c8f4a1e6d203')
+        self.assertIn('templates', inspect(self.engine).get_table_names())
+        self.assertNotIn('response_language', [c['name'] for c in inspect(self.engine).get_columns('emails')])
+        self.migrate('upgrade', 'head')
+
+    def test_nullable_confidence_keeps_old_emails_and_supports_rollback(self):
+        self.migrate('upgrade', 'd4a7e2b9f610')
+        email_id = uuid4()
+        with self.engine.begin() as connection:
+            connection.execute(text("INSERT INTO emails (id, gmail_id, sender, status, generated_draft, created_by, last_updated_by) VALUES (:id, 'confidence-migration', 'student@example.org', 'DRAFT', 'Bozza esistente', 'test', 'test')"), {'id': email_id})
+        self.migrate('upgrade', 'head')
+        with self.engine.begin() as connection:
+            self.assertIsNone(connection.execute(text('SELECT ai_confidence FROM emails WHERE id=:id'), {'id': email_id}).scalar())
+            connection.execute(text('UPDATE emails SET ai_confidence=0.96 WHERE id=:id'), {'id': email_id})
+        self.migrate('downgrade', '-1')
+        self.assertNotIn('ai_confidence', [column['name'] for column in inspect(self.engine).get_columns('emails')])
+        with self.engine.connect() as connection:
+            self.assertEqual(connection.execute(text('SELECT generated_draft FROM emails WHERE id=:id'), {'id': email_id}).scalar(), 'Bozza esistente')
+        self.migrate('upgrade', 'head')
+
     def test_fresh_database_without_vector_tables(self):
         self.migrate('upgrade', 'head')
         self.assertIn('reference_url', [column['name'] for column in inspect(self.engine).get_columns('documents')])

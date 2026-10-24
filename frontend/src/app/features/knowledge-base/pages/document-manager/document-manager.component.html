@@ -1,27 +1,13 @@
 <div class="workspace-page">
   <app-workspace-header
-    title="Base documentale"
+    title="Documenti"
     [subtitle]="documents().length + ' fonti'"
     [search]="search()"
     (searchChange)="search.set($event)"
     placeholder="Nome, URL, testo o categoria…"
     actionLabel="Aggiungi fonte"
     (action)="openCreate()"
-  >
-    <label class="category-filter"
-      ><span class="sr-only">Filtra documenti per categoria</span
-      ><select
-        class="form-control"
-        [value]="categoryFilter()"
-        (change)="categoryFilter.set($any($event.target).value)"
-      >
-        <option value="">Tutte le categorie</option>
-        @for (category of categories(); track category.id) {
-          <option [value]="category.id">{{ category.name }}</option>
-        }
-      </select></label
-    >
-  </app-workspace-header>
+  />
   <div
     class="master-detail"
     [class.has-detail]="creating() || selectedDocument()"
@@ -48,6 +34,7 @@
             [attr.aria-pressed]="selectedDocumentId() === doc.id"
             (click)="selectDocument(doc)"
           >
+            <span class="row-icon" aria-hidden="true"><ds-icon name="file" /></span>
             <span class="row-main"
               ><span class="row-top"
                 ><strong>{{ doc.filename || "Documento" }}</strong
@@ -69,15 +56,15 @@
             <ds-icon name="book" />
             <h2>
               {{
-                search() || categoryFilter()
+                search()
                   ? "Nessuna fonte corrispondente"
                   : "Nessun documento"
               }}
             </h2>
             <p>
               {{
-                search() || categoryFilter()
-                  ? "Modifica la ricerca o il filtro per categoria."
+                search()
+                  ? "Prova un nome o una parola diversa."
                   : "Carica un documento per aiutare l’AI a rispondere agli studenti."
               }}
             </p>
@@ -99,7 +86,7 @@
           <div>
             <div class="eyebrow">KNOWLEDGE BASE / NUOVA FONTE</div>
             <h2>Aggiungi fonte</h2>
-            <p>Carica un file locale per la base documentale.</p>
+            <p>Carica un file nella sezione Documenti.</p>
           </div>
           <button
             class="icon-btn panel-close"

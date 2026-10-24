@@ -6,22 +6,21 @@ import {
   ChangeDetectorRef,
   inject,
 } from '@angular/core';
+import { DsIconComponent } from '../ds-icon/ds-icon.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ShellUiService } from '../../../core/services/shell-ui.service';
 import { Api } from '../../../core/api/api';
 import { createUserFeedbackApiFeedbackPost } from '../../../core/api/fn/feedback/create-user-feedback-api-feedback-post';
 
 @Component({
   selector: 'app-feedback-button',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DsIconComponent],
   templateUrl: './feedback-button.component.html',
   styleUrl: './feedback-button.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FeedbackButtonComponent {
-  readonly shell = inject(ShellUiService);
   private api = inject(Api);
   private cdr = inject(ChangeDetectorRef);
 
@@ -43,18 +42,17 @@ export class FeedbackButtonComponent {
     this.cdr.markForCheck();
   }
   // UI States
-  isButtonVisible = true;
   isCapturing = false;
   loading = false;
   errorMsg: string | null = null;
   success = false;
 
   async startFeedbackFlow() {
+    if (this.isCapturing || this.dialogRef.nativeElement.open) return;
     this.isCapturing = true;
-    this.isButtonVisible = false;
     this.cdr.markForCheck();
 
-    // Allow time for the button to disappear from the DOM before rendering the canvas
+    // Let the mobile navigation close before capturing the workspace.
     setTimeout(async () => {
       try {
         // Load the screenshot renderer only when preparing a report.
@@ -83,12 +81,11 @@ export class FeedbackButtonComponent {
         this.screenshotUrl = null;
         this.screenshotBlob = null;
       } finally {
-        this.isButtonVisible = true;
         this.isCapturing = false;
         this.cdr.markForCheck();
         this.openDialog();
       }
-    }, 150);
+    }, 200);
   }
 
   private openDialog() {

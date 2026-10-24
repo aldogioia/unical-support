@@ -6,7 +6,6 @@ from alembic import context
 from app.models.user import User
 from app.models.category import Category
 from app.models.document import Document
-from app.models.template import Template
 from app.models.blacklist import Blacklist
 from app.models.email import Email
 from app.models.feedback import Feedback

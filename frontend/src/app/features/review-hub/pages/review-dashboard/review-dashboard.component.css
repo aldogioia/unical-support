@@ -47,9 +47,13 @@
   gap: 12px;
 }
 .email-draft {
-  min-height: 290px;
+  width: 100%;
+  max-width: 80ch;
+  min-height: 180px;
   font-size: var(--ds-reading-size);
-  line-height: var(--ds-reading-line);
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
   padding: 20px;
 }
 .draft-caption {
@@ -185,3 +189,10 @@
     gap: 5px;
   }
 }
+
+.draft-heading { flex-wrap: wrap; align-items: center; }
+.draft-view-switch { display: flex; gap: 4px; margin: 12px 0; padding: 3px; width: fit-content; border-radius: 8px; background: var(--ds-hover); }
+.draft-view-switch .btn { color: var(--ds-text-secondary); font-weight: var(--ds-action-weight); }
+@media (max-width: 480px) { .draft-caption { flex-wrap: wrap; } }
+
+.sender-address { font-size: 11px; color: var(--ds-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

@@ -6,8 +6,7 @@ from app.models.category import Category
 from app.models.email import Email, EmailStatus
 from app.core.celery_app import celery_app
 from app.ai.rag import retrieve_context
-from app.core.email_formatting import prepare_draft
-from app.models.enumerators.enumerators import TemplateStatus
+from app.core.email_formatting import prepare_draft, get_ai_disclaimer, response_language_for
 
 @tool
 def get_available_categories() -> str:
@@ -70,33 +69,22 @@ def search_knowledge_base(query: str, category_names: list[str] | None = None) -
     return retrieve_context(query=query, k=4, category_names=category_names)
 
 @tool
-def get_category_template(category_name: str) -> str:
-    """
-    Recupera il template di risposta pre-approvato per una data categoria, se esiste.
-    """
-    with session_scope() as db:
-        category = db.query(Category).filter(Category.name.ilike(category_name)).first()
-        if not category:
-            return f"Categoria {category_name} non trovata."
-        templates = [t for t in category.templates if t.status == TemplateStatus.ACTIVE]
-        if not templates:
-            return f"Nessun template disponibile per {category_name}."
-        
-        return templates[0].body_template
-
-@tool
 def save_draft_response(email_id: UUID, draft_text: str, response_language: str | None = None, ai_disclaimer: str | None = None) -> str:
     """
     Salva la bozza finale sull'email indicata.
     Passa response_language con il codice ISO della lingua rilevata (it, en, es, ecc.).
-    Il sistema aggiunge il disclaimer IA prima del saluto. Per lingue diverse da
+    Il sistema inserisce separatamente la nota IA supervisionata al momento dell'invio.
+    Non includere disclaimer in draft_text. Per lingue diverse da
     it/en/es/fr/de/pt, passa anche ai_disclaimer: la traduzione nella lingua della
-    risposta di "Questa risposta è stata generata con l'intelligenza artificiale e
-    potrebbe contenere errori. Verifica le informazioni nelle fonti indicate."
+    risposta di "Questa risposta è stata preparata con l'ausilio dell'intelligenza
+    artificiale e revisionata da un operatore prima dell'invio. L'IA può commettere
+    errori: verifica le informazioni nelle fonti indicate."
     Obbligatorio chiamare questo tool alla fine del processo di risposta.
     """
     try:
         formatted_draft = prepare_draft(draft_text, response_language, ai_disclaimer)
+        language = response_language_for(response_language)
+        disclaimer = get_ai_disclaimer(language, ai_disclaimer)
     except ValueError as exc:
         return str(exc)
     with session_scope() as db:
@@ -105,6 +93,8 @@ def save_draft_response(email_id: UUID, draft_text: str, response_language: str 
             return f"Email {email_id} non trovata."
         
         email.generated_draft = formatted_draft
+        email.response_language = language
+        email.ai_disclaimer = disclaimer
         email.status = EmailStatus.DRAFT
         return "Bozza salvata con successo."
 

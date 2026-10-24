@@ -11,9 +11,9 @@
         (click)="shell.closeNavigation()"
       ></button>
     }
-    <app-side-navbar />
+    <app-side-navbar [feedbackBusy]="feedback.isCapturing" (feedbackRequested)="feedback.startFeedbackFlow()" />
     <main class="app-main" [inert]="shell.mobileOpen()"><router-outlet /></main>
-    <app-feedback-button [inert]="shell.mobileOpen()" />
+    <app-feedback-button #feedback />
   </div>
 } @else {
   <router-outlet />

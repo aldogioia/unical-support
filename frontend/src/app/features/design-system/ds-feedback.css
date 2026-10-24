@@ -256,42 +256,17 @@
   display:flex;
   align-items:center;
   gap:10px;
-  border:var(--ds-stroke) solid var(--ds-border);
-  border-left:3px solid var(--ds-success);
-  background:var(--ds-elevated);
   padding:14px 15px;
-  box-shadow:var(--ds-shadow-lg);
-  border-radius:8px;
+  border-radius:10px;
   font-size:12px;
 }
-.toast>ds-icon {
-  color:var(--ds-success);
-  width:17px;
-}
-.toast.danger {
-  border-left-color:var(--ds-danger);
-}
-.toast.danger>ds-icon {
-  color:var(--ds-danger);
-}
-.toast.warning {
-  border-left-color:var(--ds-warning);
-}
-.toast.warning>ds-icon {
-  color:var(--ds-warning);
-}
-.toast.info {
-  border-left-color:var(--ds-info);
-}
-.toast.info>ds-icon {
-  color:var(--ds-info);
-}
+.toast>ds-icon { color:inherit; width:17px; }
 .toast button {
   display:grid;
   place-items:center;
   border:0;
   background:none;
-  color:var(--ds-text-muted);
+  color:inherit;
   margin-left:12px;
   min-width:26px;
   min-height:26px;

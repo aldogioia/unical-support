@@ -4,6 +4,7 @@ from app.models.category import Category
 from app.models.email import Email, EmailStatus
 from app.schemas.email import EmailUpdateDraft, EmailCreate
 from fastapi import HTTPException
+from app.core.email_formatting import normalize_email_text
 
 def get_email(db: Session, email_id: UUID):
     return db.query(Email).filter(Email.id == email_id).first()
@@ -44,7 +45,9 @@ def update_email_draft(db: Session, email_id: UUID, update_data: EmailUpdateDraf
     if not db_email:
         raise HTTPException(status_code=404, detail="Email non trovata")
 
-    db_email.generated_draft = update_data.generated_draft
+    db_email.generated_draft = normalize_email_text(update_data.generated_draft)
+    if not db_email.generated_draft:
+        raise HTTPException(status_code=400, detail="La risposta non può essere vuota.")
     db_email.status = update_data.status
 
     # Se lo status diventa SENT, invia davvero l'email tramite Gmail
@@ -54,9 +57,11 @@ def update_email_draft(db: Session, email_id: UUID, update_data: EmailUpdateDraf
             client = GmailClient()
             client.send_reply(
                 original_gmail_id=db_email.gmail_id,
-                reply_text=update_data.generated_draft,
+                reply_text=db_email.generated_draft,
                 sender_email=db_email.sender,
                 subject=db_email.subject or '',
+                response_language=db_email.response_language,
+                ai_disclaimer=db_email.ai_disclaimer,
             )
         except Exception as e:
             # Se l'invio fallisce non blocchiamo il salvataggio del draft,

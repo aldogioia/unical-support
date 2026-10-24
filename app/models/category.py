@@ -5,13 +5,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.database import Base
 from app.core.audit_logging import Auditable
 
-template_category_association = Table(
-    "template_category",
-    Base.metadata,
-    Column("template_id", UUID(as_uuid=True), ForeignKey("templates.id", ondelete="CASCADE"), primary_key=True),
-    Column("category_id", UUID(as_uuid=True), ForeignKey("categories.id", ondelete="CASCADE"), primary_key=True),
-)
-
 email_category_association = Table(
     "email_category",
     Base.metadata,
@@ -39,12 +32,6 @@ class Category(Base, Auditable):
     name: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     description: Mapped[str | None] = mapped_column(Text)
 
-    templates: Mapped[List["Template"]] = relationship(
-        "Template", 
-        secondary=template_category_association, 
-        back_populates="categories"
-    )
-    
     emails: Mapped[List["Email"]] = relationship(
         "Email", 
         secondary=email_category_association, 

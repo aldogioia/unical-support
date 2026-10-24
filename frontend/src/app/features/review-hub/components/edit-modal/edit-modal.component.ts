@@ -1,4 +1,6 @@
 import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
+import { AutoResizeDirective } from '../../../../shared/components/auto-resize.directive';
+import { DsIconComponent } from '../../../../shared/components/ds-icon/ds-icon.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { EmailResponse } from '../../../../core/api/models/email-response';
@@ -6,7 +8,7 @@ import { EmailResponse } from '../../../../core/api/models/email-response';
 @Component({
   selector: 'app-edit-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DsIconComponent, AutoResizeDirective],
   templateUrl: './edit-modal.component.html',
   styleUrl: './edit-modal.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush

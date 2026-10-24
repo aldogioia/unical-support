@@ -8,7 +8,7 @@
           <p class="modal-subtitle">Mittente: {{email.sender}}</p>
         </div>
         <button (click)="close()" class="icon-btn" aria-label="Chiudi">
-          <svg class="icon-md" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          <ds-icon name="close" />
         </button>
       </div>
 
@@ -29,11 +29,14 @@
         <!-- Edit Area -->
         <div class="modal-edit">
           <h3 class="info-label">Bozza della risposta</h3>
-          <textarea 
+          <textarea appAutoResize
             [(ngModel)]="editableDraft" 
             class="form-control flex-1 resize-none"
+            wrap="soft"
+            aria-describedby="modal-email-layout-note"
             placeholder="Scrivi qui la risposta..."
           ></textarea>
+          <p id="modal-email-layout-note" class="layout-note">All’invio la risposta verrà impaginata nel template ufficiale Unical Support con logo e nota di trasparenza AI.</p>
         </div>
       </div>
 

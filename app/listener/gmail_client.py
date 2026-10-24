@@ -5,6 +5,9 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.image import MIMEImage
+from app.services.email_renderer import render_email, LOGO_PATH, LOGO_CID
 
 SCOPES = ['https://www.googleapis.com/auth/gmail.modify', 'https://www.googleapis.com/auth/gmail.send']
 
@@ -80,26 +83,41 @@ class GmailClient:
             body={'removeLabelIds': ['UNREAD']}
         ).execute()
 
-    def send_reply(self, original_gmail_id: str, reply_text: str, sender_email: str, subject: str):
+    def send_reply(self, original_gmail_id: str, reply_text: str, sender_email: str, subject: str, response_language: str | None = None, ai_disclaimer: str | None = None):
         """Invia una risposta all'email originale mantenendo il thread Gmail."""
 
         # Recupera il thread ID e il Message-ID originale per il threading corretto
         original = self.service.users().messages().get(
             userId='me', id=original_gmail_id, format='metadata',
-            metadataHeaders=['From', 'Subject', 'Message-ID']
+            metadataHeaders=['From', 'Subject', 'Message-ID', 'References']
         ).execute()
 
         headers = original.get('payload', {}).get('headers', [])
-        message_id = next((h['value'] for h in headers if h['name'] == 'Message-ID'), None)
+        original_headers = {h['name'].lower(): h['value'] for h in headers}
+        message_id = original_headers.get('message-id')
         thread_id = original.get('threadId')
 
         # Costruisce l'email di risposta
-        msg = MIMEText(reply_text, 'plain', 'utf-8')
+        rendered = render_email(reply_text, response_language, ai_disclaimer)
+        msg = MIMEMultipart('alternative')
+        msg.attach(MIMEText(rendered.plain_text, 'plain', 'utf-8'))
+        html_part = MIMEMultipart('related')
+        html_part.attach(MIMEText(rendered.html, 'html', 'utf-8'))
+        logo = MIMEImage(LOGO_PATH.read_bytes(), _subtype='png')
+        logo.add_header('Content-ID', f'<{LOGO_CID}>')
+        logo.add_header('Content-Disposition', 'inline', filename='unical-logo.png')
+        html_part.attach(logo)
+        msg.attach(html_part)
+        msg['Content-Language'] = rendered.language
         msg['To'] = sender_email
-        msg['Subject'] = f"Re: {subject}" if not subject.startswith('Re:') else subject
+        msg['Subject'] = f"Re: {subject}" if not subject.lower().startswith('re:') else subject
+        references = original_headers.get('references', '').strip()
         if message_id:
             msg['In-Reply-To'] = message_id
-            msg['References'] = message_id
+            if message_id not in references.split():
+                references = f'{references} {message_id}'.strip()
+        if references:
+            msg['References'] = references
 
         raw = base64.urlsafe_b64encode(msg.as_bytes()).decode('utf-8')
 

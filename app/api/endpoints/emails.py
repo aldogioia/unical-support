@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
-from app.schemas.email import EmailResponse, EmailUpdateDraft, EmailCreate, EmailFetchResponse
+from app.schemas.email import EmailResponse, EmailUpdateDraft, EmailCreate, EmailFetchResponse, EmailPreviewRequest, EmailPreviewResponse
 from app.services.email_polling_service import enqueue_email_poll, PollCoordinator
 from app.models.enumerators.enumerators import EmailStatus
 from app.models.email import Email
@@ -66,3 +66,16 @@ def create_new_email(email: EmailCreate, current_user: Annotated[User, Depends(g
 @router.put("/{email_id}/draft", response_model=EmailResponse)
 def update_email_draft(email_id: UUID, update_data: EmailUpdateDraft, current_user: Annotated[User, Depends(get_current_user)], db: Session = Depends(get_db)):
     return email_service.update_email_draft(db, email_id=email_id, update_data=update_data, user_id=current_user.id)
+
+
+@router.post("/{email_id}/preview", response_model=EmailPreviewResponse)
+def preview_email_draft(email_id: UUID, payload: EmailPreviewRequest, current_user: Annotated[User, Depends(get_current_user)], db: Session = Depends(get_db)):
+    from app.services.email_renderer import render_email_preview
+    email = email_service.get_email(db, email_id=email_id)
+    if email is None:
+        raise HTTPException(status_code=404, detail="Email non trovata")
+    try:
+        html = render_email_preview(payload.generated_draft, email.response_language, email.ai_disclaimer)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    return EmailPreviewResponse(html=html)

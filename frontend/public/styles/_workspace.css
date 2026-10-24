@@ -276,7 +276,7 @@ app-workspace-header {
   flex-direction: column;
   min-height: 0;
   min-width: 0;
-  border-left: var(--ds-container-stroke) solid var(--ds-border);
+  border-left: 2px solid var(--ds-panel-divider);
   background: var(--ds-bg);
   overflow: hidden;
 }
@@ -417,6 +417,7 @@ app-workspace-header {
     z-index: 40;
     height: 100dvh;
     border: 0;
+    border-left: 2px solid var(--ds-panel-divider);
     background: var(--ds-bg);
   }
   .panel-back {

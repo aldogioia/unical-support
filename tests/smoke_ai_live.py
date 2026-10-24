@@ -21,7 +21,8 @@ def main():
     from app.ai.llm_factory import get_responder_llm
     from app.ai.prompts import get_responder_system_prompt
     from app.core.config import settings
-    from app.core.email_formatting import prepare_draft, DISCLAIMERS
+    from app.core.email_formatting import prepare_draft, get_ai_disclaimer, DISCLAIMERS
+    from app.services.email_renderer import render_email
 
     source_url = 'https://example.org/unical-support-test'
     collection_name = 'unical_smoke_' + uuid4().hex
@@ -35,13 +36,8 @@ def main():
         return rag.retrieve_context(query, k=1)
 
     @tool
-    def get_category_template(category_name: str) -> str:
-        """Read an approved template for a category, if present."""
-        return 'Nessun template disponibile per questa categoria.'
-
-    @tool
     def save_draft_response(email_id: str, draft_text: str, response_language: str | None = None, ai_disclaimer: str | None = None) -> str:
-        """Capture a draft for this smoke test. Pass ISO response_language and, for languages other than it/en/es/fr/de/pt, the translated ai_disclaimer. The system prepends the disclaimer before the greeting."""
+        """Capture a draft for this smoke test. Pass ISO response_language and, for languages other than it/en/es/fr/de/pt, the translated ai_disclaimer. The system adds the supervised transparency note separately at send time."""
         captures.append(dict(language=response_language, draft=prepare_draft(draft_text, response_language, ai_disclaimer)))
         return 'Bozza salvata con successo.'
 
@@ -60,7 +56,7 @@ def main():
         assert source_url in context and 'UNICAL-COLLAUDO-7429' in context
         print(json.dumps({'check': 'embedding_retrieval_reference_url', 'ok': True}), flush=True)
         llm = get_responder_llm()
-        tools = [search_knowledge_base, get_category_template, save_draft_response, escalate_to_human]
+        tools = [search_knowledge_base, save_draft_response, escalate_to_human]
         cases = [
             ('it', 'Ciao, qual è il codice di verifica nel documento sintetico di collaudo? Includi il link alla fonte.'),
             ('en', 'Hello, what is the verification code in the synthetic test document? Please include a link to the source.'),
@@ -73,10 +69,12 @@ def main():
             assert len(captures) > before, 'Il modello non ha salvato la bozza'
             result = captures[-1]
             assert result['language'] == language, f"Lingua inattesa: {result['language']}"
-            assert result['draft'].startswith(DISCLAIMERS[language] + '\n\n'), 'Disclaimer mancante in apertura'
+            assert not result['draft'].startswith(DISCLAIMERS[language]), 'Disclaimer duplicato nel corpo'
+            rendered = render_email(result['draft'], language, get_ai_disclaimer(language))
+            assert rendered.plain_text.startswith(DISCLAIMERS[language]), 'Nota IA mancante in apertura'
             assert source_url in result['draft'], 'Citazione URL mancante'
             assert 'UNICAL-COLLAUDO-7429' in result['draft'], 'Informazione recuperata mancante'
-            print(json.dumps({'check': 'real_responder', 'language': language, 'disclaimer_first': True, 'reference_url_cited': True, 'retrieved_fact_present': True, 'draft': result['draft']}, ensure_ascii=False), flush=True)
+            print(json.dumps({'check': 'real_responder', 'language': language, 'supervised_disclaimer_at_top': True, 'reference_url_cited': True, 'retrieved_fact_present': True, 'draft': result['draft']}, ensure_ascii=False), flush=True)
     finally:
         rag._vector_store = original_store
         store.delete_collection()

@@ -26,6 +26,7 @@
             [attr.aria-pressed]="editingId() === category.id"
             (click)="startEdit(category)"
           >
+            <span class="row-icon" aria-hidden="true"><ds-icon name="tag" /></span>
             <span class="row-main"
               ><strong class="row-title">{{ category.name }}</strong
               ><span class="row-preview">{{
@@ -183,7 +184,7 @@
     }
   </div>
   @if (notice()) {
-    <div class="ui-toast" role="status">
+    <div class="ui-toast toast-surface" role="status">
       <ds-icon name="check" /><span>{{ notice() }}</span
       ><button
         class="icon-btn"

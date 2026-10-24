@@ -4,6 +4,8 @@ import {
   inject,
   OnInit,
   computed,
+  input,
+  output,
   effect,
   ElementRef,
   DestroyRef,
@@ -24,6 +26,13 @@ import { AuthService } from '../../services/auth.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SideNavbarComponent implements OnInit {
+  readonly feedbackBusy = input(false);
+  readonly feedbackRequested = output<void>();
+  openFeedback(): void {
+    this.shell.closeNavigation();
+    this.feedbackRequested.emit();
+  }
+
   protected authService = inject(AuthService);
   readonly shell = inject(ShellUiService);
   private readonly element = inject<ElementRef<HTMLElement>>(ElementRef);

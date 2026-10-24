@@ -19,6 +19,9 @@ class EmailResponse(EmailBase):
     gmail_id: str
     status: EmailStatus
     generated_draft: str | None = None
+    ai_confidence: float | None = Field(default=None, ge=0, le=1)
+    response_language: str | None = None
+    ai_disclaimer: str | None = None
     categories: List[CategoryResponse] = []
     model_config = ConfigDict(from_attributes=True)
 
@@ -33,3 +36,11 @@ class EmailFetchResponse(BaseModel):
     message: str
     fetched_count: int = 0
     already_running: bool = False
+
+
+class EmailPreviewRequest(BaseModel):
+    generated_draft: str = Field(min_length=1, max_length=100000)
+
+
+class EmailPreviewResponse(BaseModel):
+    html: str

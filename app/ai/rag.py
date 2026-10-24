@@ -162,8 +162,13 @@ def retrieve_context(query: str, k: int = 4, category_names: list[str] | str | N
             passages=[{"id": i, "text": doc.page_content} for i, doc in enumerate(candidates)]
         )
         reranked = get_reranker().rerank(rerank_request)
-        top_k_ids = [r["id"] for r in reranked[:k]]
-        final_docs = [candidates[i] for i in top_k_ids]
+        final_docs = []
+        for result in reranked[:k]:
+            # Copy metadata: relevance belongs to this query, not the stored chunk.
+            doc = candidates[result["id"]].model_copy(deep=True)
+            score = float(result["score"])
+            doc.metadata["retrieval_relevance_score"] = score if 0 <= score <= 1 else None
+            final_docs.append(doc)
         print(f"Reranking completato: selezionati {len(final_docs)} frammenti finali")
 
     except Exception as e:
@@ -202,5 +207,6 @@ def format_source_context(docs: list) -> str:
             "reference_url": source.get("reference_url", doc.metadata.get("reference_url")),
             "page": doc.metadata.get("page_number", doc.metadata.get("page")),
             "content": doc.page_content,
+            "relevance_score": doc.metadata.get("retrieval_relevance_score"),
         }, ensure_ascii=False))
     return "\n\n---\n\n".join(passages)

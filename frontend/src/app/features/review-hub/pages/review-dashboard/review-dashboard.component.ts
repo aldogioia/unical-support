@@ -11,8 +11,12 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription, timer, from, exhaustMap } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { WorkspaceHeaderComponent } from '../../../../shared/components/workspace-header/workspace-header.component';
+import { AutoResizeDirective } from '../../../../shared/components/auto-resize.directive';
 import { DsIconComponent } from '../../../../shared/components/ds-icon/ds-icon.component';
+import { AiConfidenceComponent } from '../../../../shared/components/ai-confidence/ai-confidence.component';
+import { EmailPreviewComponent } from '../../../../shared/components/email-preview/email-preview.component';
 import { DetailPanelDirective } from '../../../../shared/components/detail-panel.directive';
+import { senderInfo } from '../../../../shared/sender';
 import { EMAIL_STATUS_LABELS } from '../../../../shared/email-status-labels';
 import { ShellUiService } from '../../../../core/services/shell-ui.service';
 import { EditModalComponent } from '../../components/edit-modal/edit-modal.component';
@@ -31,7 +35,10 @@ import { readEmailFetchStatusApiEmailsFetchStatusJobIdGet } from '../../../../co
     CommonModule,
     WorkspaceHeaderComponent,
     DsIconComponent,
+    AutoResizeDirective,
     DetailPanelDirective,
+    AiConfidenceComponent,
+    EmailPreviewComponent,
   ],
   templateUrl: './review-dashboard.component.html',
   styleUrl: './review-dashboard.component.css',
@@ -43,9 +50,11 @@ export class ReviewDashboardComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute, { optional: true });
   private readonly router = inject(Router, { optional: true });
   private filterSubscription?: Subscription;
+  readonly senderInfo = senderInfo;
   readonly search = signal('');
   readonly selectedId = signal<string | null>(null);
   readonly editableDraft = signal('');
+  readonly draftView = signal<'edit' | 'preview'>('edit');
   readonly acting = signal(false);
   readonly counts = this.shell.emailCounts;
   readonly statusLabels = EMAIL_STATUS_LABELS;
@@ -76,6 +85,7 @@ export class ReviewDashboardComponent implements OnInit, OnDestroy {
   selectEmail(email: EmailResponse): void {
     if (this.acting() || email.id === this.selectedId()) return;
     if (email.id !== this.selectedId() && !this.confirmDiscard()) return;
+    this.draftView.set('edit');
     this.selectedId.set(email.id);
     this.editableDraft.set(email.generated_draft || '');
   }
@@ -207,7 +217,7 @@ export class ReviewDashboardComponent implements OnInit, OnDestroy {
   emails = signal<EmailResponse[]>([]);
   loading = signal<boolean>(true);
   fetching = signal(false);
-  toast = signal<{ message: string; error: boolean } | null>(null);
+  toast = signal<{ message: string; error: boolean; tone: 'success' | 'warning' | 'error' | 'info' } | null>(null);
   private pollSubscription?: Subscription;
   private refreshSubscription?: Subscription;
   private toastTimer?: ReturnType<typeof setTimeout>;
@@ -269,10 +279,10 @@ export class ReviewDashboardComponent implements OnInit, OnDestroy {
     clearTimeout(this.toastTimer);
   }
 
-  showToast(message: string, error = false) {
+  showToast(message: string, error = false, tone: 'success' | 'warning' | 'error' | 'info' = error ? 'error' : 'success') {
     if (this.destroyed) return;
     clearTimeout(this.toastTimer);
-    this.toast.set({ message, error });
+    this.toast.set({ message, error, tone });
     this.toastTimer = setTimeout(() => this.toast.set(null), 8000);
   }
 
@@ -289,6 +299,7 @@ export class ReviewDashboardComponent implements OnInit, OnDestroy {
         job.already_running
           ? 'Un controllo è già in corso. Attendo il risultato.'
           : 'Controllo delle nuove email avviato.',
+        false, 'warning',
       );
       this.pollSubscription?.unsubscribe();
       this.pollSubscription = timer(0, 1500)
@@ -307,7 +318,7 @@ export class ReviewDashboardComponent implements OnInit, OnDestroy {
             if (['completed', 'failed', 'expired'].includes(result.status)) {
               this.fetching.set(false);
               this.pollSubscription?.unsubscribe();
-              this.showToast(result.message, result.status !== 'completed');
+              this.showToast(result.message, result.status === 'failed', result.status === 'completed' ? 'success' : result.status === 'expired' ? 'warning' : 'error');
               this.loadEmails(false);
             }
           },
@@ -411,7 +422,7 @@ export class ReviewDashboardComponent implements OnInit, OnDestroy {
         },
       });
       this.emails.update((emails) => emails.filter((e) => e.id !== email.id));
-      this.showToast('Email assegnata alla gestione manuale.');
+      this.showToast('Email assegnata alla gestione manuale.', false, 'warning');
     } catch (e) {
       console.error("Errore durante l'escalation:", e);
       this.showToast('Impossibile richiedere la gestione manuale.', true);

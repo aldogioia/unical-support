@@ -144,3 +144,5 @@ dialog.drawer {
     margin-left:44px;
   }
 }
+
+dialog.drawer { border-left: 2px solid var(--ds-panel-divider); }

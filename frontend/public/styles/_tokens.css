@@ -1,4 +1,14 @@
 :root {
+  --ds-toast-success-bg: rgba(220, 252, 231, 0.92);
+  --ds-toast-success-text: #14532d;
+  --ds-toast-warning-bg: rgba(254, 243, 199, 0.94);
+  --ds-toast-warning-text: #78350f;
+  --ds-toast-error-bg: rgba(254, 226, 226, 0.94);
+  --ds-toast-error-text: #7f1d1d;
+  --ds-toast-info-bg: rgba(224, 231, 255, 0.94);
+  --ds-toast-info-text: #312e81;
+  --ds-panel-divider: #cbd5e1;
+  --ds-action-weight: 500;
   --ds-color-primary: #b61918;
   --ds-color-primary-hover: #981513;
   --ds-color-primary-active: #7c1715;

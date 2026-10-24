@@ -73,7 +73,7 @@ def respond_email_task(self, email_id: UUID):
     from langgraph.prebuilt import create_react_agent
     from langchain_core.messages import SystemMessage, HumanMessage
     from app.ai.prompts import get_responder_system_prompt
-    from app.ai.tools import search_knowledge_base, get_category_template, save_draft_response, escalate_to_human
+    from app.ai.tools import search_knowledge_base, save_draft_response, escalate_to_human
 
     try:
         with session_scope() as db:
@@ -81,6 +81,7 @@ def respond_email_task(self, email_id: UUID):
             if not email or email.status != EmailStatus.TO_RESPOND:
                 return f"Email {email_id} ignorata (non trovata o stato non valido)."
             
+            email.ai_confidence = None
             sender = email.sender
             subject = email.subject or ""
             body = email.body or ""
@@ -90,20 +91,23 @@ def respond_email_task(self, email_id: UUID):
         print(f"[WORKER-RESPOND] Avvio risposta email {email_id} (Tentativo {self.request.retries + 1}/4)...")
         
         llm = get_responder_llm()
-        tools = [search_knowledge_base, get_category_template, save_draft_response, escalate_to_human]
+        tools = [search_knowledge_base, save_draft_response, escalate_to_human]
         
         sys_msg = SystemMessage(content=get_responder_system_prompt())
         user_msg = HumanMessage(content=f"L'email ID è {email_id}.\nMittente: {sender}\nOggetto: {subject}\nCategorie Assegnate: {categories}\nTesto:\n{body}")
         
         agent = create_react_agent(llm, tools)
         
-        agent.invoke(
+        result = agent.invoke(
             {"messages": [sys_msg, user_msg]}, 
             config={"recursion_limit": 15}
         )
         
         with session_scope() as db:
             check_email = db.query(Email).filter(Email.id == email_id).first()
+            if check_email and check_email.status == EmailStatus.DRAFT:
+                from app.core.ai_confidence import retrieval_confidence
+                check_email.ai_confidence = retrieval_confidence(result.get("messages", []))
             if check_email and check_email.status == EmailStatus.TO_RESPOND:
                 raise Exception("L'agente non ha completato la risposta o l'escalation. Forzatura retry.")
 

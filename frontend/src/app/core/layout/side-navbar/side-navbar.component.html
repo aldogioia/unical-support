@@ -102,8 +102,8 @@
       routerLinkActive="active"
       ariaCurrentWhenActive="page"
       class="nav-link"
-      title="Base documentale"
-      ><ds-icon name="book" /><span class="expanded">Base documentale</span></a
+      title="Documenti"
+      ><ds-icon name="book" /><span class="expanded">Documenti</span></a
     >
     <a
       routerLink="/taxonomy"
@@ -115,6 +115,10 @@
     >
   </div>
   <div class="footer-links">
+    <button type="button" class="nav-link" title="Segnalazioni" aria-label="Segnalazioni" [disabled]="feedbackBusy()" (click)="openFeedback()">
+      @if (feedbackBusy()) { <span class="spinner" aria-hidden="true"></span> } @else { <ds-icon name="message" /> }
+      <span class="expanded">Segnalazioni</span>
+    </button>
     <a
       routerLink="/ai-settings"
       routerLinkActive="active"
@@ -129,9 +133,6 @@
         <strong>Operatore</strong
         ><span class="operator-address" [title]="email()"
           ><span>{{ email().split("@")[0] }}</span>
-          @if (email().includes("@")) {
-            <small>&#64;{{ email().split("@")[1] }}</small>
-          }
         </span>
       </div>
       <button

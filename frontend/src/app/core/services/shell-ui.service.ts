@@ -26,7 +26,6 @@ export class ShellUiService {
   readonly emailStatus = signal('ALL');
   readonly emailMenuExpanded = signal(true);
   readonly emailCounts = signal<Partial<Record<string, number>>>({});
-  readonly detailFooterHeight = signal(0);
   readonly emailCount = signal<{ count: number; label: string } | null>(null);
   toggleNavigation(): void {
     if (this.narrow()) this.mobileOpen.update((value) => !value);

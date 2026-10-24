@@ -39,7 +39,6 @@ import { CategoryMultiSelectComponent } from '../../../../shared/components/cate
 export class DocumentManagerComponent implements OnInit {
   private api = inject(Api);
   readonly search = signal('');
-  readonly categoryFilter = signal('');
   readonly selectedDocumentId = signal<string | null>(null);
   readonly creating = signal(false);
   readonly loadError = signal('');
@@ -52,10 +51,8 @@ export class DocumentManagerComponent implements OnInit {
   );
   readonly filteredDocuments = computed(() => {
     const query = this.search().trim().toLocaleLowerCase('it');
-    const category = this.categoryFilter();
     return this.documents().filter(
       (document) =>
-        (!category || document.categories?.some((c) => c.id === category)) &&
         (!query ||
           [
             document.filename,
@@ -260,7 +257,7 @@ export class DocumentManagerComponent implements OnInit {
         this.documents.update((docs) => [created, ...docs]);
       }
       this.referenceUrl = '';
-      this.uploadNotice.set('Fonte aggiunta alla base documentale.');
+      this.uploadNotice.set('Fonte aggiunta ai Documenti.');
     } catch (e) {
       console.error(e);
       this.uploadError.set('Errore durante il caricamento del file. Riprova.');

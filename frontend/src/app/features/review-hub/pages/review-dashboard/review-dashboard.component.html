@@ -34,11 +34,14 @@
             >
             <span class="email-content">
               <span class="email-sender"
-                ><strong [title]="email.sender">{{ email.sender }}</strong>
+                ><strong [title]="email.sender">{{ senderInfo(email.sender).name || "Mittente senza nome" }}</strong>
                 @if (needsAttention(email.status)) {
                   <i class="attention-dot" aria-label="Richiede attenzione"></i>
                 }
               </span>
+              @if (!senderInfo(email.sender).name && senderInfo(email.sender).address) {
+                <span class="sender-address">{{ senderInfo(email.sender).address }}</span>
+              }
               <span class="email-subject-row"
                 ><strong class="email-subject">{{
                   email.subject || "(Senza oggetto)"
@@ -171,9 +174,9 @@
                 ><ds-icon name="down" />
               </summary>
               <p>
-                Per questa email non sono disponibili frammenti documentali,
-                template o punteggi di confidence. Controlla i riferimenti nella
-                risposta e consulta la base documentale.
+                Per questa email non sono disponibili frammenti documentali
+                o punteggi di rilevanza. Controlla i riferimenti nella
+                risposta e consulta i Documenti.
               </p>
             </details>
           </section>
@@ -187,22 +190,30 @@
                     : "Bozza di risposta"
                 }}
               </h3>
-              <span class="badge badge-info"
-                ><ds-icon name="sparkle" /> AI assisted</span
-              >
+              <app-ai-confidence [value]="email.ai_confidence" />
             </div>
+            <div class="draft-view-switch" role="group" aria-label="Visualizzazione risposta">
+              <button type="button" class="btn btn-sm" [class.btn-secondary]="draftView() === 'edit'" [attr.aria-pressed]="draftView() === 'edit'" (click)="draftView.set('edit')"><ds-icon name="file" />Modifica testo</button>
+              <button type="button" class="btn btn-sm" [class.btn-secondary]="draftView() === 'preview'" [attr.aria-pressed]="draftView() === 'preview'" (click)="draftView.set('preview')"><ds-icon name="eye" />Anteprima email</button>
+            </div>
+            @if (draftView() === 'edit') {
             <label for="email-draft" class="sr-only"
               >Modifica bozza della risposta</label
-            ><textarea
+            ><textarea appAutoResize
               id="email-draft"
               class="form-control email-draft"
+              wrap="soft"
+              aria-describedby="email-layout-note"
               [value]="editableDraft()"
               (input)="editableDraft.set($any($event.target).value)"
               [readOnly]="!canReview() || acting()"
               placeholder="Scrivi la risposta allo studente…"
             ></textarea>
-            <div class="draft-caption">
-              <span>Verifica contenuti e riferimenti prima dell’invio.</span
+            } @else {
+              <app-email-preview [emailId]="email.id" [draft]="editableDraft()" />
+            }
+            <div id="email-layout-note" class="draft-caption">
+              <span>All’invio la risposta verrà impaginata nel template ufficiale Unical Support con logo e nota di trasparenza AI.</span
               ><span>{{ editableDraft().length }} caratteri</span>
             </div>
           </section>
@@ -245,8 +256,8 @@
     }
   </div>
   @if (toast(); as notification) {
-    <div class="ui-toast" [class.error]="notification.error" role="status">
-      <ds-icon [name]="notification.error ? 'warning' : 'check'" /><span>{{
+    <div class="ui-toast toast-surface" [class.error]="notification.error" [class.warning]="notification.tone === 'warning'" [class.info]="notification.tone === 'info'" role="status">
+      <ds-icon [name]="notification.error || notification.tone === 'warning' ? 'warning' : notification.tone === 'info' ? 'info' : 'check'" /><span>{{
         notification.message
       }}</span
       ><button

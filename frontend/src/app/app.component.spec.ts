@@ -21,9 +21,11 @@ describe('AppComponent', () => {
     fixture.detectChanges();
     const text = fixture.nativeElement.textContent;
     expect(text).toContain('Revisione email');
-    expect(text).toContain('Base documentale');
+    expect(text).toContain('Documenti');
     expect(text).toContain('Categorie');
     expect(text).toContain('Impostazioni');
+    expect(text).toContain('Segnalazioni');
+    expect(fixture.nativeElement.querySelector('.feedback-fab')).toBeNull();
     fixture.destroy();
   });
 });

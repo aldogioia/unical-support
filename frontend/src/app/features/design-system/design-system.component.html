@@ -59,7 +59,7 @@
     </div>
   </main>
 </div>
-<div class="copy-toast" role="status" aria-live="polite">@if (copied()) {<span><ds-icon name="check" />{{ copied() }}</span>}</div>
+<div class="copy-toast" role="status" aria-live="polite">@if (copied()) {<span class="toast-surface"><ds-icon name="check" />{{ copied() }}</span>}</div>
 <dialog #preferences class="preferences" aria-labelledby="preferences-title" (click)="closePreferencesOnBackdrop($event)">
   <div class="preferences-head"><span class="eyebrow">PERSONALIZZA IL LABORATORIO</span><button class="icon-button" aria-label="Chiudi impostazioni" (click)="closePreferences()"><ds-icon name="close" /></button></div>
   <div class="preference-symbol"><ds-icon name="accessibility" /></div><h2 id="preferences-title">Aspetto e accessibilità</h2><p>Trova il tuo equilibrio tra essenzialità e leggibilità. Le preferenze si applicano all’anteprima corrente.</p>

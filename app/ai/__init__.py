@@ -5,7 +5,6 @@ from .tools import (
     get_available_categories,
     assign_categories_and_route,
     search_knowledge_base,
-    get_category_template,
     save_draft_response,
     escalate_to_human
 )
@@ -15,5 +14,5 @@ __all__ = [
     "get_classifier_system_prompt", "get_responder_system_prompt",
     "init_vector_store", "get_vector_store", "index_langchain_documents", "retrieve_context",
     "get_available_categories", "assign_categories_and_route",
-    "search_knowledge_base", "get_category_template", "save_draft_response", "escalate_to_human",
+    "search_knowledge_base", "save_draft_response", "escalate_to_human",
 ]

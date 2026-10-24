@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from apscheduler.schedulers.background import BackgroundScheduler
 from contextlib import asynccontextmanager
 from app.core.config import settings
-from app.api.endpoints import categories, templates, documents, emails, auth, ai_settings, feedback
+from app.api.endpoints import categories, documents, emails, auth, ai_settings, feedback
 from app.db.database import engine, Base
 from app.services.blacklist_service import remove_expired_tokens
 from app.db.database import SessionLocal
@@ -59,7 +59,6 @@ app.add_middleware(
 
 app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(categories.router, prefix="/api/categories", tags=["Categories"])
-app.include_router(templates.router, prefix="/api/templates", tags=["Templates"])
 app.include_router(documents.router, prefix="/api/documents", tags=["Documents"])
 app.include_router(emails.router, prefix="/api/emails", tags=["Emails"])
 app.include_router(ai_settings.router, prefix="/api/ai-settings", tags=["AI Settings"])

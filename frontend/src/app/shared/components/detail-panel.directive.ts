@@ -9,7 +9,6 @@ import {
   input,
   output,
 } from '@angular/core';
-import { ShellUiService } from '../../core/services/shell-ui.service';
 
 /** Keyboard/focus behavior for the same detail region on desktop and as a mobile slide-over. */
 @Directive({
@@ -25,7 +24,6 @@ import { ShellUiService } from '../../core/services/shell-ui.service';
 export class DetailPanelDirective implements AfterViewInit {
   private readonly element = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly shell = inject(ShellUiService);
   private readonly cdr = inject(ChangeDetectorRef);
   readonly media = window.matchMedia('(max-width:1023px)');
   readonly detailLabel = input('Dettaglio');
@@ -42,16 +40,6 @@ export class DetailPanelDirective implements AfterViewInit {
       if (this.master) this.master.inert = this.media.matches;
       this.cdr.markForCheck();
     };
-    const footer =
-      this.element.nativeElement.querySelector<HTMLElement>('.detail-footer');
-    const footerObserver = footer
-      ? new ResizeObserver(() =>
-          this.shell.detailFooterHeight.set(
-            Math.ceil(footer.getBoundingClientRect().height),
-          ),
-        )
-      : null;
-    if (footer) footerObserver?.observe(footer);
     update();
     this.media.addEventListener('change', update);
     this.frame = requestAnimationFrame(() =>
@@ -61,8 +49,6 @@ export class DetailPanelDirective implements AfterViewInit {
     );
     this.destroyRef.onDestroy(() => {
       cancelAnimationFrame(this.frame);
-      footerObserver?.disconnect();
-      this.shell.detailFooterHeight.set(0);
       this.media.removeEventListener('change', update);
       if (this.master) this.master.inert = false;
       if (this.previousFocus?.isConnected)

@@ -2,6 +2,7 @@ import {
   Component, ChangeDetectionStrategy, ElementRef, EventEmitter, HostListener,
   Input, OnInit, Output, computed, inject, signal
 } from '@angular/core';
+import { DsIconComponent } from '../ds-icon/ds-icon.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CategoryResponse } from '../../../core/api/models/category-response';
@@ -13,7 +14,7 @@ import { CategoryResponse } from '../../../core/api/models/category-response';
 @Component({
   selector: 'app-category-multi-select',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DsIconComponent],
   templateUrl: './category-multi-select.component.html',
   styleUrl: './category-multi-select.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush

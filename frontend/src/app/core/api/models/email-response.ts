@@ -4,11 +4,14 @@
 import { CategoryResponse } from '../models/category-response';
 import { EmailStatus } from '../models/email-status';
 export interface EmailResponse {
+  ai_confidence?: (number | null);
+  ai_disclaimer?: (string | null);
   body?: (string | null);
   categories?: Array<CategoryResponse>;
   generated_draft?: (string | null);
   gmail_id: string;
   id: string;
+  response_language?: (string | null);
   sender: string;
   status: EmailStatus;
   subject?: (string | null);

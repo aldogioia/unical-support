@@ -60,7 +60,9 @@ describe('Knowledge base master-detail', () => {
       component.search.set(query);
       expect(component.filteredDocuments().length).toBe(1);
     }
-    component.categoryFilter.set('missing');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('app-workspace-header select')).toBeNull();
+    component.search.set('missing');
     expect(component.filteredDocuments().length).toBe(0);
     expect(api.invoke.calls.count()).toBe(count);
     fixture.destroy();

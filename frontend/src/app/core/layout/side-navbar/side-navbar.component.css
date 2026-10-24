@@ -85,7 +85,7 @@
   color: var(--ds-color-primary);
   background: #fef2f2;
   border-color: var(--ds-color-primary-100);
-  font-weight: 600;
+  font-weight: var(--ds-action-weight);
 }
 .footer-links {
   margin-top: auto;
@@ -171,17 +171,13 @@
     margin: 17px 8px -20px auto;
   }
 }
-.operator-address > span,
-.operator-address > small {
+.operator-address > span {
   display: block;
   font-size: 10px;
   line-height: 1.55;
   white-space: nowrap;
 }
-.operator-address > small {
-  font-size: 9px;
-  color: var(--ds-text-muted);
-}
+
 
 .email-submenu {
   display: grid;
@@ -276,3 +272,7 @@
     padding: 12px 0;
   }
 }
+
+button.nav-link { width: 100%; text-align: left; background: transparent; font-family: inherit; font-weight: var(--ds-action-weight); cursor: pointer; }
+button.nav-link:hover:not(:disabled) { background: var(--ds-hover); }
+button.nav-link:disabled { opacity: .6; cursor: wait; }

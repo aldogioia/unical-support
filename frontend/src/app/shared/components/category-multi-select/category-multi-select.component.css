@@ -176,3 +176,5 @@
 .cms-trigger {
   min-height: var(--ds-control-height);
 }
+
+.cms-chip-remove ds-icon { width: 10px; height: 10px; }

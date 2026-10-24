@@ -27,3 +27,5 @@
 .detail-footer .btn-danger {
   margin-right: auto;
 }
+
+.row-title, .row-top > strong { font-weight: var(--ds-action-weight); }

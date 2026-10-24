@@ -1,33 +1,3 @@
-<!-- Floating Feedback Button -->
-<button
-  *ngIf="isButtonVisible"
-  class="feedback-fab"
-  [style.bottom.px]="24 + shell.detailFooterHeight()"
-  [class.panel-open]="shell.detailFooterHeight() > 0"
-  (click)="startFeedbackFlow()"
-  [disabled]="isCapturing"
-  title="Invia segnalazione"
-  aria-label="Invia segnalazione"
->
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="feather feather-message-square"
-  >
-    <path
-      d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
-    ></path>
-  </svg>
-  <span>Segnalazioni</span>
-</button>
-
 <!-- Feedback Dialog -->
 <dialog
   #feedbackDialog
@@ -46,40 +16,14 @@
         (click)="closeDialog()"
         [disabled]="loading"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
+        <ds-icon name="close" />
       </button>
     </div>
 
     <!-- Success View -->
     <div *ngIf="success" class="feedback-success-view">
       <div class="feedback-success-icon">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="48"
-          height="48"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="var(--color-success)"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-          <polyline points="22 4 12 14.01 9 11.01"></polyline>
-        </svg>
+        <ds-icon name="check" />
       </div>
       <p class="feedback-success-message">
         Grazie! La tua segnalazione è stata inviata.

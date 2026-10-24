@@ -1,7 +1,7 @@
 import uuid
 from enum import Enum
 from typing import List
-from sqlalchemy import String, Text, Enum as SQLEnum, UUID
+from sqlalchemy import String, Text, Float, CheckConstraint, Enum as SQLEnum, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.database import Base
 from app.models.category import email_category_association
@@ -10,6 +10,7 @@ from app.core.audit_logging import Auditable
 
 class Email(Base, Auditable):
     __tablename__ = "emails"
+    __table_args__ = (CheckConstraint("ai_confidence >= 0 AND ai_confidence <= 1", name="ck_emails_ai_confidence_range"),)
 
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -32,6 +33,9 @@ class Email(Base, Auditable):
     )
     
     generated_draft: Mapped[str | None] = mapped_column(Text)
+    ai_confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
+    response_language: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    ai_disclaimer: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     categories: Mapped[List["Category"]] = relationship(
         "Category",

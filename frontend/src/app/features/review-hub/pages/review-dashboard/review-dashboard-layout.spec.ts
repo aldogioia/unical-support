@@ -42,6 +42,8 @@ describe('Review hub master-detail', () => {
     expect(fixture.nativeElement.querySelector('#email-draft').value).toBe(
       'Risposta iniziale',
     );
+    expect(fixture.nativeElement.querySelector('#email-draft').getAttribute('wrap')).toBe('soft');
+    expect(fixture.nativeElement.querySelector('#email-layout-note').textContent).toContain('logo e nota di trasparenza AI');
     const calls = api.invoke.calls.count();
     component.search.set('corso');
     expect(component.filteredEmails().length).toBe(1);
@@ -51,6 +53,38 @@ describe('Review hub master-detail', () => {
     component.closeDetail();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.detail-pane')).toBeNull();
+    fixture.destroy();
+  }));
+  it('opens the official preview with unsaved text without altering draft or sending', fakeAsync(() => {
+    const fixture = TestBed.createComponent(ReviewDashboardComponent), component = fixture.componentInstance;
+    fixture.detectChanges(); flushMicrotasks();
+    component.selectEmail(example);
+    component.editableDraft.set('Testo non ancora salvato');
+    component.draftView.set('preview'); fixture.detectChanges();
+    const preview = fixture.nativeElement.querySelector('app-email-preview');
+    expect(preview).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('#email-draft')).toBeNull();
+    component.draftView.set('edit'); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('#email-draft').value).toBe('Testo non ancora salvato');
+    expect(component.selectedEmail()?.generated_draft).toBe('Risposta iniziale');
+    expect(api.invoke.calls.allArgs().some(args => args[0] === updateEmailDraftApiEmailsEmailIdDraftPut)).toBeFalse();
+    fixture.destroy();
+  }));
+  it('uses sender names and a secondary fallback address in list rows', fakeAsync(() => {
+    const fixture = TestBed.createComponent(ReviewDashboardComponent), component = fixture.componentInstance;
+    fixture.detectChanges(); flushMicrotasks();
+    component.emails.set([{ ...example, sender: 'Giulia Rossi <giulia@example.org>' }, { ...example, id: 'email-2', sender: 'student@example.org' }]);
+    fixture.detectChanges();
+    const rows = fixture.nativeElement.querySelectorAll('.email-row');
+    expect(rows[0].querySelector('.email-sender strong').textContent).toBe('Giulia Rossi');
+    expect(rows[0].querySelector('.email-sender strong').title).toContain('giulia@example.org');
+    expect(rows[0].querySelector('.sender-address')).toBeNull();
+    expect(rows[1].querySelector('.email-sender strong').textContent).toBe('Mittente senza nome');
+    expect(rows[1].querySelector('.sender-address').textContent).toContain('student@example.org');
+    component.showToast('Attenzione', false, 'warning'); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.ui-toast').classList.contains('warning')).toBeTrue();
+    component.showToast('Errore', true); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.ui-toast').classList.contains('error')).toBeTrue();
     fixture.destroy();
   }));
   it('preserves edited text during background refresh and repeated selection', fakeAsync(() => {
