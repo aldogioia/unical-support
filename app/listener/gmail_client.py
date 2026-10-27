@@ -1,5 +1,6 @@
 import os.path
 import base64
+import argparse
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -12,14 +13,18 @@ from app.services.email_renderer import render_email, LOGO_PATH, LOGO_CID
 SCOPES = ['https://www.googleapis.com/auth/gmail.modify', 'https://www.googleapis.com/auth/gmail.send']
 
 class GmailClient:
-    def __init__(self, credentials_path="credentials.json", token_path="token.json"):
+    def __init__(self, credentials_path="credentials.json", token_path="token.json", *,
+                 force_reauth=False, auth_port=0, open_browser=True, bind_addr=None):
         self.credentials_path = credentials_path
         self.token_path = token_path
-        self.service = self._authenticate()
+        self.service = self._authenticate(
+            force_reauth=force_reauth, auth_port=auth_port,
+            open_browser=open_browser, bind_addr=bind_addr,
+        )
 
-    def _authenticate(self):
+    def _authenticate(self, *, force_reauth=False, auth_port=0, open_browser=True, bind_addr=None):
         creds = None
-        if os.path.exists(self.token_path):
+        if not force_reauth and os.path.exists(self.token_path):
             creds = Credentials.from_authorized_user_file(self.token_path, SCOPES)
         
         if not creds or not creds.valid:
@@ -27,7 +32,10 @@ class GmailClient:
                 creds.refresh(Request())
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, SCOPES)
-                creds = flow.run_local_server(port=0)
+                creds = flow.run_local_server(
+                    host='localhost', bind_addr=bind_addr, port=auth_port,
+                    open_browser=open_browser, prompt='consent',
+                )
             with open(self.token_path, 'w') as token:
                 token.write(creds.to_json())
 
@@ -126,5 +134,19 @@ class GmailClient:
             body={'raw': raw, 'threadId': thread_id}
         ).execute()
 
-# Per rinnovare il token di testing
-#GmailClient()
+def main():
+    parser = argparse.ArgumentParser(description='Autorizza o rinnova il token Gmail.')
+    parser.add_argument('--reauth', action='store_true', help='Ignora il token esistente e richiedi un nuovo consenso.')
+    parser.add_argument('--port', type=int, default=0, help='Porta del callback OAuth (0: automatica).')
+    parser.add_argument('--bind-address', default=None, help='Indirizzo di ascolto del callback (Docker: 0.0.0.0).')
+    parser.add_argument('--no-browser', action='store_true', help='Stampa il link da aprire nel browser del computer.')
+    args = parser.parse_args()
+    GmailClient(
+        force_reauth=args.reauth, auth_port=args.port,
+        open_browser=not args.no_browser, bind_addr=args.bind_address,
+    )
+    print('Autenticazione Gmail completata: token.json salvato e pronto per l\'uso.')
+
+
+if __name__ == '__main__':
+    main()

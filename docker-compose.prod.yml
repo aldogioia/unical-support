@@ -12,7 +12,9 @@ services:
       - postgres_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    # NOTA SICUREZZA: Nessuna porta 5432 esposta all'esterno!
+    # Accesso dal worker in rete host; bind limitato al loopback della VPS.
+    ports:
+      - "127.0.0.1:15432:5432"
 
   redis:
     image: redis:7-alpine
@@ -20,7 +22,8 @@ services:
     entrypoint: sh -c "exec redis-server --requirepass \$$(cat /run/secrets/redis_password)"
     secrets:
       - redis_password
-    # NOTA SICUREZZA: Nessuna porta 6379 esposta all'esterno!
+    ports:
+      - "127.0.0.1:16379:6379"
 
   backend:
     build:
@@ -52,12 +55,15 @@ services:
     command: celery -A app.core.celery_app worker -Q polling_queue,classify_queue,respond_queue,document_queue -l INFO --concurrency=2
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    # Mantiene l'accesso al tunnel SSH dell'LLM sulla VPS.
     network_mode: host
     volumes:
       - shared_uploads:/app/uploads
     secrets:
-      - database_url
-      - redis_url
+      - source: database_url_host
+        target: database_url
+      - source: redis_url_host
+        target: redis_url
       - secret_key          
       - groq_api_key
       - google_api_key
@@ -71,7 +77,6 @@ services:
       context: .
       target: backend
     restart: always
-    network_mode: host
     command: celery -A app.core.celery_app beat --loglevel=info
     secrets:
       - database_url
@@ -111,6 +116,10 @@ secrets:
     file: /home/operatore/secrets/database_url
   redis_url:
     file: /home/operatore/secrets/redis_url
+  database_url_host:
+    file: /home/operatore/secrets/database_url_host
+  redis_url_host:
+    file: /home/operatore/secrets/redis_url_host
   secret_key:
     file: /home/operatore/secrets/secret_key
   groq_api_key:
