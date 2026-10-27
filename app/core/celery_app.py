@@ -12,7 +12,8 @@ celery_app = Celery(
     backend=settings.REDIS_URL,
     include=[
         "app.tasks.email_tasks",
-        "app.tasks.polling_tasks"
+        "app.tasks.polling_tasks",
+        "app.tasks.document_tasks"
     ]
 )
 
@@ -22,6 +23,8 @@ celery_app.conf.update(
     result_serializer="json",
     timezone="Europe/Rome",
     enable_utc=True,
+    broker_connection_retry_on_startup=True,
+    task_track_started=True,
     task_routes={
         "app.tasks.email_tasks.classify_email*": {"queue": "classify_queue"},
         "app.tasks.email_tasks.respond_email*": {"queue": "respond_queue"},
@@ -32,10 +35,12 @@ celery_app.conf.update(
         "poll-gmail-every-2-minutes": {
             "task": "app.tasks.polling_tasks.poll_gmail",
             "schedule": crontab(minute="*/2"),
+            "options": {"expires": 120},
         },
         "sweep-stuck-emails-every-15-minutes": {
             "task": "app.tasks.polling_tasks.sweep_stuck_emails",
             "schedule": crontab(minute="*/15"),
+            "options": {"expires": 600},
         }
     }
 )

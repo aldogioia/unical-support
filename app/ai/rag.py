@@ -223,12 +223,18 @@ def format_source_context(docs: list) -> str:
                     "reference_url": source.reference_url,
                 }
 
+    from app.core.urls import normalize_reference_url
     passages = []
     for doc in docs:
         source = sources.get(str(doc.metadata.get("document_id")), {})
+        try:
+            reference = normalize_reference_url(source.get("reference_url", doc.metadata.get("reference_url")))
+        except (ValueError, TypeError, AttributeError):
+            reference = None
         passages.append(json.dumps({
             "source_name": source.get("name") or doc.metadata.get("source_name") or doc.metadata.get("filename") or "Documento",
-            "reference_url": source.get("reference_url", doc.metadata.get("reference_url")),
+            "reference_url": reference,
+            "citation_allowed": bool(reference),
             "page": doc.metadata.get("page_number", doc.metadata.get("page")),
             "content": doc.page_content,
             "relevance_score": doc.metadata.get("retrieval_relevance_score"),

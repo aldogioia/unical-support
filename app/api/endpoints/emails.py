@@ -2,11 +2,11 @@ from uuid import UUID
 from app.api.authentication import get_current_user
 from app.models.user import User
 from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
-from app.schemas.email import EmailResponse, EmailUpdateDraft, EmailCreate, EmailFetchResponse, EmailPreviewRequest, EmailPreviewResponse
+from app.schemas.email import EmailResponse, EmailUpdateDraft, EmailCreate, EmailFetchResponse, EmailPreviewRequest, EmailPreviewResponse, EmailPage, EmailRetryRequest, EmailRetryBatchResponse, EmailRetryBatchRequest
 from app.services.email_polling_service import enqueue_email_poll, PollCoordinator
 from app.models.enumerators.enumerators import EmailStatus
 from app.models.email import Email
@@ -39,11 +39,28 @@ def read_email_fetch_status(job_id: UUID, current_user: Annotated[User, Depends(
 def read_emails(
     current_user: Annotated[User, Depends(get_current_user)],
     status: Optional[EmailStatus] = None,
-    skip: int = 0,
-    limit: int = 100,
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=100, ge=1, le=100),
     db: Session = Depends(get_db),
 ):
     return email_service.get_emails(db, status=status, skip=skip, limit=limit)
+
+@router.get('/page', response_model=EmailPage)
+def read_email_page(current_user: Annotated[User, Depends(get_current_user)],
+                    status: Optional[EmailStatus] = None, cursor: str | None = Query(default=None, max_length=512),
+                    limit: int = Query(default=50, ge=1, le=100), q: str = Query(default='', max_length=500), db: Session = Depends(get_db)):
+    return email_service.get_email_page(db, status, cursor, limit, q)
+
+
+@router.post('/retry-failed', response_model=EmailRetryBatchResponse, status_code=202)
+def retry_failed_email_batch(payload: EmailRetryBatchRequest, current_user: Annotated[User, Depends(get_current_user)], db: Session = Depends(get_db)):
+    return email_service.retry_failed_emails(db, payload.exclude_ids)
+
+
+@router.post('/{email_id}/retry', response_model=EmailResponse, status_code=202)
+def retry_failed_email(email_id: UUID, payload: EmailRetryRequest, current_user: Annotated[User, Depends(get_current_user)], db: Session = Depends(get_db)):
+    return email_service.retry_email(db, email_id, payload.expected_revision)
+
 
 @router.get("/{email_id}", response_model=EmailResponse)
 def read_email(
@@ -60,7 +77,8 @@ def read_email(
 @router.post("/", response_model=EmailResponse)
 def create_new_email(email: EmailCreate, current_user: Annotated[User, Depends(get_current_user)], db: Session = Depends(get_db)):
     db_email = email_service.create_email(db=db, email=email, user_id=current_user.id)
-    classify_email_task.delay(db_email.id)
+    from app.services.email_processing import enqueue_processing
+    enqueue_processing(db_email.id, 'classify', db_email.processing_generation)
     return db_email
 
 @router.put("/{email_id}/draft", response_model=EmailResponse)

@@ -17,7 +17,7 @@ def get_classifier_system_prompt() -> str:
 def get_responder_system_prompt() -> str:
     policy = json.dumps({
         "fallback_language": settings.AI_RESPONSE_FALLBACK_LANGUAGE,
-        "language_overrides": settings.AI_RESPONSE_LANGUAGE_OVERRIDES,
+        "body_language_is_authoritative": True,
         "disclaimer_translations": settings.AI_DISCLAIMER_TRANSLATIONS,
     }, ensure_ascii=False)
     return load_prompt_text("responder.txt") + "\n\nPOLITICA LINGUISTICA CONFIGURATA:\n" + policy

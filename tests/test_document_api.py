@@ -109,7 +109,8 @@ def test_worker_extracts_only_the_file_including_previously_queued_file_tasks(le
          patch('app.tasks.document_tasks.os.path.exists', return_value=True), \
          patch('app.tasks.document_tasks.os.remove'), \
          patch('app.tasks.document_tasks.session_scope') as session, \
-         patch('app.ai.rag.index_langchain_documents', return_value=1) as index:
+         patch('app.ai.rag.index_langchain_documents', return_value=1) as index, \
+         patch('app.ai.md_formatter.normalize_to_structured_markdown', return_value=SimpleNamespace(needs_review=False, markdown='Regole', review_notes=None)):
         session.return_value.__enter__.return_value = db
         loader.return_value.load.return_value = [Document(page_content='Regole')]
         args = ('doc-id', '/tmp/guida.txt', 'https://example.org/old-origin', ['category-id']) if legacy else ('doc-id', '/tmp/guida.txt', ['category-id'])

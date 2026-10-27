@@ -76,13 +76,13 @@ class EmailPollingTests(unittest.TestCase):
         db = MagicMock()
         db.query.return_value.filter.return_value.first.side_effect = [None, SimpleNamespace(id=uuid4())]
         email_id = uuid4()
-        with patch('app.services.email_polling_service.PollCoordinator', return_value=self.coordinator), patch('app.tasks.polling_tasks.get_email_client', return_value=gmail), patch('app.tasks.polling_tasks.session_scope') as session, patch('app.tasks.polling_tasks.email_service.create_email', return_value=SimpleNamespace(id=email_id)) as create, patch('app.tasks.polling_tasks.celery_app.send_task') as send:
+        with patch('app.services.email_polling_service.PollCoordinator', return_value=self.coordinator), patch('app.tasks.polling_tasks.get_email_client', return_value=gmail), patch('app.tasks.polling_tasks.session_scope') as session, patch('app.tasks.polling_tasks.email_service.create_email', return_value=SimpleNamespace(id=email_id, processing_generation=0)) as create, patch('app.tasks.polling_tasks.celery_app.send_task') as send:
             session.return_value.__enter__.return_value = db
             result = poll_gmail.run(job)
         self.assertEqual(result['status'], 'completed')
         self.assertEqual(result['fetched_count'], 1)
         self.assertEqual(create.call_count, 1)
-        send.assert_called_once_with('app.tasks.email_tasks.classify_email_task', args=[str(email_id)], queue='classify_queue')
+        send.assert_called_once_with('app.tasks.email_tasks.classify_email_task', args=[str(email_id)], kwargs={'generation': 0}, queue='classify_queue')
         self.assertEqual(gmail.mark_as_read.call_count, 2)
         self.assertFalse(self.coordinator.owns_lock(job))
 

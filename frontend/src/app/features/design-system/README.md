@@ -1,6 +1,6 @@
 # Unical Support · Design System & UI Kit
 
-Laboratorio standalone, lazy-loaded su `/design-system`, accessibile senza login. Dopo la promozione globale del tema, il catalogo resta un laboratorio locale; l’architettura operativa è documentata in `docs/ui-redesign.md`. Tutte le interazioni sono simulazioni locali: nessun invio di email, modifica delle impostazioni applicative o caricamento al backend.
+Laboratorio standalone, lazy-loaded su `/design-system`, accessibile senza login. Dopo la promozione globale del tema, il catalogo resta un laboratorio locale; l’architettura operativa è documentata in `docs/ARCHITECTURE.md`. Tutte le interazioni sono simulazioni locali: nessun invio di email, modifica delle impostazioni applicative o caricamento al backend.
 
 ## Identità
 

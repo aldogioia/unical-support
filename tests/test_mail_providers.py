@@ -109,7 +109,7 @@ class ImapSmtpTests(TestCase):
         self.assertIn('Vorrei informazioni.', message['body'])
         self.assertNotIn('Un allegato', message['body'])
         self.assertTrue(message['gmail_id'].startswith('imap:'))
-        self.imap.uid.assert_any_call('FETCH', b'7', '(BODY.PEEK[])')
+        self.imap.uid.assert_any_call('FETCH', b'7', '(BODY.PEEK[] INTERNALDATE)')
         self.assertFalse(any(c.args[0] == 'STORE' for c in self.imap.uid.call_args_list))
         self.assertEqual(self.ssl_imap.call_args.kwargs['timeout'], 30)
         self.assertTrue(self.ssl_imap.call_args.kwargs['ssl_context'].check_hostname)
@@ -155,7 +155,7 @@ class ImapSmtpTests(TestCase):
         ]
         message = self.client.fetch_unread_emails()[0]
         self.assertEqual(message['gmail_id'], format(1278455344230334865, 'x'))
-        self.imap.uid.assert_any_call('FETCH', b'7', '(BODY.PEEK[] X-GM-MSGID)')
+        self.imap.uid.assert_any_call('FETCH', b'7', '(BODY.PEEK[] X-GM-MSGID INTERNALDATE)')
 
     def test_html_only_message_has_readable_text_without_style_or_attachment(self):
         message = EmailMessage()
@@ -269,10 +269,10 @@ class ImapSmtpTests(TestCase):
                 email = SimpleNamespace(
                     id=uuid4(), gmail_id=message_id, sender='student@example.org',
                     subject='Documents', response_language='en', ai_disclaimer=None,
-                    apply_audit_fields=MagicMock(),
+                    status=EmailStatus.DRAFT, draft_revision=0, processing_generation=0, apply_audit_fields=MagicMock(),
                 )
                 db = MagicMock()
-                db.query.return_value.filter.return_value.first.return_value = email
+                db.query.return_value.filter.return_value.populate_existing.return_value.with_for_update.return_value.first.return_value = email
                 server = self.smtp_server()
                 if rejected:
                     server.login.side_effect = smtplib.SMTPAuthenticationError(535, b'Bad credentials')

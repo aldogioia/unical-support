@@ -3,6 +3,7 @@
 
 import { EmailStatus } from '../models/email-status';
 export interface EmailUpdateDraft {
+  expected_revision?: (number | null);
   generated_draft: string;
   status: EmailStatus;
 }

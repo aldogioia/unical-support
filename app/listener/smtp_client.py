@@ -10,6 +10,7 @@ import re
 import smtplib
 import ssl
 
+from app.core.message_dates import received_timestamp
 from app.listener.email_client import EmailClient
 from app.listener.message_builder import build_reply_message
 
@@ -150,7 +151,7 @@ class ImapSmtpClient(EmailClient):
         data = self._check(connection.uid('SEARCH', None, 'UNSEEN'), 'ricerca non letti')
         uids = data[0].split() if data and data[0] else []
         messages = []
-        fields = '(BODY.PEEK[] X-GM-MSGID)' if self._gmail else '(BODY.PEEK[])'
+        fields = '(BODY.PEEK[] X-GM-MSGID INTERNALDATE)' if self._gmail else '(BODY.PEEK[] INTERNALDATE)'
         for uid in uids[:self.config.MAIL_FETCH_LIMIT]:
             metadata, message = self._fetch(uid, fields)
             messages.append({
@@ -158,6 +159,7 @@ class ImapSmtpClient(EmailClient):
                 'sender': str(message.get('From', 'Sconosciuto')),
                 'subject': str(message.get('Subject', 'Nessun Oggetto')),
                 'body': self._body(message),
+                'received_at': received_timestamp(internal_imap=metadata, header_date=message.get('Date')).isoformat(),
             })
         return messages
 

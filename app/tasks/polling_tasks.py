@@ -43,10 +43,8 @@ def poll_gmail(self, reservation_id: str | None = None):
                         db=db, user_id=None, email=EmailCreate(**email_data),
                     )
                     fetched_count += 1
-                    celery_app.send_task(
-                        "app.tasks.email_tasks.classify_email_task",
-                        args=[str(db_email.id)], queue="classify_queue",
-                    )
+                    from app.services.email_processing import enqueue_processing
+                    enqueue_processing(db_email.id, 'classify', db_email.processing_generation)
                     client.mark_as_read(gmail_id)
                 except IntegrityError:
                     db.rollback()
@@ -69,50 +67,33 @@ def poll_gmail(self, reservation_id: str | None = None):
             coordinator.release(job_id)
 
 
-@celery_app.task(name="app.tasks.polling_tasks.sweep_stuck_emails")
+@celery_app.task(name="app.tasks.polling_tasks.sweep_stuck_emails", soft_time_limit=120, time_limit=150)
 def sweep_stuck_emails():
-    """Ricerca e riaccoda le email rimaste incastrate per crash dei worker."""
-    print("[SWEEPER] Ricerca di email bloccate (zombie)...")
-    try:
-        with session_scope() as db:
-            time_threshold = datetime.now(timezone.utc) - timedelta(minutes=15)
-            
-            stuck_emails = db.query(Email).filter(
-                or_(
-                    Email.status == EmailStatus.TO_CLASSIFY,
-                    Email.status == EmailStatus.TO_RESPOND
-                ),
-                Email.updated_at < time_threshold
-            ).all()
-
-            if not stuck_emails:
-                print("[SWEEPER] Nessuna email bloccata trovata. Tutto regolare.")
-                return True
-
-            print(f"[SWEEPER] Trovate {len(stuck_emails)} email bloccate. Ri-accodamento in corso...")
-
-            for email in stuck_emails:
-                email.updated_at = datetime.now(timezone.utc)
-                
-                if email.status == EmailStatus.TO_CLASSIFY:
-                    celery_app.send_task(
-                        "app.tasks.email_tasks.classify_email_task",
-                        args=[email.id],
-                        queue="classify_queue"
-                    )
-                    print(f"[SWEEPER] Ri-accodata email {email.id} per CLASSIFICAZIONE.")
-                
-                elif email.status == EmailStatus.TO_RESPOND:
-                    celery_app.send_task(
-                        "app.tasks.email_tasks.respond_email_task",
-                        args=[email.id],
-                        queue="respond_queue"
-                    )
-                    print(f"[SWEEPER] Ri-accodata email {email.id} per RISPOSTA.")
-            
-            db.commit()
-            return True
-            
-    except Exception as e:
-        print(f"[SWEEPER] Errore critico durante l'esecuzione dello sweeper: {e}")
-        return False
+    """Recover expired leases/queued jobs, never reviewed drafts or active workers."""
+    from sqlalchemy import and_
+    from app.services.email_processing import LEASE_SECONDS, release_processing, enqueue_processing
+    now = datetime.now(timezone.utc)
+    jobs = []
+    with session_scope() as db:
+        rows = db.query(Email).filter(
+            Email.status.in_([EmailStatus.TO_CLASSIFY, EmailStatus.TO_RESPOND]), Email.manually_edited.is_(False),
+            or_(and_(Email.processing_token.is_(None), Email.updated_at < now - timedelta(minutes=15)),
+                and_(Email.processing_token.is_not(None), or_(Email.processing_started_at.is_(None), Email.processing_started_at < now - timedelta(seconds=LEASE_SECONDS)))),
+        ).with_for_update(skip_locked=True).limit(100).all()
+        for email in rows:
+            stage = 'classify' if email.status == EmailStatus.TO_CLASSIFY else 'respond'
+            release_processing(email)
+            email.processing_generation += 1
+            email.updated_at = now
+            jobs.append((str(email.id), stage, email.processing_generation))
+    # Publish after committing generation/lease changes; consumers must see the new state.
+    for identifier, stage, generation in jobs:
+        try:
+            enqueue_processing(identifier, stage, generation)
+        except Exception:
+            with session_scope() as db:
+                email = db.query(Email).filter(Email.id == identifier).populate_existing().with_for_update().first()
+                if email and email.processing_generation == generation and email.processing_token is None and email.status in (EmailStatus.TO_CLASSIFY, EmailStatus.TO_RESPOND):
+                    email.status = EmailStatus.FAILED
+                    email.failure_stage = stage
+    return {'requeued_count': len(jobs)}

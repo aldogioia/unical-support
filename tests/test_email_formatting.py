@@ -32,10 +32,11 @@ class EmailFormattingTests(unittest.TestCase):
 
     def test_fallback_and_policy_are_configurable(self):
         with patch.object(settings, 'AI_RESPONSE_FALLBACK_LANGUAGE', 'en'), patch.object(settings, 'AI_RESPONSE_LANGUAGE_OVERRIDES', {'es': 'en'}):
-            self.assertEqual(response_language_for('es'), 'en')
+            self.assertEqual(response_language_for('es'), 'es')
+            self.assertEqual(response_language_for(None), 'en')
             self.assertEqual(get_ai_disclaimer(), DISCLAIMERS['en'])
             self.assertIn('"fallback_language": "en"', get_responder_system_prompt())
-            self.assertIn('"es": "en"', get_responder_system_prompt())
+            self.assertIn('"body_language_is_authoritative": true', get_responder_system_prompt())
 
     def test_configured_note_and_empty_body(self):
         with patch.object(settings, 'AI_DISCLAIMER_TRANSLATIONS', {'it': 'Avviso personalizzato.'}):

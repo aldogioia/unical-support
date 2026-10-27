@@ -5,6 +5,7 @@ export interface EmailCreate {
   body?: (string | null);
   category_ids?: Array<string>;
   gmail_id: string;
+  received_at?: (string | null);
   sender: string;
   subject?: (string | null);
 }

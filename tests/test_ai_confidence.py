@@ -58,9 +58,9 @@ def test_responder_persists_confidence_from_its_own_retrieval_messages():
     from app.tasks.email_tasks import respond_email_task
     from app.models.enumerators.enumerators import EmailStatus
     email = SimpleNamespace(id=uuid4(), status=EmailStatus.TO_RESPOND, sender='student@example.org',
-                            subject='Domanda', body='Regole', gmail_id='gmail-1', categories=[], ai_confidence=0.1)
+                            subject='Domanda', body='Regole', gmail_id='gmail-1', categories=[], ai_confidence=0.1, processing_token=None, processing_started_at=None, processing_generation=0, manually_edited=False)
     db = MagicMock()
-    db.query.return_value.filter.return_value.first.return_value = email
+    db.query.return_value.filter.return_value.populate_existing.return_value.with_for_update.return_value.first.return_value = email
     agent = MagicMock()
     def generate(*args, **kwargs):
         assert email.ai_confidence is None

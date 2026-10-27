@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { reviewChangesGuard } from './core/guards/review-changes.guard';
 import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
@@ -21,6 +22,7 @@ export const routes: Routes = [
   {
     path: 'review',
     canActivate: [authGuard],
+    canDeactivate: [reviewChangesGuard],
     loadComponent: () =>
       import('./features/review-hub/pages/review-dashboard/review-dashboard.component').then(
         (m) => m.ReviewDashboardComponent,

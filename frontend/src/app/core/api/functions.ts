@@ -39,6 +39,12 @@ export type { ReadEmailsApiEmailsGet$Params as ReadEmailsApiEmailsGet$Params } f
 export { readEmailsApiEmailsGet as readEmailsApiEmailsGet } from './fn/emails/read-emails-api-emails-get';
 export type { CreateNewEmailApiEmailsPost$Params as CreateNewEmailApiEmailsPost$Params } from './fn/emails/create-new-email-api-emails-post';
 export { createNewEmailApiEmailsPost as createNewEmailApiEmailsPost } from './fn/emails/create-new-email-api-emails-post';
+export type { ReadEmailPageApiEmailsPageGet$Params as ReadEmailPageApiEmailsPageGet$Params } from './fn/emails/read-email-page-api-emails-page-get';
+export { readEmailPageApiEmailsPageGet as readEmailPageApiEmailsPageGet } from './fn/emails/read-email-page-api-emails-page-get';
+export type { RetryFailedEmailBatchApiEmailsRetryFailedPost$Params as RetryFailedEmailBatchApiEmailsRetryFailedPost$Params } from './fn/emails/retry-failed-email-batch-api-emails-retry-failed-post';
+export { retryFailedEmailBatchApiEmailsRetryFailedPost as retryFailedEmailBatchApiEmailsRetryFailedPost } from './fn/emails/retry-failed-email-batch-api-emails-retry-failed-post';
+export type { RetryFailedEmailApiEmailsEmailIdRetryPost$Params as RetryFailedEmailApiEmailsEmailIdRetryPost$Params } from './fn/emails/retry-failed-email-api-emails-email-id-retry-post';
+export { retryFailedEmailApiEmailsEmailIdRetryPost as retryFailedEmailApiEmailsEmailIdRetryPost } from './fn/emails/retry-failed-email-api-emails-email-id-retry-post';
 export type { ReadEmailApiEmailsEmailIdGet$Params as ReadEmailApiEmailsEmailIdGet$Params } from './fn/emails/read-email-api-emails-email-id-get';
 export { readEmailApiEmailsEmailIdGet as readEmailApiEmailsEmailIdGet } from './fn/emails/read-email-api-emails-email-id-get';
 export type { UpdateEmailDraftApiEmailsEmailIdDraftPut$Params as UpdateEmailDraftApiEmailsEmailIdDraftPut$Params } from './fn/emails/update-email-draft-api-emails-email-id-draft-put';

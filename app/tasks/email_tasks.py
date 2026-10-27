@@ -2,133 +2,62 @@ from uuid import UUID
 from app.core.celery_app import celery_app
 from app.db.database import session_scope
 from app.models.email import Email, EmailStatus
+from app.services.email_processing import claim_processing, can_write, release_processing
 
-@celery_app.task(bind=True, max_retries=3, name="app.tasks.email_tasks.classify_email_task")
-def classify_email_task(self, email_id: UUID):
-    
-    from app.ai.llm_factory import get_classifier_llm
+
+def _process(task, email_id, stage, generation=None):
+    from app.ai.llm_factory import get_classifier_llm, get_responder_llm
     from langgraph.prebuilt import create_react_agent
     from langchain_core.messages import SystemMessage, HumanMessage
-    from app.ai.prompts import get_classifier_system_prompt
-    from app.ai.tools import get_available_categories, assign_categories_and_route
-
-    try:
-        with session_scope() as db:
-            email = db.query(Email).filter(Email.id == email_id).first()
-            if not email or email.status != EmailStatus.TO_CLASSIFY:
-                return f"Email {email_id} ignorata (non trovata o stato non valido)."
-            
-            sender = email.sender
-            subject = email.subject or ""
-            body = email.body or ""
-            gmail_id = email.gmail_id
-        
-        print(f"[WORKER-CLASSIFY] Avvio classificazione per email {email_id} (Tentativo {self.request.retries + 1}/4)...")
-        
-        llm = get_classifier_llm()
-        tools = [get_available_categories, assign_categories_and_route]
-        
-        sys_msg = SystemMessage(content=get_classifier_system_prompt())
-        user_msg = HumanMessage(content=f"L'email ID è {email_id}.\nMittente: {sender}\nOggetto: {subject}\nTesto:\n{body}")
-        
-        agent = create_react_agent(llm, tools)
-        
-        agent.invoke(
-            {"messages": [sys_msg, user_msg]}, 
-            config={"recursion_limit": 15}
-        )
-        
-        # Validazione successo
-        with session_scope() as db:
-            check_email = db.query(Email).filter(Email.id == email_id).first()
-            if check_email and check_email.status == EmailStatus.TO_CLASSIFY:
-                raise Exception("L'agente non ha aggiornato lo stato. Forzatura retry.")
-                
-        print(f"[WORKER-CLASSIFY] Classificazione completata con successo per email {email_id}.")
-        return True
-
-    except Exception as e:
-        print(f"[WORKER-CLASSIFY] Errore elaborazione email {email_id}: {e}")
-        
-        if self.request.retries >= self.max_retries:
-            print(f"[WORKER-CLASSIFY] Limite retry raggiunto per email {email_id}. Spostamento in FAILED.")
-            try:
-                with session_scope() as db:
-                    email = db.query(Email).filter(Email.id == email_id).first()
-                    if email:
-                        email.status = EmailStatus.FAILED
-                
-            except Exception as inner_e:
-                print(f"Errore critico durante la marcatura di FAILED: {inner_e}")
-            return False
-        else:
-            delay = 60 * (self.request.retries + 1)
-            print(f"[WORKER-CLASSIFY] Ritento tra {delay} secondi...")
-            raise self.retry(exc=e, countdown=delay)
-
-@celery_app.task(bind=True, max_retries=3, name="app.tasks.email_tasks.respond_email_task")
-def respond_email_task(self, email_id: UUID):
-
-    from app.ai.llm_factory import get_responder_llm
-    from langgraph.prebuilt import create_react_agent
-    from langchain_core.messages import SystemMessage, HumanMessage
-    from app.ai.prompts import get_responder_system_prompt
-    from app.ai.tools import search_knowledge_base, save_draft_response, escalate_to_human
-
-    try:
-        with session_scope() as db:
-            email = db.query(Email).filter(Email.id == email_id).first()
-            if not email or email.status != EmailStatus.TO_RESPOND:
-                return f"Email {email_id} ignorata (non trovata o stato non valido)."
-            
+    from app.ai.prompts import get_classifier_system_prompt, get_responder_system_prompt
+    from app.ai.tools import processing_tools
+    status = EmailStatus.TO_CLASSIFY if stage == 'classify' else EmailStatus.TO_RESPOND
+    with session_scope() as db:
+        email = claim_processing(db, email_id, status, generation)
+        if email is None:
+            return 'Email già gestita, elaborazione attiva o generazione scaduta: ignorata.'
+        token, generation = email.processing_token, email.processing_generation
+        sender, subject, body = email.sender, email.subject or '', email.body or ''
+        categories = ', '.join(c.name for c in email.categories)
+        if stage == 'respond':
             email.ai_confidence = None
-            sender = email.sender
-            subject = email.subject or ""
-            body = email.body or ""
-            gmail_id = email.gmail_id
-            categories = ", ".join([c.name for c in email.categories])
-        
-        print(f"[WORKER-RESPOND] Avvio risposta email {email_id} (Tentativo {self.request.retries + 1}/4)...")
-        
-        llm = get_responder_llm()
-        tools = [search_knowledge_base, save_draft_response, escalate_to_human]
-        
-        sys_msg = SystemMessage(content=get_responder_system_prompt())
-        user_msg = HumanMessage(content=f"L'email ID è {email_id}.\nMittente: {sender}\nOggetto: {subject}\nCategorie Assegnate: {categories}\nTesto:\n{body}")
-        
-        agent = create_react_agent(llm, tools)
-        
-        result = agent.invoke(
-            {"messages": [sys_msg, user_msg]}, 
-            config={"recursion_limit": 15}
-        )
-        
+    try:
+        llm = get_classifier_llm() if stage == 'classify' else get_responder_llm()
+        prompt = get_classifier_system_prompt() if stage == 'classify' else get_responder_system_prompt()
+        agent = create_react_agent(llm, processing_tools(email_id, token, stage))
+        result = agent.invoke({'messages': [SystemMessage(content=prompt), HumanMessage(content=(
+            f'Email ID: {email_id}\nMittente: {sender}\nOggetto (non determina la lingua): {subject}\n'
+            f'Categorie assegnate: {categories}\nCORPO DEL MESSAGGIO:\n{body}'
+        ))]}, config={'recursion_limit': 15})
         with session_scope() as db:
-            check_email = db.query(Email).filter(Email.id == email_id).first()
-            if check_email and check_email.status == EmailStatus.DRAFT:
+            email = db.query(Email).filter(Email.id == email_id).populate_existing().with_for_update().first()
+            if not email or email.processing_generation != generation or email.manually_edited:
+                return False
+            if stage == 'respond' and email.status == EmailStatus.DRAFT:
                 from app.core.ai_confidence import retrieval_confidence
-                check_email.ai_confidence = retrieval_confidence(result.get("messages", []))
-            if check_email and check_email.status == EmailStatus.TO_RESPOND:
-                raise Exception("L'agente non ha completato la risposta o l'escalation. Forzatura retry.")
-
+                email.ai_confidence = retrieval_confidence(result.get('messages', []))
+            elif can_write(email, status, token):
+                raise RuntimeError('L’agente non ha completato il salvataggio o la transizione di stato.')
         return True
+    except Exception as exc:
+        with session_scope() as db:
+            email = db.query(Email).filter(Email.id == email_id).populate_existing().with_for_update().first()
+            if not can_write(email, status, token):
+                return False
+            release_processing(email)
+            if task.request.retries >= task.max_retries:
+                email.status = EmailStatus.FAILED
+                email.failure_stage = stage
+                # Preserve the last draft, including operator text, on infrastructure failures.
+                return False
+        raise task.retry(exc=exc, countdown=60 * (task.request.retries + 1), kwargs={'generation': generation})
 
-    except Exception as e:
-        print(f"[WORKER-RESPOND] Errore elaborazione email {email_id}: {e}")
-        
-        if self.request.retries >= self.max_retries:
-            print(f"[WORKER-RESPOND] Limite retry raggiunto per email {email_id}. Spostamento in ESCALATED.")
-            try:
-                with session_scope() as db:
-                    email = db.query(Email).filter(Email.id == email_id).first()
-                    if email:
-                        email.status = EmailStatus.ESCALATED
-                        email.generated_draft = f"Errore interno di sistema dopo 3 tentativi: {str(e)}"
-                
-            except Exception as inner_e:
-                print(f"Errore critico durante la marcatura di ESCALATED: {inner_e}")
-            return False
-        else:
-            delay = 60 * (self.request.retries + 1)
-            print(f"[WORKER-RESPOND] Ritento tra {delay} secondi...")
-            raise self.retry(exc=e, countdown=delay)
+
+@celery_app.task(bind=True, max_retries=3, name='app.tasks.email_tasks.classify_email_task', soft_time_limit=540, time_limit=600)
+def classify_email_task(self, email_id: UUID, generation: int | None = None):
+    return _process(self, email_id, 'classify', generation)
+
+
+@celery_app.task(bind=True, max_retries=3, name='app.tasks.email_tasks.respond_email_task', soft_time_limit=540, time_limit=600)
+def respond_email_task(self, email_id: UUID, generation: int | None = None):
+    return _process(self, email_id, 'respond', generation)

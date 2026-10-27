@@ -1,9 +1,10 @@
+import { emailPage } from './review-test-data';
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { Api } from '../../../../core/api/api';
-import { readEmailsApiEmailsGet } from '../../../../core/api/fn/emails/read-emails-api-emails-get';
+import { readEmailPageApiEmailsPageGet } from '../../../../core/api/fn/emails/read-email-page-api-emails-page-get';
 import { AuthService } from '../../../../core/services/auth.service';
 import { ShellUiService } from '../../../../core/services/shell-ui.service';
 import { SideNavbarComponent } from '../../../../core/layout/side-navbar/side-navbar.component';
@@ -27,7 +28,7 @@ describe('Email filters in sidebar navigation', () => {
   let api: jasmine.SpyObj<Api>;
   beforeEach(async () => {
     api = jasmine.createSpyObj<Api>('Api', ['invoke']);
-    api.invoke.and.returnValue(Promise.resolve([email]) as any);
+    api.invoke.and.returnValue(Promise.resolve(emailPage([email])) as any);
     await TestBed.configureTestingModule({
       imports: [SideNavbarComponent],
       providers: [
@@ -54,8 +55,8 @@ describe('Email filters in sidebar navigation', () => {
     harness.detectChanges();
     expect(page.selectedStatus()).toBe('SENT');
     expect(api.invoke.calls.count()).toBe(1);
-    expect(api.invoke).toHaveBeenCalledWith(readEmailsApiEmailsGet, {
-      status: 'SENT',
+    expect(api.invoke).toHaveBeenCalledWith(readEmailPageApiEmailsPageGet, {
+      status: 'SENT', limit: 50,
     });
     expect(
       harness.routeNativeElement!.querySelector('.workspace-toolbar'),
@@ -83,10 +84,10 @@ describe('Email filters in sidebar navigation', () => {
       ),
     ).toEqual([
       'Bozze 1',
-      'Da gestire —',
-      'In elaborazione —',
-      'Errori —',
-      'Inviate —',
+      'Da gestire 0',
+      'In elaborazione 0',
+      'Errori 0',
+      'Inviate 0',
     ]);
     sidebar.nativeElement.querySelector('.email-navigation a').click();
     await new Promise((resolve) => setTimeout(resolve, 0));
@@ -95,7 +96,7 @@ describe('Email filters in sidebar navigation', () => {
     sidebar.detectChanges();
     expect(TestBed.inject(Router).url).toBe('/review?status=ALL');
     expect(TestBed.inject(ShellUiService).emailStatus()).toBe('ALL');
-    expect(api.invoke).toHaveBeenCalledWith(readEmailsApiEmailsGet, {});
+    expect(api.invoke).toHaveBeenCalledWith(readEmailPageApiEmailsPageGet, { limit: 50 });
     expect(sidebar.nativeElement.querySelector('.sub-current')).toBeNull();
     expect(sidebar.componentInstance.shell.emailMenuExpanded()).toBeFalse();
     sidebar.nativeElement.querySelector('.email-menu-toggle').click();

@@ -1,3 +1,4 @@
+from app.core.message_dates import received_timestamp
 import os.path
 import base64
 import argparse
@@ -63,7 +64,8 @@ class GmailClient(EmailClient):
                 "gmail_id": msg_id,
                 "sender": sender,
                 "subject": subject,
-                "body": body
+                "body": body,
+                "received_at": received_timestamp(internal_ms=message_detail.get("internalDate"), header_date=next((h["value"] for h in headers if h["name"].lower() == "date"), None)).isoformat()
             })
 
         return emails_data

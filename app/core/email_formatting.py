@@ -28,8 +28,7 @@ def normalize_language(language: str | None) -> str:
 
 def response_language_for(detected_language: str | None) -> str:
     language = normalize_language(detected_language)
-    overrides = settings.AI_RESPONSE_LANGUAGE_OVERRIDES
-    return normalize_language(overrides.get(language, language))
+    return language
 
 
 LIST_ITEM = re.compile(r"^(?:[-*•]\s+|\d+[.)]\s+)")

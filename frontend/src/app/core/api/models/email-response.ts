@@ -8,9 +8,13 @@ export interface EmailResponse {
   ai_disclaimer?: (string | null);
   body?: (string | null);
   categories?: Array<CategoryResponse>;
+  draft_revision?: number;
+  failure_stage?: (string | null);
   generated_draft?: (string | null);
   gmail_id: string;
   id: string;
+  manually_edited?: boolean;
+  received_at?: (string | null);
   response_language?: (string | null);
   sender: string;
   status: EmailStatus;

@@ -1,16 +1,23 @@
 <div class="workspace-page">
   <app-workspace-header
     title="Revisione email"
-    [subtitle]="emails().length + ' email nella vista'"
+    [subtitle]="total() + ' email nella vista'"
     [search]="search()"
-    (searchChange)="search.set($event)"
+    (searchChange)="onSearch($event)"
     placeholder="Mittente, oggetto o contenuto…"
     actionLabel="Controlla nuove email"
     actionIcon="mail"
     [busy]="fetching()"
     busyLabel="Controllo in corso…"
     (action)="fetchEmails()"
-  />
+  >
+    @if (selectedStatus() === 'FAILED') {
+      <button type="button" class="btn btn-outline" [disabled]="retrying() || acting() || !(counts()['FAILED'] ?? 0)" (click)="retryFailed()">
+        @if (retrying()) { <span class="spinner" aria-hidden="true"></span> } @else { <ds-icon name="arrow" /> }
+        Riprova errori
+      </button>
+    }
+  </app-workspace-header>
   <div class="master-detail" [class.has-detail]="selectedEmail()">
     <div class="master-pane" aria-label="Elenco email">
       @if (loading()) {
@@ -18,7 +25,10 @@
           <span class="spinner" aria-hidden="true"></span>Caricamento email…
         </div>
       } @else {
-        @for (email of filteredEmails(); track email.id) {
+        @for (group of groupedEmails(); track group.key) {
+          <section class="email-day" [attr.aria-label]="group.label">
+            <h2 class="email-date-heading"><time [attr.datetime]="group.key === 'unknown' ? null : group.key">{{ group.label }}</time></h2>
+          @for (email of group.emails; track email.id) {
           <button
             type="button"
             class="list-row email-row"
@@ -61,6 +71,7 @@
               <span class="email-preview">{{
                 email.body || "Nessun contenuto disponibile"
               }}</span>
+              @if (email.received_at) { <time class="arrival-time" [attr.datetime]="email.received_at">{{ arrivalTime(email.received_at) }}</time> }
               <span class="email-tags">
                 @for (category of email.categories; track category.id) {
                   <span class="chip">{{ category.name }}</span>
@@ -71,6 +82,8 @@
               </span>
             </span>
           </button>
+          }
+          </section>
         } @empty {
           <div class="empty-state">
             <ds-icon name="mail" />
@@ -85,10 +98,19 @@
               }}
             </p>
             @if (search()) {
-              <button class="btn btn-outline btn-sm" (click)="search.set('')">
+              <button class="btn btn-outline btn-sm" (click)="onSearch('')">
                 Cancella ricerca
               </button>
             }
+          </div>
+        }
+        @if (nextCursor()) {
+          <div class="load-more" appLoadMore [enabled]="!loadingMore() && !pageError() && !acting()" (loadMore)="loadMore()">
+            @if (pageError()) { <p role="alert">{{ pageError() }}</p> }
+            <button type="button" class="btn btn-ghost" [disabled]="loadingMore()" (click)="loadMore()">
+              @if (loadingMore()) { <span class="spinner" aria-hidden="true"></span> Caricamento… } @else { Carica altre email }
+            </button>
+            <span>{{ emails().length }} di {{ total() }} email</span>
           </div>
         }
       }
@@ -131,6 +153,19 @@
           </button>
         </header>
         <div class="detail-body">
+          @if (remoteEmail(); as remote) {
+            <div class="callout callout-warning draft-conflict" role="status">
+              <ds-icon name="warning" />
+              <div><strong>È disponibile un aggiornamento sul server</strong>
+                <p>Il pannello e il tuo testo restano invariati finché scegli come proseguire.</p>
+                <details><summary>Mostra versione sul server</summary><div class="reading-box">{{ remote.generated_draft || 'Nessuna bozza disponibile.' }}</div></details>
+                <div class="conflict-actions">
+                  <button class="btn btn-outline btn-sm" (click)="loadRemoteVersion()">Carica versione server</button>
+                  @if (['DRAFT', 'ESCALATED', 'FAILED'].includes(remote.status)) { <button class="btn btn-outline btn-sm" (click)="keepLocalVersion()">Mantieni il mio testo</button> }
+                </div>
+              </div>
+            </div>
+          }
           <section class="detail-section">
             <h3>
               <ds-icon name="mail" /> Email ricevuta
@@ -219,6 +254,9 @@
           </section>
         </div>
         <footer class="detail-footer">
+          @if (email.status === 'FAILED' && !email.manually_edited && email.failure_stage !== 'send') {
+            <button type="button" class="btn btn-outline" [disabled]="acting()" (click)="retrySelected()"><ds-icon name="arrow" />Riprova elaborazione</button>
+          }
           @if (canReview()) {
             <button
               class="btn btn-ghost"
@@ -242,7 +280,7 @@
               } @else {
                 <ds-icon name="check" />
               }
-              Approva e invia
+              {{ email.status === 'FAILED' && (email.manually_edited || email.failure_stage === 'send') ? 'Riprova invio' : 'Approva e invia' }}
             </button>
           } @else {
             <span class="toolbar-copy">{{

@@ -24,7 +24,7 @@ Un saluto,
 Segreteria Unical'''
 rendered = render_email(body, 'it')
 logo = base64.b64encode(LOGO_PATH.read_bytes()).decode('ascii')
-output = Path(sys.argv[1] if len(sys.argv) > 1 else 'docs/email-preview.html')
+output = Path(sys.argv[1] if len(sys.argv) > 1 else 'docs/assets/email-preview.html')
 output.parent.mkdir(parents=True, exist_ok=True)
 output.write_text(rendered.html.replace(f'cid:{LOGO_CID}', f'data:image/png;base64,{logo}'), encoding='utf-8')
 print(output)

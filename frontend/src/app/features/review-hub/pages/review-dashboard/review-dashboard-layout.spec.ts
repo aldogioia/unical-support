@@ -1,3 +1,4 @@
+import { emailPage } from './review-test-data';
 import { TestBed, fakeAsync, flushMicrotasks } from '@angular/core/testing';
 import { Api } from '../../../../core/api/api';
 import { updateEmailDraftApiEmailsEmailIdDraftPut } from '../../../../core/api/fn/emails/update-email-draft-api-emails-email-id-draft-put';
@@ -19,7 +20,7 @@ describe('Review hub master-detail', () => {
   let api: jasmine.SpyObj<Api>;
   beforeEach(async () => {
     api = jasmine.createSpyObj<Api>('Api', ['invoke']);
-    api.invoke.and.returnValue(Promise.resolve([example]) as any);
+    api.invoke.and.returnValue(Promise.resolve(emailPage([example])) as any);
     await TestBed.configureTestingModule({
       imports: [ReviewDashboardComponent],
       providers: [{ provide: Api, useValue: api }],
@@ -73,7 +74,7 @@ describe('Review hub master-detail', () => {
   it('uses sender names and a secondary fallback address in list rows', fakeAsync(() => {
     const fixture = TestBed.createComponent(ReviewDashboardComponent), component = fixture.componentInstance;
     fixture.detectChanges(); flushMicrotasks();
-    component.emails.set([{ ...example, sender: 'Giulia Rossi <giulia@example.org>' }, { ...example, id: 'email-2', sender: 'student@example.org' }]);
+    component.emails.set([{ ...example, sender: 'Giulia Rossi <giulia@example.org>', received_at: '2026-10-26T12:00:00Z' }, { ...example, id: 'email-2', sender: 'student@example.org', received_at: '2026-10-25T12:00:00Z' }]);
     fixture.detectChanges();
     const rows = fixture.nativeElement.querySelectorAll('.email-row');
     expect(rows[0].querySelector('.email-sender strong').textContent).toBe('Giulia Rossi');
@@ -116,7 +117,7 @@ describe('Review hub master-detail', () => {
       updateEmailDraftApiEmailsEmailIdDraftPut,
       {
         email_id: 'email-1',
-        body: { generated_draft: 'Testo salvato', status: 'DRAFT' },
+        body: { generated_draft: 'Testo salvato', status: 'DRAFT', expected_revision: 0 },
       },
     );
     expect(component.selectedEmail()?.generated_draft).toBe('Testo salvato');

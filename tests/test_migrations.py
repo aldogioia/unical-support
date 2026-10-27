@@ -112,7 +112,7 @@ class MigrationTests(unittest.TestCase):
         with self.engine.begin() as connection:
             self.assertIsNone(connection.execute(text('SELECT ai_confidence FROM emails WHERE id=:id'), {'id': email_id}).scalar())
             connection.execute(text('UPDATE emails SET ai_confidence=0.96 WHERE id=:id'), {'id': email_id})
-        self.migrate('downgrade', '-1')
+        self.migrate('downgrade', 'd4a7e2b9f610')
         self.assertNotIn('ai_confidence', [column['name'] for column in inspect(self.engine).get_columns('emails')])
         with self.engine.connect() as connection:
             self.assertEqual(connection.execute(text('SELECT generated_draft FROM emails WHERE id=:id'), {'id': email_id}).scalar(), 'Bozza esistente')

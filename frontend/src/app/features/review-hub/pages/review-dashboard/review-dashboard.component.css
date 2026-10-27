@@ -196,3 +196,13 @@
 @media (max-width: 480px) { .draft-caption { flex-wrap: wrap; } }
 
 .sender-address { font-size: 11px; color: var(--ds-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.email-date-heading { position: sticky; top: 0; z-index: 2; padding: 10px 20px; margin: 0; background: var(--ds-bg); color: var(--ds-text-muted); font-size: 11px; font-weight: 500; letter-spacing: .15px; border-bottom: 1px solid var(--ds-divider); }
+.arrival-time { color: var(--ds-text-muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.load-more { display: grid; justify-items: center; gap: 6px; padding: 20px; color: var(--ds-text-muted); font-size: 11px; }
+.load-more p { color: var(--ds-danger); }
+.draft-conflict { margin-bottom: 20px; }
+.draft-conflict > div { min-width: 0; flex: 1; }
+.draft-conflict details { margin-top: 8px; }
+.draft-conflict summary { cursor: pointer; }
+.conflict-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }

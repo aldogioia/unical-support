@@ -1,3 +1,4 @@
+import { emailPage } from './review-test-data';
 import { ComponentFixture, TestBed, fakeAsync, flushMicrotasks, tick } from '@angular/core/testing';
 import { Api } from '../../../../core/api/api';
 import { fetchEmailsNowApiEmailsFetchNowPost } from '../../../../core/api/fn/emails/fetch-emails-now-api-emails-fetch-now-post';
@@ -23,7 +24,7 @@ describe('ReviewDashboardComponent manual fetch', () => {
     api.invoke.and.callFake(((operation: unknown) => {
       if (operation === fetchEmailsNowApiEmailsFetchNowPost) return Promise.resolve(job);
       if (operation === readEmailFetchStatusApiEmailsFetchStatusJobIdGet) return Promise.resolve(++checks === 1 ? job : {...job, status: 'completed', message: 'Controllo completato: 2 nuove email.', fetched_count: 2});
-      return Promise.resolve([]);
+      return Promise.resolve(emailPage([]));
     }) as any);
     fixture.detectChanges(); flushMicrotasks();
     component.fetchEmails(); flushMicrotasks(); tick(0); flushMicrotasks(); fixture.detectChanges();
@@ -41,7 +42,7 @@ describe('ReviewDashboardComponent manual fetch', () => {
     api.invoke.and.callFake(((operation: unknown) => {
       if (operation === fetchEmailsNowApiEmailsFetchNowPost) return Promise.resolve(job);
       if (operation === readEmailFetchStatusApiEmailsFetchStatusJobIdGet) return Promise.resolve({...job, status: 'failed', message: 'Verifica le credenziali OAuth.'});
-      return Promise.resolve([]);
+      return Promise.resolve(emailPage([]));
     }) as any);
     fixture.detectChanges(); flushMicrotasks();
     component.fetchEmails(); flushMicrotasks(); tick(0); flushMicrotasks();
@@ -53,7 +54,7 @@ describe('ReviewDashboardComponent manual fetch', () => {
 
   it('stops following a request if the page is destroyed while enqueueing', fakeAsync(() => {
     let finish!: (job: any) => void;
-    api.invoke.and.callFake(((operation: unknown) => operation === fetchEmailsNowApiEmailsFetchNowPost ? new Promise(resolve => finish = resolve) : Promise.resolve([])) as any);
+    api.invoke.and.callFake(((operation: unknown) => operation === fetchEmailsNowApiEmailsFetchNowPost ? new Promise(resolve => finish = resolve) : Promise.resolve(emailPage([]))) as any);
     fixture.detectChanges(); flushMicrotasks();
     component.fetchEmails(); fixture.destroy();
     finish(job); flushMicrotasks(); tick(2000);
@@ -62,7 +63,7 @@ describe('ReviewDashboardComponent manual fetch', () => {
 
   it('keeps the draft visible when Gmail sending fails', fakeAsync(() => {
     const email: any = {id: 'email-1', status: 'DRAFT', sender: 'student@example.org', body: 'Domanda'};
-    api.invoke.and.callFake(((operation: unknown) => operation === updateEmailDraftApiEmailsEmailIdDraftPut ? Promise.resolve({...email, status: 'FAILED'}) : Promise.resolve([email])) as any);
+    api.invoke.and.callFake(((operation: unknown) => operation === updateEmailDraftApiEmailsEmailIdDraftPut ? Promise.resolve({...email, status: 'FAILED'}) : Promise.resolve(emailPage([email]))) as any);
     fixture.detectChanges(); flushMicrotasks();
     component.handleApprove({email, draft: 'Risposta'}); flushMicrotasks();
     expect(component.emails().length).toBe(1);
