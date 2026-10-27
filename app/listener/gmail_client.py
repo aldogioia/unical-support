@@ -5,24 +5,22 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.mime.image import MIMEImage
-from app.services.email_renderer import render_email, LOGO_PATH, LOGO_CID
+from app.listener.email_client import EmailClient
+from app.listener.message_builder import build_reply_message
 
 SCOPES = ['https://www.googleapis.com/auth/gmail.modify', 'https://www.googleapis.com/auth/gmail.send']
 
-class GmailClient:
+class GmailClient(EmailClient):
     def __init__(self, credentials_path="credentials.json", token_path="token.json", *,
-                 force_reauth=False, auth_port=0, open_browser=True, bind_addr=None):
+                 force_reauth=False, auth_port=0, open_browser=True, bind_addr=None, interactive=False):
         self.credentials_path = credentials_path
         self.token_path = token_path
         self.service = self._authenticate(
             force_reauth=force_reauth, auth_port=auth_port,
-            open_browser=open_browser, bind_addr=bind_addr,
+            open_browser=open_browser, bind_addr=bind_addr, interactive=interactive,
         )
 
-    def _authenticate(self, *, force_reauth=False, auth_port=0, open_browser=True, bind_addr=None):
+    def _authenticate(self, *, force_reauth=False, auth_port=0, open_browser=True, bind_addr=None, interactive=False):
         creds = None
         if not force_reauth and os.path.exists(self.token_path):
             creds = Credentials.from_authorized_user_file(self.token_path, SCOPES)
@@ -31,6 +29,8 @@ class GmailClient:
             if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
             else:
+                if not (interactive or force_reauth):
+                    raise RuntimeError('Token Gmail assente o non utilizzabile. Esegui python -m app.listener.gmail_client --reauth.')
                 flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, SCOPES)
                 creds = flow.run_local_server(
                     host='localhost', bind_addr=bind_addr, port=auth_port,
@@ -105,27 +105,10 @@ class GmailClient:
         message_id = original_headers.get('message-id')
         thread_id = original.get('threadId')
 
-        # Costruisce l'email di risposta
-        rendered = render_email(reply_text, response_language, ai_disclaimer)
-        msg = MIMEMultipart('alternative')
-        msg.attach(MIMEText(rendered.plain_text, 'plain', 'utf-8'))
-        html_part = MIMEMultipart('related')
-        html_part.attach(MIMEText(rendered.html, 'html', 'utf-8'))
-        logo = MIMEImage(LOGO_PATH.read_bytes(), _subtype='png')
-        logo.add_header('Content-ID', f'<{LOGO_CID}>')
-        logo.add_header('Content-Disposition', 'inline', filename='unical-logo.png')
-        html_part.attach(logo)
-        msg.attach(html_part)
-        msg['Content-Language'] = rendered.language
-        msg['To'] = sender_email
-        msg['Subject'] = f"Re: {subject}" if not subject.lower().startswith('re:') else subject
-        references = original_headers.get('references', '').strip()
-        if message_id:
-            msg['In-Reply-To'] = message_id
-            if message_id not in references.split():
-                references = f'{references} {message_id}'.strip()
-        if references:
-            msg['References'] = references
+        msg = build_reply_message(
+            reply_text, sender_email, subject, response_language, ai_disclaimer,
+            message_id=message_id, references=original_headers.get('references', ''),
+        )
 
         raw = base64.urlsafe_b64encode(msg.as_bytes()).decode('utf-8')
 
@@ -133,6 +116,10 @@ class GmailClient:
             userId='me',
             body={'raw': raw, 'threadId': thread_id}
         ).execute()
+
+    def close(self):
+        self.service.close()
+
 
 def main():
     parser = argparse.ArgumentParser(description='Autorizza o rinnova il token Gmail.')
@@ -143,7 +130,7 @@ def main():
     args = parser.parse_args()
     GmailClient(
         force_reauth=args.reauth, auth_port=args.port,
-        open_browser=not args.no_browser, bind_addr=args.bind_address,
+        open_browser=not args.no_browser, bind_addr=args.bind_address, interactive=True,
     )
     print('Autenticazione Gmail completata: token.json salvato e pronto per l\'uso.')
 

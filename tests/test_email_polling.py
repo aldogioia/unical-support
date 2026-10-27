@@ -40,7 +40,7 @@ class EmailPollingTests(unittest.TestCase):
 
     def test_automatic_poll_skips_manual_reservation(self):
         self.coordinator.reserve(str(uuid4()))
-        with patch('app.services.email_polling_service.PollCoordinator', return_value=self.coordinator), patch('app.tasks.polling_tasks.GmailClient') as gmail:
+        with patch('app.services.email_polling_service.PollCoordinator', return_value=self.coordinator), patch('app.tasks.polling_tasks.get_email_client') as gmail:
             result = poll_gmail.run()
         self.assertEqual(result['status'], 'skipped')
         gmail.assert_not_called()
@@ -58,10 +58,10 @@ class EmailPollingTests(unittest.TestCase):
     def test_gmail_error_is_visible_and_releases_lock(self):
         job = str(uuid4())
         self.coordinator.reserve(job)
-        with patch('app.services.email_polling_service.PollCoordinator', return_value=self.coordinator), patch('app.tasks.polling_tasks.GmailClient', side_effect=RuntimeError('OAuth invalid')):
+        with patch('app.services.email_polling_service.PollCoordinator', return_value=self.coordinator), patch('app.tasks.polling_tasks.get_email_client', side_effect=RuntimeError('OAuth invalid')):
             result = poll_gmail.run(job)
         self.assertEqual(result['status'], 'failed')
-        self.assertIn('OAuth', result['message'])
+        self.assertIn('credenziali email', result['message'])
         self.assertFalse(self.coordinator.owns_lock(job))
         self.assertEqual(self.coordinator.status(job)['status'], 'failed')
 
@@ -76,7 +76,7 @@ class EmailPollingTests(unittest.TestCase):
         db = MagicMock()
         db.query.return_value.filter.return_value.first.side_effect = [None, SimpleNamespace(id=uuid4())]
         email_id = uuid4()
-        with patch('app.services.email_polling_service.PollCoordinator', return_value=self.coordinator), patch('app.tasks.polling_tasks.GmailClient', return_value=gmail), patch('app.tasks.polling_tasks.session_scope') as session, patch('app.tasks.polling_tasks.email_service.create_email', return_value=SimpleNamespace(id=email_id)) as create, patch('app.tasks.polling_tasks.celery_app.send_task') as send:
+        with patch('app.services.email_polling_service.PollCoordinator', return_value=self.coordinator), patch('app.tasks.polling_tasks.get_email_client', return_value=gmail), patch('app.tasks.polling_tasks.session_scope') as session, patch('app.tasks.polling_tasks.email_service.create_email', return_value=SimpleNamespace(id=email_id)) as create, patch('app.tasks.polling_tasks.celery_app.send_task') as send:
             session.return_value.__enter__.return_value = db
             result = poll_gmail.run(job)
         self.assertEqual(result['status'], 'completed')

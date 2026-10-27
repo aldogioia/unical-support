@@ -396,7 +396,7 @@ export class ReviewDashboardComponent implements OnInit, OnDestroy {
           emails.map((e) => (e.id === updated.id ? updated : e)),
         );
         this.showToast(
-          'Invio non riuscito. La risposta è stata salvata: verifica Gmail e riprova.',
+          'Invio non riuscito. La risposta è stata salvata: verifica la connessione alla posta e riprova.',
           true,
         );
         return;

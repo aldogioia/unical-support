@@ -1,0 +1,28 @@
+# Optional overlay: -f docker-compose.prod.yml -f docker-compose.smtp.yml
+x-mail-environment: &mail-environment
+  MAIL_PROVIDER: smtp
+  MAIL_USERNAME: ${MAIL_USERNAME:?Imposta MAIL_USERNAME nel file .env}
+  MAIL_FROM: ${MAIL_FROM:-}
+  MAIL_IMAP_HOST: ${MAIL_IMAP_HOST:-imap.gmail.com}
+  MAIL_IMAP_PORT: ${MAIL_IMAP_PORT:-993}
+  MAIL_IMAP_SECURITY: ${MAIL_IMAP_SECURITY:-ssl}
+  MAIL_IMAP_FOLDER: ${MAIL_IMAP_FOLDER:-INBOX}
+  MAIL_SMTP_HOST: ${MAIL_SMTP_HOST:-smtp.gmail.com}
+  MAIL_SMTP_PORT: ${MAIL_SMTP_PORT:-465}
+  MAIL_SMTP_SECURITY: ${MAIL_SMTP_SECURITY:-ssl}
+  MAIL_TIMEOUT_SECONDS: ${MAIL_TIMEOUT_SECONDS:-30}
+  MAIL_FETCH_LIMIT: ${MAIL_FETCH_LIMIT:-50}
+
+services:
+  backend:
+    environment: *mail-environment
+    secrets:
+      - mail_password
+  worker:
+    environment: *mail-environment
+    secrets:
+      - mail_password
+
+secrets:
+  mail_password:
+    file: ${MAIL_PASSWORD_SECRET_FILE:-/home/operatore/secrets/mail_password}

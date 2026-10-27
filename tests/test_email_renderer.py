@@ -116,7 +116,7 @@ def test_reviewed_draft_is_normalized_and_delivery_metadata_is_forwarded():
     db = MagicMock()
     email = SimpleNamespace(id=uuid4(), gmail_id='gmail-1', sender='student@example.org', subject='Documents', response_language='en', ai_disclaimer=DISCLAIMERS['en'], apply_audit_fields=MagicMock())
     db.query.return_value.filter.return_value.first.return_value = email
-    with patch('app.listener.gmail_client.GmailClient') as client:
+    with patch('app.listener.client_factory.get_email_client') as client:
         result = update_email_draft(db, email.id, EmailUpdateDraft(generated_draft='Hello,\n\nYou can\nupload the file.', status=EmailStatus.SENT), uuid4())
     assert result.generated_draft == 'Hello,\n\nYou can upload the file.'
-    client.return_value.send_reply.assert_called_once_with(original_gmail_id='gmail-1', reply_text=result.generated_draft, sender_email='student@example.org', subject='Documents', response_language='en', ai_disclaimer=DISCLAIMERS['en'])
+    client.return_value.__enter__.return_value.send_reply.assert_called_once_with(original_gmail_id='gmail-1', reply_text=result.generated_draft, sender_email='student@example.org', subject='Documents', response_language='en', ai_disclaimer=DISCLAIMERS['en'])

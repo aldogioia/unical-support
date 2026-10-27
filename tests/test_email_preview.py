@@ -36,7 +36,7 @@ def test_preview_uses_unsaved_text_and_stored_language_without_saving_or_sending
     email = SimpleNamespace(response_language='en', ai_disclaimer=None, generated_draft='Original draft')
     with patch('app.services.email_service.get_email', return_value=email), \
          patch('app.services.email_service.update_email_draft') as update, \
-         patch('app.listener.gmail_client.GmailClient') as gmail:
+         patch('app.listener.client_factory.get_email_client') as gmail:
         response = preview_app().post(f'/api/emails/{uuid4()}/preview', json={'generated_draft': 'Hello,\n\nEdited <script>unsafe</script>'})
     assert response.status_code == 200
     html = response.json()['html']

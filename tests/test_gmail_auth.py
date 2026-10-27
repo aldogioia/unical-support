@@ -12,6 +12,12 @@ class GmailAuthTests(TestCase):
         self.addCleanup(directory.cleanup)
         self.tmp_path = Path(directory.name)
 
+    def test_application_never_opens_browser_when_token_is_missing(self):
+        with patch('app.listener.gmail_client.InstalledAppFlow.from_client_secrets_file') as flow:
+            with self.assertRaisesRegex(RuntimeError, '--reauth'):
+                GmailClient(token_path=str(self.tmp_path / 'missing.json'))
+        flow.assert_not_called()
+
     def test_reauth_replaces_unusable_token_and_supports_docker_callback(self):
         tmp_path = self.tmp_path
         token_path = tmp_path / 'token.json'

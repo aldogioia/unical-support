@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field, model_validator
+from pydantic import Field, SecretStr, model_validator
+from typing import Literal
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Unical Support MVP"
@@ -13,6 +14,19 @@ class Settings(BaseSettings):
     FEEDBACK_EMAIL_SENDER: str = ""
     FEEDBACK_EMAIL_PASSWORD: str = ""
     FEEDBACK_EMAIL_RECIPIENT: str = ""
+    MAIL_PROVIDER: Literal['gmail_api', 'smtp'] = 'gmail_api'
+    MAIL_USERNAME: str = ''
+    MAIL_PASSWORD: SecretStr = SecretStr('')
+    MAIL_FROM: str = ''  # Defaults to MAIL_USERNAME.
+    MAIL_IMAP_HOST: str = 'imap.gmail.com'
+    MAIL_IMAP_PORT: int = Field(default=993, ge=1, le=65535)
+    MAIL_IMAP_SECURITY: Literal['ssl', 'starttls'] = 'ssl'
+    MAIL_IMAP_FOLDER: str = 'INBOX'
+    MAIL_SMTP_HOST: str = 'smtp.gmail.com'
+    MAIL_SMTP_PORT: int = Field(default=465, ge=1, le=65535)
+    MAIL_SMTP_SECURITY: Literal['ssl', 'starttls'] = 'ssl'
+    MAIL_TIMEOUT_SECONDS: float = Field(default=30, gt=0, le=120)
+    MAIL_FETCH_LIMIT: int = Field(default=50, ge=1, le=500)
     ALLOWED_ORIGINS: str = "http://localhost:4200,http://localhost"
     SHOW_DOCS: bool = False
     AI_RESPONSE_FALLBACK_LANGUAGE: str = "it"

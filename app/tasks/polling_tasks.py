@@ -2,7 +2,7 @@
 from datetime import datetime, timedelta, timezone
 from sqlalchemy import or_
 from app.core.celery_app import celery_app
-from app.listener.gmail_client import GmailClient
+from app.listener.client_factory import get_email_client
 from app.db.database import session_scope
 from app.schemas.email import EmailCreate
 from app.services import email_service
@@ -22,13 +22,14 @@ def poll_gmail(self, reservation_id: str | None = None):
         return {"status": "skipped", "message": "Prenotazione scaduta o controllo già in corso."}
 
     fetched_count = 0
+    client = None
     try:
-        print("[BEAT] Controllo nuove email Gmail...")
+        print("[BEAT] Controllo nuove email...")
         try:
-            client = GmailClient()
+            client = get_email_client()
         except Exception as exc:
-            print(f"[BEAT] Autenticazione Gmail fallita: {exc}")
-            return coordinator.update(job_id, "failed", "Impossibile accedere a Gmail. Verifica le credenziali OAuth.")
+            print(f"[BEAT] Inizializzazione client email fallita: {exc}")
+            return coordinator.update(job_id, "failed", "Impossibile accedere alla posta. Verifica provider e credenziali email.")
 
         unread_emails = client.fetch_unread_emails()
         with session_scope() as db:
@@ -58,10 +59,14 @@ def poll_gmail(self, reservation_id: str | None = None):
     except Exception as exc:
         print(f"[BEAT] Errore durante il polling: {exc}")
         return coordinator.update(
-            job_id, "failed", "Errore durante il recupero delle email. Verifica Gmail e riprova.", fetched_count,
+            job_id, "failed", "Errore durante il recupero delle email. Verifica la connessione alla posta e riprova.", fetched_count,
         )
     finally:
-        coordinator.release(job_id)
+        try:
+            if client is not None:
+                client.close()
+        finally:
+            coordinator.release(job_id)
 
 
 @celery_app.task(name="app.tasks.polling_tasks.sweep_stuck_emails")

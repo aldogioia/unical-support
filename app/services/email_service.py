@@ -50,23 +50,23 @@ def update_email_draft(db: Session, email_id: UUID, update_data: EmailUpdateDraf
         raise HTTPException(status_code=400, detail="La risposta non può essere vuota.")
     db_email.status = update_data.status
 
-    # Se lo status diventa SENT, invia davvero l'email tramite Gmail
+    # Se lo status diventa SENT, invia tramite il provider configurato.
     if update_data.status == EmailStatus.SENT:
         try:
-            from app.listener.gmail_client import GmailClient
-            client = GmailClient()
-            client.send_reply(
-                original_gmail_id=db_email.gmail_id,
-                reply_text=db_email.generated_draft,
-                sender_email=db_email.sender,
-                subject=db_email.subject or '',
-                response_language=db_email.response_language,
-                ai_disclaimer=db_email.ai_disclaimer,
-            )
+            from app.listener.client_factory import get_email_client
+            with get_email_client() as client:
+                client.send_reply(
+                    original_gmail_id=db_email.gmail_id,
+                    reply_text=db_email.generated_draft,
+                    sender_email=db_email.sender,
+                    subject=db_email.subject or '',
+                    response_language=db_email.response_language,
+                    ai_disclaimer=db_email.ai_disclaimer,
+                )
         except Exception as e:
             # Se l'invio fallisce non blocchiamo il salvataggio del draft,
             # ma segnaliamo l'errore e teniamo lo status su FAILED
-            print(f"[EMAIL_SERVICE] Errore invio Gmail: {e}")
+            print(f"[EMAIL_SERVICE] Errore invio email: {e}")
             db_email.status = EmailStatus.FAILED
 
     db_email.apply_audit_fields(user_id=user_id)

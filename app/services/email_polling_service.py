@@ -1,4 +1,4 @@
-"""Shared coordination for manual and scheduled Gmail polling."""
+"""Shared coordination for manual and scheduled email polling."""
 import json
 from uuid import uuid4
 
