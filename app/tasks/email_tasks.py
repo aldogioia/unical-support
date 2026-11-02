@@ -40,6 +40,12 @@ def _process(task, email_id, stage, generation=None):
                 raise RuntimeError('L’agente non ha completato il salvataggio o la transizione di stato.')
         return True
     except Exception as exc:
+        # Ripiego per i modelli senza tool calling: se l'agente fallisce per un problema
+        # del modello, la stessa email viene completata da app/ai/fallback.py.
+        from app.ai.fallback import attempt_fallback
+        handled, exc = attempt_fallback(exc, email_id, stage, token, generation)
+        if handled:
+            return True
         with session_scope() as db:
             email = db.query(Email).filter(Email.id == email_id).populate_existing().with_for_update().first()
             if not can_write(email, status, token):
