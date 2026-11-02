@@ -1,5 +1,6 @@
 from uuid import UUID
 from app.api.authentication import get_current_user
+from app.api.authorization import is_admin_user
 from app.models.user import User
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
@@ -16,7 +17,7 @@ router = APIRouter()
 def read_documents(
     current_user: Annotated[User, Depends(get_current_user)],
     skip: int = 0,
-    limit: int = 100,
+    limit: int = 150,
     db: Session = Depends(get_db),
 ):
     return document_service.get_documents(db, skip=skip, limit=limit)
@@ -53,3 +54,13 @@ def delete_document(
     db: Session = Depends(get_db),
 ):
     document_service.delete_document(db, document_id)
+
+
+@router.post("/{document_id}/force-index", response_model=DocumentResponse)
+def force_index_document(
+    document_id: UUID,
+    current_user: Annotated[User, Depends(is_admin_user)],
+    db: Session = Depends(get_db),
+):
+    """Indicizza comunque un documento fermato dalla verifica di fedeltà (solo amministratori)."""
+    return document_service.force_index_document(db, document_id, current_user.id)

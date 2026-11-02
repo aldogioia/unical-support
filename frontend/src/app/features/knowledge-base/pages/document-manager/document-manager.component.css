@@ -95,3 +95,122 @@
 }
 
 .row-title, .row-top > strong { font-weight: var(--ds-action-weight); }
+
+/* Revisione dei documenti fermati dalla verifica di fedeltà (solo admin) */
+.review-badge ds-icon {
+  color: var(--ds-warning);
+}
+.review-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: var(--ds-stroke) solid var(--ds-border);
+  border-left: 3px solid var(--ds-warning);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-surface);
+}
+.review-section h3 {
+  margin: 0;
+}
+.review-parts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+.review-part {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: var(--ds-stroke) solid var(--ds-border);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-bg);
+}
+.review-part-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ds-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.review-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+}
+.review-kind {
+  font-size: 12px;
+  color: var(--ds-text-secondary);
+  min-width: 190px;
+}
+.review-row.is-extra .review-kind {
+  color: var(--ds-danger);
+  font-weight: 550;
+}
+.review-chip {
+  font-variant-numeric: tabular-nums;
+}
+.review-chip-extra {
+  color: var(--ds-danger);
+  background: var(--ds-danger-soft);
+  border-color: #efced3;
+}
+.review-raw {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ds-text-secondary);
+}
+.review-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+.review-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 14px;
+  border: var(--ds-stroke) solid var(--ds-border);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-bg);
+}
+.review-confirm p {
+  margin: 0;
+  font-size: 13px;
+}
+.review-confirm-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.review-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ds-text-secondary);
+}
+.review-forced details {
+  margin-top: 6px;
+}
+.review-forced summary {
+  cursor: pointer;
+  font-weight: 550;
+}
+.review-forced ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+@media (max-width: 680px) {
+  .review-kind {
+    min-width: 0;
+    width: 100%;
+  }
+}

@@ -31,6 +31,8 @@ export type { DeleteDocumentApiDocumentsDocumentIdDelete$Params as DeleteDocumen
 export { deleteDocumentApiDocumentsDocumentIdDelete as deleteDocumentApiDocumentsDocumentIdDelete } from './fn/documents/delete-document-api-documents-document-id-delete';
 export type { UploadDocumentApiDocumentsUploadPost$Params as UploadDocumentApiDocumentsUploadPost$Params } from './fn/documents/upload-document-api-documents-upload-post';
 export { uploadDocumentApiDocumentsUploadPost as uploadDocumentApiDocumentsUploadPost } from './fn/documents/upload-document-api-documents-upload-post';
+export type { ForceIndexDocumentApiDocumentsDocumentIdForceIndexPost$Params as ForceIndexDocumentApiDocumentsDocumentIdForceIndexPost$Params } from './fn/documents/force-index-document-api-documents-document-id-force-index-post';
+export { forceIndexDocumentApiDocumentsDocumentIdForceIndexPost as forceIndexDocumentApiDocumentsDocumentIdForceIndexPost } from './fn/documents/force-index-document-api-documents-document-id-force-index-post';
 export type { FetchEmailsNowApiEmailsFetchNowPost$Params as FetchEmailsNowApiEmailsFetchNowPost$Params } from './fn/emails/fetch-emails-now-api-emails-fetch-now-post';
 export { fetchEmailsNowApiEmailsFetchNowPost as fetchEmailsNowApiEmailsFetchNowPost } from './fn/emails/fetch-emails-now-api-emails-fetch-now-post';
 export type { ReadEmailFetchStatusApiEmailsFetchStatusJobIdGet$Params as ReadEmailFetchStatusApiEmailsFetchStatusJobIdGet$Params } from './fn/emails/read-email-fetch-status-api-emails-fetch-status-job-id-get';

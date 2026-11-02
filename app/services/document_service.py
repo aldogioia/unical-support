@@ -11,6 +11,7 @@ from app.models.document import Document
 from app.models.category import Category
 from app.schemas.document import DocumentUpdate
 from app.tasks.document_tasks import process_document_task
+from app.tasks.document_tasks import force_index_document_task
 from app.core.urls import normalize_reference_url
 
 UPLOAD_DIR = "/app/uploads"
@@ -36,7 +37,7 @@ MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
 def get_document(db: Session, document_id: UUID):
     return db.query(Document).filter(Document.id == document_id).first()
 
-def get_documents(db: Session, skip: int = 0, limit: int = 100):
+def get_documents(db: Session, skip: int = 0, limit: int = 150):
     return db.query(Document).offset(skip).limit(limit).all()
 
 def _resolve_categories(db: Session, category_ids: list[UUID] | None) -> list[Category]:
@@ -159,6 +160,48 @@ def update_document(db: Session, document_id: UUID, document_in: DocumentUpdate,
     })
     db.commit()
     db.refresh(db_document)
+    return db_document
+
+# Prefisso che process_document_task antepone al Markdown quando la verifica di fedeltà fallisce.
+REVIEW_PREFIX = "ATTENZIONE: verifica di fedeltà numerica/fattuale fallita, documento NON indicizzato.\n\n"
+EMPTY_REVIEW_TEXT = "Nessun testo generato."
+FORCED_REVIEW_NOTE = "Indicizzato manualmente da un amministratore nonostante la verifica di fedeltà."
+
+
+def reviewed_markdown(extracted_text: str | None) -> str:
+    """Markdown generato dal formatter e salvato per un documento in needs_review."""
+    if not extracted_text or not extracted_text.startswith(REVIEW_PREFIX):
+        return ""
+    markdown = extracted_text[len(REVIEW_PREFIX):].strip()
+    return "" if markdown == EMPTY_REVIEW_TEXT else markdown
+
+
+def force_index_document(db: Session, document_id: UUID, user_id: UUID):
+    """
+    Indicizza un documento fermato dalla verifica di fedeltà, su decisione di un
+    amministratore. Usa il Markdown già generato: nessun file da ricaricare.
+    """
+    db_document = (
+        db.query(Document).filter(Document.id == document_id)
+        .populate_existing().with_for_update().first()
+    )
+    if not db_document:
+        raise HTTPException(status_code=404, detail="Documento non trovato")
+    if db_document.processing_status != "needs_review":
+        raise HTTPException(status_code=409, detail="Il documento non è in attesa di revisione.")
+    if not reviewed_markdown(db_document.extracted_text):
+        raise HTTPException(status_code=422, detail="Non c'è testo generato da indicizzare: ricarica il documento.")
+
+    db_document.processing_status = "pending"
+    db_document.apply_audit_fields(user_id=user_id, is_create=False)
+    db.commit()
+    db.refresh(db_document)
+    try:
+        force_index_document_task.delay(str(db_document.id))
+    except Exception as exc:
+        db_document.processing_status = "needs_review"
+        db.commit()
+        raise HTTPException(status_code=503, detail="Impossibile avviare l'indicizzazione. Riprova.") from exc
     return db_document
 
 def delete_document(db: Session, document_id: UUID):

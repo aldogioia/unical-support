@@ -1,9 +1,18 @@
-import { TestBed, fakeAsync, flushMicrotasks } from '@angular/core/testing';
+import { signal } from '@angular/core';
+import { TestBed, fakeAsync, flushMicrotasks, tick } from '@angular/core/testing';
 import { Api } from '../../../../core/api/api';
 import { readCategoriesApiCategoriesGet } from '../../../../core/api/fn/categories/read-categories-api-categories-get';
 import { updateDocumentApiDocumentsDocumentIdPut } from '../../../../core/api/fn/documents/update-document-api-documents-document-id-put';
 import { uploadDocumentApiDocumentsUploadPost } from '../../../../core/api/fn/documents/upload-document-api-documents-upload-post';
-import { DocumentManagerComponent } from './document-manager.component';
+import { forceIndexDocumentApiDocumentsDocumentIdForceIndexPost } from '../../../../core/api/fn/documents/force-index-document-api-documents-document-id-force-index-post';
+import { readDocumentsApiDocumentsGet } from '../../../../core/api/fn/documents/read-documents-api-documents-get';
+import { UserResponse } from '../../../../core/api/models/user-response';
+import { AuthService } from '../../../../core/services/auth.service';
+import {
+  DocumentManagerComponent,
+  FORCED_REVIEW_NOTE,
+  parseReviewNotes,
+} from './document-manager.component';
 
 const category = {
   id: 'category-1',
@@ -18,6 +27,7 @@ const source = {
   reference_url: 'https://www.unical.it/guida.pdf',
   categories: [category],
 };
+const currentUser = signal<UserResponse | null>(null);
 describe('Knowledge base master-detail', () => {
   let api: jasmine.SpyObj<Api>;
   beforeEach(async () => {
@@ -28,7 +38,10 @@ describe('Knowledge base master-detail', () => {
       )) as any);
     await TestBed.configureTestingModule({
       imports: [DocumentManagerComponent],
-      providers: [{ provide: Api, useValue: api }],
+      providers: [
+        { provide: Api, useValue: api },
+        { provide: AuthService, useValue: { currentUser } },
+      ],
     }).compileComponents();
   });
   it('keeps upload controls out of the initial list and opens them only when creating', fakeAsync(() => {
@@ -159,6 +172,123 @@ describe('Knowledge base master-detail', () => {
     flushMicrotasks();
     expect(api.invoke.calls.count()).toBe(count);
     expect(component.editError()).toContain('URL valido');
+    fixture.destroy();
+  }));
+});
+
+const reviewed = {
+  ...source,
+  id: 'document-review',
+  filename: 'Regolamento Tasse.pdf',
+  processing_status: 'needs_review',
+  review_notes:
+    "Parte 1/2: dati persi: 14, 15\nParte 2/2: dati persi: 2024; dati non presenti nell'originale: 31/08",
+  extracted_text:
+    'ATTENZIONE: verifica di fedeltà numerica/fattuale fallita, documento NON indicizzato.\n\nTesto generato',
+};
+describe('Document review for administrators', () => {
+  let api: jasmine.SpyObj<Api>;
+  let listed: any[];
+  beforeEach(async () => {
+    listed = [reviewed];
+    currentUser.set({ id: 'u1', email: 'admin@unical.it', is_active: true, role: 'admin' });
+    api = jasmine.createSpyObj<Api>('Api', ['invoke']);
+    api.invoke.and.callFake(((operation: unknown) => {
+      if (operation === readCategoriesApiCategoriesGet) return Promise.resolve([category]);
+      if (operation === forceIndexDocumentApiDocumentsDocumentIdForceIndexPost)
+        return Promise.resolve({ ...reviewed, processing_status: 'pending' });
+      return Promise.resolve(listed);
+    }) as any);
+    await TestBed.configureTestingModule({
+      imports: [DocumentManagerComponent],
+      providers: [
+        { provide: Api, useValue: api },
+        { provide: AuthService, useValue: { currentUser } },
+      ],
+    }).compileComponents();
+  });
+  afterEach(() => currentUser.set(null));
+
+  function open() {
+    const fixture = TestBed.createComponent(DocumentManagerComponent);
+    fixture.detectChanges();
+    flushMicrotasks();
+    fixture.componentInstance.selectDocument(reviewed as any);
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  it('parses lost and added data for every part of the review notes', () => {
+    const parts = parseReviewNotes(FORCED_REVIEW_NOTE + '\n' + reviewed.review_notes);
+    expect(parts.map((p) => p.label)).toEqual(['Parte 1 di 2', 'Parte 2 di 2']);
+    expect(parts[0].lost).toEqual(['14', '15']);
+    expect(parts[1].lost).toEqual(['2024']);
+    expect(parts[1].extra).toEqual(['31/08']);
+  });
+
+  it('marks documents to review in the list', fakeAsync(() => {
+    const fixture = open();
+    expect(fixture.nativeElement.querySelector('.review-badge').textContent).toContain('Da verificare');
+    fixture.destroy();
+  }));
+
+  it('shows the review section with the differences and a risk warning to admins', fakeAsync(() => {
+    const fixture = open();
+    const section = fixture.nativeElement.querySelector('.review-section');
+    expect(section).not.toBeNull();
+    expect(section.querySelectorAll('.review-part').length).toBe(2);
+    expect(section.querySelector('.review-chip-extra').textContent).toContain('31/08');
+    expect(section.querySelector('.review-risk')).not.toBeNull();
+    expect(section.querySelector('.review-force')).not.toBeNull();
+    fixture.destroy();
+  }));
+
+  it('hides the review section from non-admin users', fakeAsync(() => {
+    currentUser.set({ id: 'u2', email: 'op@unical.it', is_active: true, role: 'user' });
+    const fixture = open();
+    expect(fixture.nativeElement.querySelector('.review-section')).toBeNull();
+    fixture.destroy();
+  }));
+
+  it('asks for confirmation, forces indexing and follows it until it is indexed', fakeAsync(() => {
+    const fixture = open(),
+      component = fixture.componentInstance;
+    fixture.nativeElement.querySelector('.review-force').click();
+    fixture.detectChanges();
+    expect(api.invoke).not.toHaveBeenCalledWith(
+      forceIndexDocumentApiDocumentsDocumentIdForceIndexPost,
+      jasmine.anything(),
+    );
+    expect(fixture.nativeElement.querySelector('.review-confirm')).not.toBeNull();
+    component.forceIndex(reviewed as any);
+    flushMicrotasks();
+    fixture.detectChanges();
+    expect(api.invoke).toHaveBeenCalledWith(
+      forceIndexDocumentApiDocumentsDocumentIdForceIndexPost,
+      { document_id: reviewed.id },
+    );
+    expect(fixture.nativeElement.querySelector('.review-progress')).not.toBeNull();
+    listed = [{ ...reviewed, processing_status: 'indexed', extracted_text: 'Testo generato',
+      review_notes: FORCED_REVIEW_NOTE + '\n' + reviewed.review_notes }];
+    tick(3000);
+    flushMicrotasks();
+    fixture.detectChanges();
+    expect(component.isForcing(reviewed as any)).toBeFalse();
+    expect(component.reviewNotice()).toContain('è stato indicizzato');
+    expect(fixture.nativeElement.querySelector('.review-section')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.review-forced')).not.toBeNull();
+    expect(api.invoke).toHaveBeenCalledWith(readDocumentsApiDocumentsGet, {});
+    fixture.destroy();
+  }));
+
+  it('reports a failed start without leaving the document stuck', fakeAsync(() => {
+    const fixture = open(),
+      component = fixture.componentInstance;
+    api.invoke.and.returnValue(Promise.reject(new Error('409')) as any);
+    component.forceIndex(reviewed as any);
+    flushMicrotasks();
+    expect(component.isForcing(reviewed as any)).toBeFalse();
+    expect(component.reviewError()).toContain("Impossibile avviare");
     fixture.destroy();
   }));
 });

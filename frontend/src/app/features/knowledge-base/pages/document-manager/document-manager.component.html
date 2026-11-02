@@ -38,7 +38,16 @@
             <span class="row-main"
               ><span class="row-top"
                 ><strong>{{ doc.filename || "Documento" }}</strong
-                ><span class="badge">{{ doc.content_type }}</span></span
+                ><span class="badge">{{ doc.content_type }}</span>
+                @if (needsReview(doc)) {
+                  <span class="badge badge-warning review-badge"
+                    ><ds-icon name="warning" />Da verificare</span
+                  >
+                } @else if (isForcing(doc) || doc.processing_status === "pending") {
+                  <span class="badge badge-info"
+                    ><ds-icon name="clock" />In elaborazione</span
+                  >
+                }</span
               ><span class="row-preview">{{
                 doc.extracted_text ||
                   doc.reference_url ||
@@ -220,6 +229,151 @@
             @if (editNotice()) {
               <div class="callout callout-success" role="status">
                 {{ editNotice() }}
+              </div>
+            }
+            @if (isAdmin() && (needsReview(doc) || isForcing(doc))) {
+              <section
+                class="detail-section review-section"
+                aria-labelledby="review-title"
+              >
+                <h3 id="review-title">
+                  <ds-icon name="warning" /> Revisione del documento
+                </h3>
+                <div class="callout callout-warning" role="note">
+                  <ds-icon name="info" />
+                  <div>
+                    <strong>Questo documento non è indicizzato</strong>
+                    La verifica di fedeltà ha trovato differenze tra il file
+                    originale e il testo riscritto dall'AI, quindi l'assistente
+                    non lo usa per rispondere. Controlla le differenze e il
+                    contenuto generato qui sotto prima di decidere.
+                  </div>
+                </div>
+                @if (reviewParts().length) {
+                  <ul class="review-parts" aria-label="Differenze trovate">
+                    @for (part of reviewParts(); track $index) {
+                      <li class="review-part">
+                        <span class="review-part-label">{{ part.label }}</span>
+                        @if (part.lost.length) {
+                          <div class="review-row">
+                            <span class="review-kind"
+                              >Dati dell'originale non ritrovati</span
+                            >
+                            <span class="chips">
+                              @for (item of part.lost; track $index) {
+                                <span class="chip review-chip">{{ item }}</span>
+                              }
+                            </span>
+                          </div>
+                        }
+                        @if (part.extra.length) {
+                          <div class="review-row is-extra">
+                            <span class="review-kind"
+                              >Dati non presenti nell'originale</span
+                            >
+                            <span class="chips">
+                              @for (item of part.extra; track $index) {
+                                <span class="chip review-chip review-chip-extra">{{
+                                  item
+                                }}</span>
+                              }
+                            </span>
+                          </div>
+                        }
+                        @if (!part.lost.length && !part.extra.length) {
+                          <p class="review-raw">{{ part.raw }}</p>
+                        }
+                      </li>
+                    }
+                  </ul>
+                }
+                @if (reviewHasExtra()) {
+                  <div class="callout callout-danger review-risk" role="alert">
+                    <ds-icon name="warning" />
+                    <div>
+                      <strong>Attenzione ai dati aggiunti</strong>
+                      Il testo generato contiene valori che nel file originale
+                      non ci sono: potrebbero essere numeri o date trascritti
+                      male. Se indicizzi comunque, l'AI li userà nelle risposte
+                      agli studenti.
+                    </div>
+                  </div>
+                } @else {
+                  <p class="field-hint">
+                    Mancano solo dati dell'originale: spesso sono numeri di
+                    pagina, intestazioni o recapiti ripetuti. In questi casi di
+                    solito si può indicizzare comunque.
+                  </p>
+                }
+                @if (reviewError()) {
+                  <div class="callout callout-danger" role="alert">
+                    {{ reviewError() }}
+                  </div>
+                }
+                <div class="review-actions">
+                  @if (isForcing(doc)) {
+                    <div class="review-progress" role="status">
+                      <span class="spinner" aria-hidden="true"></span>
+                      Indicizzazione in corso…
+                    </div>
+                  } @else if (confirmingForceId() === doc.id) {
+                    <div class="review-confirm" role="group" aria-label="Conferma indicizzazione">
+                      <p>
+                        Il testo generato verrà indicizzato così com'è e l'AI
+                        potrà citarlo nelle risposte. Confermi?
+                      </p>
+                      <div class="review-confirm-buttons">
+                        <button
+                          type="button"
+                          class="btn btn-primary"
+                          (click)="forceIndex(doc)"
+                        >
+                          <ds-icon name="check" />Sì, indicizza comunque
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-outline"
+                          (click)="cancelForceIndex()"
+                        >
+                          Annulla
+                        </button>
+                      </div>
+                    </div>
+                  } @else {
+                    <button
+                      type="button"
+                      class="btn btn-primary review-force"
+                      (click)="askForceIndex(doc)"
+                    >
+                      <ds-icon name="upload" />Indicizza comunque
+                    </button>
+                  }
+                </div>
+              </section>
+            }
+            @if (reviewNotice() && !needsReview(doc)) {
+              <div class="callout callout-success" role="status">
+                {{ reviewNotice() }}
+              </div>
+            }
+            @if (isAdmin() && wasForced(doc)) {
+              <div class="callout callout-info review-forced" role="note">
+                <ds-icon name="info" />
+                <div>
+                  <strong>Indicizzato manualmente</strong>
+                  Un amministratore ha indicizzato questo documento nonostante
+                  la verifica di fedeltà avesse segnalato delle differenze.
+                  @if (reviewParts().length) {
+                    <details>
+                      <summary>Differenze segnalate</summary>
+                      <ul>
+                        @for (part of reviewParts(); track $index) {
+                          <li>{{ part.raw }}</li>
+                        }
+                      </ul>
+                    </details>
+                  }
+                </div>
               </div>
             }
             <section class="detail-section">

@@ -81,3 +81,51 @@ def process_document_task(document_id: UUID | str, file_path: str, category_ids:
 
     except Exception as e:
         print(f"[WORKER] Errore elaborazione documento {document_id}: {e}")
+
+
+@celery_app.task(name="app.tasks.document_tasks.force_index_document_task")
+def force_index_document_task(document_id: UUID | str):
+    """
+    Indicizza il Markdown di un documento in needs_review dopo la conferma di un
+    amministratore (vedi document_service.force_index_document).
+    """
+    from langchain_core.documents import Document as LangchainDocument
+    from app.ai.rag import index_langchain_documents
+    from app.services.document_service import (
+        FORCED_REVIEW_NOTE, delete_document_chunks, reviewed_markdown,
+    )
+
+    with session_scope() as db:
+        source = db.query(Document).filter(Document.id == document_id).first()
+        markdown = reviewed_markdown(source.extracted_text) if source else ""
+        if not source or source.processing_status != "pending" or not markdown:
+            print(f"[WORKER] Indicizzazione forzata ignorata per il documento {document_id}.")
+            return
+        category_names = sorted(c.name for c in source.categories)
+        reference_url = source.reference_url
+        source_name = source.filename
+        notes = source.review_notes
+        # idempotente: un eventuale tentativo precedente non lascia chunk duplicati
+        delete_document_chunks(db, document_id)
+
+    try:
+        chunk_count = index_langchain_documents(
+            [LangchainDocument(page_content=markdown)], category_names=category_names,
+            document_id=str(document_id), reference_url=reference_url, source_name=source_name,
+        )
+    except Exception as e:
+        print(f"[WORKER] Indicizzazione forzata fallita per il documento {document_id}: {e}")
+        with session_scope() as db:
+            db_doc = db.query(Document).filter(Document.id == document_id).first()
+            if db_doc and db_doc.processing_status == "pending":
+                db_doc.processing_status = "needs_review"
+        return
+
+    with session_scope() as db:
+        db_doc = db.query(Document).filter(Document.id == document_id).first()
+        if db_doc:
+            db_doc.extracted_text = markdown[:500]
+            db_doc.processing_status = "indexed"
+            if not (notes or "").startswith(FORCED_REVIEW_NOTE):
+                db_doc.review_notes = FORCED_REVIEW_NOTE + ("\n" + notes if notes else "")
+    print(f"[WORKER] Documento {document_id} indicizzato manualmente. Chunks: {chunk_count}")

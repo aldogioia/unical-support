@@ -5,6 +5,7 @@ import {
   signal,
   inject,
   computed,
+  OnDestroy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -20,6 +21,46 @@ import { readCategoriesApiCategoriesGet } from '../../../../core/api/fn/categori
 import { DocumentResponse } from '../../../../core/api/models/document-response';
 import { CategoryResponse } from '../../../../core/api/models/category-response';
 import { CategoryMultiSelectComponent } from '../../../../shared/components/category-multi-select/category-multi-select.component';
+import { forceIndexDocumentApiDocumentsDocumentIdForceIndexPost } from '../../../../core/api/fn/documents/force-index-document-api-documents-document-id-force-index-post';
+import { AuthService } from '../../../../core/services/auth.service';
+
+/** Una riga delle note di revisione prodotte dalla verifica di fedeltà. */
+export interface ReviewPart {
+  label: string;
+  lost: string[];
+  extra: string[];
+  raw: string;
+}
+
+/** Deve coincidere con FORCED_REVIEW_NOTE in app/services/document_service.py. */
+export const FORCED_REVIEW_NOTE =
+  'Indicizzato manualmente da un amministratore nonostante la verifica di fedeltà.';
+const REVIEW_POLL_MS = 3000;
+const REVIEW_POLL_MAX = 60;
+
+export function parseReviewNotes(notes: string | null | undefined): ReviewPart[] {
+  return (notes ?? '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line && line !== FORCED_REVIEW_NOTE)
+    .map((line) => {
+      const match = /^Parte (\d+)\/(\d+):\s*(.*)$/.exec(line);
+      const part: ReviewPart = {
+        label: match ? `Parte ${match[1]} di ${match[2]}` : 'Nota',
+        lost: [],
+        extra: [],
+        raw: line,
+      };
+      for (const segment of (match ? match[3] : line).split(/;\s*(?=dati )/)) {
+        const lost = /^dati persi:\s*(.*)$/.exec(segment);
+        const extra = /^dati non presenti nell'originale:\s*(.*)$/.exec(segment);
+        const items = (lost ?? extra)?.[1].split(', ').map((s) => s.trim()).filter(Boolean) ?? [];
+        if (lost) part.lost.push(...items);
+        if (extra) part.extra.push(...items);
+      }
+      return part;
+    });
+}
 
 @Component({
   selector: 'app-document-manager',
@@ -36,8 +77,22 @@ import { CategoryMultiSelectComponent } from '../../../../shared/components/cate
   styleUrl: './document-manager.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DocumentManagerComponent implements OnInit {
+export class DocumentManagerComponent implements OnInit, OnDestroy {
   private api = inject(Api);
+  private auth = inject(AuthService);
+  readonly isAdmin = computed(() => this.auth.currentUser()?.role === 'admin');
+  readonly reviewParts = computed(() =>
+    parseReviewNotes(this.selectedDocument()?.review_notes),
+  );
+  readonly reviewHasExtra = computed(() =>
+    this.reviewParts().some((part) => part.extra.length > 0),
+  );
+  readonly confirmingForceId = signal<string | null>(null);
+  readonly forcingIds = signal<ReadonlySet<string>>(new Set());
+  readonly reviewError = signal<string | null>(null);
+  readonly reviewNotice = signal('');
+  private pollTimer: ReturnType<typeof setTimeout> | null = null;
+  private pollAttempts = 0;
   readonly search = signal('');
   readonly selectedDocumentId = signal<string | null>(null);
   readonly creating = signal(false);
@@ -75,6 +130,7 @@ export class DocumentManagerComponent implements OnInit {
   }
   selectDocument(document: DocumentResponse): void {
     if (this.uploading() || this.savingCategoryDocId()) return;
+    this.resetReview();
     this.cancelEditCategories();
     this.creating.set(false);
     this.selectedDocumentId.set(document.id);
@@ -82,6 +138,7 @@ export class DocumentManagerComponent implements OnInit {
   }
   closeDetail(): void {
     if (this.uploading() || this.savingCategoryDocId()) return;
+    this.resetReview();
     this.cancelEditCategories();
     this.creating.set(false);
     this.selectedDocumentId.set(null);
@@ -264,6 +321,119 @@ export class DocumentManagerComponent implements OnInit {
     } finally {
       this.uploading.set(false);
     }
+  }
+
+  needsReview(doc: DocumentResponse): boolean {
+    return doc.processing_status === 'needs_review';
+  }
+
+  isForcing(doc: DocumentResponse): boolean {
+    return this.forcingIds().has(doc.id);
+  }
+
+  wasForced(doc: DocumentResponse): boolean {
+    return (
+      doc.processing_status === 'indexed' &&
+      !!doc.review_notes?.startsWith(FORCED_REVIEW_NOTE)
+    );
+  }
+
+  askForceIndex(doc: DocumentResponse): void {
+    this.reviewError.set(null);
+    this.reviewNotice.set('');
+    this.confirmingForceId.set(doc.id);
+  }
+
+  cancelForceIndex(): void {
+    this.confirmingForceId.set(null);
+  }
+
+  async forceIndex(doc: DocumentResponse): Promise<void> {
+    if (!this.isAdmin() || this.isForcing(doc)) return;
+    this.confirmingForceId.set(null);
+    this.reviewError.set(null);
+    this.reviewNotice.set('');
+    this.setForcing(doc.id, true);
+    try {
+      const updated = await this.api.invoke(
+        forceIndexDocumentApiDocumentsDocumentIdForceIndexPost,
+        { document_id: doc.id },
+      );
+      this.documents.update((docs) =>
+        docs.map((d) => (d.id === doc.id ? updated : d)),
+      );
+      this.pollAttempts = 0;
+      this.schedulePoll();
+    } catch (e) {
+      console.error(e);
+      this.setForcing(doc.id, false);
+      this.reviewError.set(
+        "Impossibile avviare l'indicizzazione. Ricarica la pagina e riprova.",
+      );
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.stopPolling();
+  }
+
+  private resetReview(): void {
+    this.confirmingForceId.set(null);
+    this.reviewError.set(null);
+    this.reviewNotice.set('');
+  }
+
+  private setForcing(id: string, active: boolean): void {
+    this.forcingIds.update((ids) => {
+      const next = new Set(ids);
+      if (active) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }
+
+  private stopPolling(): void {
+    if (this.pollTimer) clearTimeout(this.pollTimer);
+    this.pollTimer = null;
+  }
+
+  private schedulePoll(): void {
+    this.stopPolling();
+    if (!this.forcingIds().size) return;
+    if (this.pollAttempts >= REVIEW_POLL_MAX) {
+      this.forcingIds.set(new Set());
+      this.reviewNotice.set(
+        "L'indicizzazione sta richiedendo più tempo del previsto: ricarica la pagina tra qualche minuto.",
+      );
+      return;
+    }
+    this.pollAttempts++;
+    this.pollTimer = setTimeout(() => this.refreshForced(), REVIEW_POLL_MS);
+  }
+
+  private async refreshForced(): Promise<void> {
+    this.pollTimer = null;
+    try {
+      const data = await this.api.invoke(readDocumentsApiDocumentsGet, {});
+      this.documents.set(data);
+      for (const id of this.forcingIds()) {
+        const doc = data.find((d) => d.id === id);
+        if (doc?.processing_status === 'pending') continue;
+        this.setForcing(id, false);
+        if (doc?.processing_status === 'indexed') {
+          this.reviewNotice.set(
+            `«${doc.filename}» è stato indicizzato: l'AI ora può usarlo nelle risposte.`,
+          );
+        } else if (doc?.processing_status === 'needs_review') {
+          this.reviewError.set(
+            `Indicizzazione di «${doc.filename}» non riuscita: il documento è tornato in revisione. Riprova più tardi.`,
+          );
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    this.schedulePoll();
   }
 
   async deleteDocument(id: string) {
