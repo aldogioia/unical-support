@@ -6,7 +6,7 @@ Lo script `scripts/deploy.py` aggiorna un'installazione Docker Compose **già pr
 
 Il database esistente deve essere mantenuto. Lo script richiede container PostgreSQL/Redis già attivi, individua il progetto e i volumi effettivi e rifiuta installazioni ambigue. Non esegue `down`, cancellazioni di volumi, `stamp`, restore o ricreazioni di db/redis. Prima di ogni rollout fa un dump verificato; l'aggiornamento dello schema avviene soltanto con `--migrate`.
 
-Stato al 28 ottobre 2026: script e test locali preparati; nessun deploy remoto eseguito. Il primo accesso SSH ha risposto “Too many authentication failures”; la seconda verifica con identità limitate non è stata autorizzata. Directory, progetto, secret, volumi e connettività effettivi della VPS restano da verificare.
+Stato al 3 novembre 2026: l'accesso SSH con password e i percorsi `/home/operatore/unical_support` e `/home/operatore/secrets` sono confermati. I tentativi di --check hanno rilevato accesso negato al socket Docker e assenza di sudo. Per questo server usare `--interactive-ssh --su`. Non è stato eseguito un deploy remoto durante l'intervento; progetto Docker, volumi e prerequisiti applicativi restano da verificare con --check --su.
 
 ## Connessione SSH
 
@@ -25,7 +25,18 @@ Host UnicalSupport
     ProxyJump UnicalSupportJump
 ```
 
-Usare le chiavi già autorizzate per i due account. Se l'agent offre troppe chiavi, aggiungere `IdentityFile` e `IdentitiesOnly yes` **a entrambe le sezioni**, oppure usare le opzioni dello script:
+Per l'accesso con password usare `--interactive-ssh` dal terminale del **Mac**, nella radice del progetto locale. Se si è ancora nella shell remota, uscire prima con `exit`:
+
+```bash
+python3 scripts/deploy.py --interactive-ssh \
+  --remote-dir /home/operatore/unical_support --check
+```
+
+OpenSSH chiede prima la password di `unicalsupport@160.97.63.29`, poi quella di `operatore@160.97.104.166`, salvo autenticazioni già soddisfatte tramite chiave. Le password vengono lette dal terminale da OpenSSH, non dallo script Python. Non passare password come argomenti o file di configurazione. Il timeout di connessione in questa modalità è 180 secondi, per consentire le due autenticazioni.
+
+Lo script apre prima una connessione master con un socket in una directory temporanea privata; controllo, upload ed esecuzione usano la stessa connessione. Alla fine, anche in caso di errore, chiude il proprio master. Ogni nuova invocazione dello script effettua una nuova autenticazione: un --check separato e il successivo deploy possono richiedere entrambi le due password. Non viene mantenuta una sessione del precedente `ssh UnicalSupport`.
+
+Per accessi automatici usare le chiavi già autorizzate per i due account, senza --interactive-ssh. Se l'agent offre troppe chiavi, aggiungere `IdentityFile` e `IdentitiesOnly yes` **a entrambe le sezioni**, oppure usare le opzioni dello script:
 
 ```bash
 python3 scripts/deploy.py --check \
@@ -33,12 +44,40 @@ python3 scripts/deploy.py --check \
   --jump-identity ~/.ssh/chiave_jump
 ```
 
-I percorsi sono esempi: sostituirli con le chiavi corrette. Non vengono cambiate automaticamente configurazione SSH, chiavi o permessi sul server. Lo script usa autenticazione non interattiva e verifica stretta delle host key. Al primo accesso verificare le impronte con l'amministratore e completare un normale `ssh UnicalSupport` interattivo; non disabilitare il controllo delle host key. Se l'accesso richiede una password o una chiave cifrata non caricata, predisporre prima il normale accesso SSH/agent.
+I percorsi delle chiavi sono esempi: sostituirli con quelli corretti. Non vengono cambiate automaticamente configurazione SSH, chiavi o permessi sul server. Il default resta non interattivo su entrambi gli host; --interactive-ssh abilita password e passphrase. La verifica delle host key rimane stretta in entrambe le modalità. Al primo accesso verificare le impronte con l'amministratore e completare un normale `ssh UnicalSupport` interattivo; non disabilitare il controllo delle host key.
+
+### Docker richiede root: usare su su questo server
+
+Il server non dispone di sudo. Usare `--su`, senza `--sudo`, dal Mac:
+
+```bash
+python3 scripts/deploy.py --interactive-ssh --su \
+  --remote-dir /home/operatore/unical_support --check
+```
+
+L'accesso SSH resta come operatore attraverso il jump. Il terminale remoto esegue `su --login root --command ...`: alla richiesta di su inserire **la password di root**, non quella di operatore, salvo che coincidano. La password viene letta direttamente da su dal terminale; non passa come argomento, JSON o dato letto da Python. Per un deploy completo su può richiederla due volte, una per l'inventario e una per il rollout; in un --check separato la richiede nuovamente.
+
+L'helper parte nella sessione root, poi usa UID/GID effettivi e gruppi originali di operatore per le operazioni sui file. Soltanto i processi figli che eseguono Docker riprendono l'identità root. In questo modo i file generati di release, runtime e backup restano accessibili a operatore senza chown ricorsivi sul progetto e senza modificare i secret. Questa modalità non dipende da sudo, non cambia i gruppi dell'utente e non cambia i permessi del socket Docker.
+
+I file temporanei dell'inventario restano separati dal terminale di autenticazione e vengono rimossi al termine. `--su` e `--sudo` sono mutuamente esclusivi. Per i comandi manuali del manifest con `docker_access: "su"`, aprire una sessione remota root con `su -` prima di usare Docker; il vettore compose_command in questa modalità non contiene un prefisso sudo.
+
+### Opzione sudo per altri server
+
+Se il controllo restituisce `permission denied ... /var/run/docker.sock`, SSH è riuscito ma l'utente non può accedere direttamente al daemon. Aggiungere `--sudo` sia al controllo sia al deploy:
+
+```bash
+python3 scripts/deploy.py --interactive-ssh --sudo \
+  --remote-dir /home/operatore/unical_support --check
+```
+
+Oltre alle password SSH, può essere richiesta la password sudo di operatore. L'utente deve essere già autorizzato a usare Docker tramite sudo; lo script non modifica sudoers, gruppi o permessi del socket. Python e la creazione di release/backup restano eseguiti come operatore; soltanto Docker viene invocato tramite `sudo -n docker`. Un `sudo -v` nel medesimo terminale verifica o rinnova prima l'autenticazione, anche dopo build lunghe. Le password non vengono raccolte da Python né mescolate con i flussi binari dei backup.
+
+In questa modalità --check carica un piccolo helper in una directory temporanea privata del server, lo esegue con terminale per sudo e legge il risultato JSON da un file separato; poi rimuove i due file e la directory. Non modifica container, schema o dati applicativi. Il solo comando di autenticazione sudo può essere registrato nei log amministrativi. Per i comandi manuali dal manifest con prefisso sudo, eseguire prima `sudo -v` nella propria sessione se la credenziale è scaduta.
 
 ## Prerequisiti del server
 
 - Linux, Python 3.9+, Docker Engine e plugin Compose v2 con supporto per `--no-build` e bind `create_host_path: false`.
-- L'utente operatore può usare Docker e scrivere nella directory del progetto esistente. Lo script non usa sudo.
+- L'utente operatore può scrivere nella directory del progetto esistente. Per Docker può usare accesso diretto, su root con --su (questa installazione), oppure sudo con --sudo se disponibile.
 - Un solo progetto identificabile, con servizi esistenti `db`, `redis`, `backend`, `worker`, `beat`, `frontend`. In caso di più installazioni specificare `--project`.
 - PostgreSQL e Redis già attivi; database e upload su volumi Docker nominati. Bind mount del database o upload divergenti fra backend e worker richiedono una migrazione manuale, non vengono convertiti.
 - Spazio sufficiente per build, vecchie immagini, nuova release e dump; accesso del server ai registry Docker e Python/npm.
@@ -65,10 +104,10 @@ Dalla radice del repository:
 python3 scripts/deploy.py --dry-run --build all --migrate
 
 # Inventario remoto in sola lettura: nessun upload, backup o riavvio.
-python3 scripts/deploy.py --check
+python3 scripts/deploy.py --interactive-ssh --su --remote-dir /home/operatore/unical_support --check
 
-# Rollout completo, con backup e migrazioni.
-python3 scripts/deploy.py --build all --migrate
+# Solo se il controllo riesce: rollout completo, con backup e migrazioni.
+python3 scripts/deploy.py --interactive-ssh --su --remote-dir /home/operatore/unical_support --build all --migrate
 ```
 
 `--check` verifica Docker Compose, container, progetto, volumi, provider, directory e porte richieste. Non certifica da solo la validità di tutti i secret, l'autenticazione email o il tunnel LLM. Durante il deploy `compose config --quiet`, i controlli dello schema e le verifiche di avvio aggiungono i rispettivi controlli.
@@ -97,6 +136,9 @@ Usare il nome **esistente** restituito dall'inventario; inventarne uno nuovo non
 | `--overlay /percorso/file.yml` | Mantiene un override aggiuntivo già sul server; ripetibile |
 | `--host`, `--jump-host` | Alias SSH; default UnicalSupport e UnicalSupportJump |
 | `--identity`, `--jump-identity` | Identità esplicite per destinazione e jump |
+| `--interactive-ssh` | Password/passphrase dal terminale su entrambi gli host; una connessione riutilizzata per l'intera invocazione |
+| `--sudo` | Docker remoto tramite sudo; terminale dedicato per eventuali richieste di password |
+| `--su` | Accesso root tramite su sul server; password di root nel terminale, senza dipendenza da sudo |
 
 Le opzioni di build parziale riguardano la costruzione delle immagini: il rollout ricrea comunque i quattro servizi applicativi, per mantenere riferimenti di rete e runtime coerenti. Usare frontend/none solo quando le immagini Python installate contengono già il codice necessario. Lo script confronta le revisioni Alembic dell'immagine backend con quelle caricate e si ferma se non coincidono; non è una verifica completa dell'identità di tutto il codice. Per distribuire tutte le modifiche correnti usare all.
 
@@ -147,4 +189,4 @@ python3 tests/test_deploy.py
 python3 scripts/deploy.py --dry-run --build all --migrate
 ```
 
-Collaudo locale: 14 test superati. Verificano esclusione dei secret, nomi dei volumi, lock, conservazione OAuth, selezione dei servizi, ordinamento backup/migrazione, rifiuto dello schema incompatibile e blocco del rollout se il backup fallisce. I comandi di deploy sono simulati; un test usa realmente Compose config per verificare il merge dei volumi e dei build context, senza daemon né container. Il collaudo completo sul server richiede l'accesso remoto.
+Collaudo locale: 32 test superati. Verificano esclusione dei secret, nomi dei volumi, lock, conservazione OAuth, selezione dei servizi, ordinamento backup/migrazione, rifiuto dello schema incompatibile e blocco del rollout se il backup fallisce. Coprono anche modalità SSH interattiva/non interattiva, riuso del socket, chiusura su errore, terminale su/sudo separato dal JSON e integrità dei flussi binari. I test su controllano quoting del comando, identità dei file e ripristino di root soltanto nei figli Docker, simulando le chiamate ai privilegi senza cambiare realmente l'identità del processo di test. I file OAuth vengono letti come archivio in memoria. Un test usa realmente Compose config senza daemon né container; l'autenticazione root e il collaudo completo sul server non sono stati eseguiti.

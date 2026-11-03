@@ -4,20 +4,73 @@ import base64
 from contextlib import contextmanager
 from datetime import datetime, timezone
 import fcntl
+import io
 import json
+import os
 from pathlib import Path
 import re
 import shutil
 import subprocess
 import sys
+import tarfile
 import time
 
 APP_SERVICES = ['backend', 'worker', 'beat', 'frontend']
 PG_PATH = '/var/lib/postgresql/data'
+DOCKER_SUDO = False
+DOCKER_SU = False
+
+
+def configure_su(config):
+    """Keep file IO under the SSH user's identity, retaining root for Docker children."""
+    global DOCKER_SU
+    if not config.get('su'):
+        return
+    if config.get('sudo'):
+        raise ValueError('Scegliere soltanto uno tra su e sudo')
+    if os.getuid() != 0 or os.geteuid() != 0:
+        raise ValueError('La modalità --su deve essere avviata tramite su root')
+    owner = config.get('file_owner') or {}
+    groups = owner.get('groups')
+    if not isinstance(groups, list):
+        raise ValueError('Identità originale SSH mancante o non valida')
+    values = [owner.get('uid'), owner.get('gid'), *groups]
+    if any(type(value) is not int or value < 0 for value in values):
+        raise ValueError('Identità originale SSH mancante o non valida')
+    # Real/saved UID remain root; effective UID/GID govern creation/access of files.
+    os.setgroups(owner['groups'])
+    os.setegid(owner['gid'])
+    os.seteuid(owner['uid'])
+    DOCKER_SU = True
+
+
+def docker_root_child():
+    """Called only after fork, before executing a Docker command, never in the parent."""
+    os.seteuid(0)
+    os.setgroups([0])
+    os.setgid(0)
+    os.setuid(0)
+
+
+def docker_command(command):
+    command = list(command)
+    return ['sudo', '-n', *command] if DOCKER_SUDO and command[0] == 'docker' else command
+
+
+def execute(command, **kwargs):
+    command = docker_command(command)
+    if DOCKER_SU and command[0] == 'docker':
+        kwargs['preexec_fn'] = docker_root_child
+    if DOCKER_SUDO and command[:3] == ['sudo', '-n', 'docker']:
+        # The helper keeps its controlling SSH tty. sudo reads passwords there,
+        # separately from binary stdin/stdout (e.g. pg_dump and pg_restore).
+        # Refresh before every command so a long build cannot expire the ticket.
+        subprocess.run(['sudo', '-v'], check=True)
+    return subprocess.run(command, **kwargs)
 
 
 def run(*args, **kwargs):
-    return subprocess.run(list(args), check=True, **kwargs)
+    return execute(list(args), check=True, **kwargs)
 
 
 def output(*args):
@@ -115,6 +168,7 @@ def discover(config):
     if not published_on_loopback(services['db'], 5432, 15432) or not published_on_loopback(services['redis'], 6379, 16379):
         raise ValueError('Mancano le porte loopback 15432/16379 richieste dal worker host; vedere DEPLOY.md')
     return {'remote_dir': str(directory), 'project': project, 'provider': provider,
+            'docker_access': 'su' if DOCKER_SU else 'sudo' if DOCKER_SUDO else 'direct',
             'volumes': volumes, 'overlays': overlays,
             'previous_compose_files': list(filter(None, previous_files)),
             'containers': {name: row['Id'] for name, row in services.items() if name in ['db', 'redis', *APP_SERVICES]},
@@ -148,7 +202,7 @@ def compose_command(config, inventory, release, override):
         command += ['-f', str(release / 'docker-compose.smtp.yml')]
     for file in inventory['overlays']:
         command += ['-f', file]
-    return command + ['-f', str(override)]
+    return docker_command(command + ['-f', str(override)])
 
 
 def build_services(mode):
@@ -164,20 +218,28 @@ def copy_oauth(services, root, runtime):
         found = False
         for name in ['worker', 'backend']:
             temporary = runtime / (filename + '.pending')
-            result = subprocess.run(['docker', 'cp', f"{services[name]}:/app/{filename}", str(temporary)],
-                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            # Stream the tar to Python: sudo docker cp to a host path would
+            # otherwise create root-owned credential files in the user's tree.
+            result = execute(['docker', 'cp', f"{services[name]}:/app/{filename}", '-'],
+                             stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
             if result.returncode == 0:
                 try:
-                    value = json.loads(temporary.read_text())
+                    with tarfile.open(fileobj=io.BytesIO(result.stdout), mode='r:*') as archive:
+                        members = [m for m in archive if m.isfile() and Path(m.name).name == filename]
+                        if len(members) != 1 or members[0].size > 1024 * 1024:
+                            raise ValueError('Archivio OAuth non valido')
+                        content = archive.extractfile(members[0]).read()
+                    value = json.loads(content)
                     if not isinstance(value, dict) or not value:
                         raise ValueError('File OAuth vuoto')
                     if filename == 'token.json' and not value.get('refresh_token'):
                         raise ValueError('Refresh token mancante')
+                    temporary.write_bytes(content)
                     temporary.chmod(0o600)
                     temporary.replace(destination)
                     found = True
                     break
-                except (ValueError, OSError):
+                except (ValueError, OSError, tarfile.TarError):
                     temporary.unlink(missing_ok=True)
         if not found and not destination.is_file():
             source = root / filename
@@ -239,7 +301,7 @@ def release_heads(release):
 def wait_ready(command, deadline):
     while True:
         try:
-            result = subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=20)
+            result = execute(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=20)
             if result.returncode == 0:
                 return
         except subprocess.TimeoutExpired:
@@ -335,7 +397,7 @@ def deploy(config):
             print(f'Deploy completato. Manifest: {manifest_path}', flush=True)
         except Exception:
             # No automatic schema downgrade or restart of incompatible old images.
-            subprocess.run(command + ['stop', '--timeout', '30', *APP_SERVICES])
+            execute(command + ['stop', '--timeout', '30', *APP_SERVICES])
             print(f'Deploy interrotto; database conservato. Applicazioni ferme per evitare versioni incompatibili. Consultare {manifest_path} e docs/DEPLOY.md.', file=sys.stderr)
             raise
 
@@ -344,8 +406,19 @@ if __name__ == '__main__':
     try:
         action, raw_config = sys.argv[1:]
         configuration = json.loads(base64.urlsafe_b64decode(raw_config))
+        DOCKER_SUDO = bool(configuration.get('sudo'))
+        if DOCKER_SUDO and not shutil.which('sudo'):
+            raise ValueError('sudo non è installato sul server; usare --su se è disponibile l’accesso root tramite su')
+        configure_su(configuration)
         if action == 'inspect':
-            print(json.dumps(discover(configuration)))
+            inventory = json.dumps(discover(configuration))
+            if configuration.get('inspection_output'):
+                path = Path(configuration['inspection_output'])
+                fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+                with os.fdopen(fd, 'w') as result:
+                    result.write(inventory)
+            else:
+                print(inventory)
         elif action == 'deploy':
             deploy(configuration)
         else:

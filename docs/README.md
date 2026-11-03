@@ -12,4 +12,4 @@ Documentazione consolidata al 28 ottobre 2026, basata sul codice corrente.
 
 I precedenti report per singola funzionalità sono stati consolidati in questi documenti: le vecchie indicazioni su template precompilati, importazione web, filtri locali e limiti della lista email non descrivevano più l'applicazione attuale. Gli script Alembic in `alembic/versions/` restano la fonte eseguibile per ogni modifica dello schema.
 
-Per aggiornare il server partire da [DEPLOY](DEPLOY.md). La verifica SSH della sessione non è stata completata e non è stato eseguito alcun deploy remoto: lo stato della VPS va rilevato con `scripts/deploy.py --check` dopo aver verificato l'accesso.
+Per aggiornare il server partire da [DEPLOY](DEPLOY.md). SSH e directory sono confermati; il 3 novembre 2026 è stata rilevata l'assenza di sudo, quindi usare su root. Non è stato eseguito alcun deploy remoto durante l'intervento. Controllo: `python3 scripts/deploy.py --interactive-ssh --su --remote-dir /home/operatore/unical_support --check`.
