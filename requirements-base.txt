@@ -25,6 +25,7 @@ PyJWT>=2.10.1
 # Message Broker e Background Tasks
 celery>=5.3.6
 redis>=5.0.1
+packaging>=23.0
 
 # Gmail API (Se il backend legge le email, altrimenti puoi spostarlo nel worker)
 google-api-python-client>=2.120.0
