@@ -15,6 +15,7 @@ Gli errori di infrastruttura (server irraggiungibile, timeout, credenziali, mode
 inesistente, database) NON attivano il ripiego: fallirebbe allo stesso modo, quindi
 proseguono verso i retry di Celery come prima.
 """
+import logging
 import json
 import re
 import unicodedata
@@ -31,6 +32,8 @@ from app.db.database import session_scope
 from app.models.category import Category
 from app.models.email import Email, EmailStatus
 from app.services.email_processing import can_write
+
+logger = logging.getLogger(__name__)
 
 # Tentativi per fase: il primo più al massimo due correzioni con l'errore restituito al modello.
 MAX_ATTEMPTS = 3
@@ -114,16 +117,16 @@ def attempt_fallback(exc, email_id, stage, token, generation):
     """
     if not is_model_failure(exc):
         return False, exc
-    print(f"[FALLBACK] Email {email_id}, fase {stage}: agente fallito ({type(exc).__name__}: {exc}). "
+    logger.warning(f"[FALLBACK] Email {email_id}, fase {stage}: agente fallito ({type(exc).__name__}: {exc}). "
           f"Avvio la modalità senza strumenti.")
     try:
         handled = run_fallback(email_id, stage, token, generation)
     except Exception as fallback_exc:
-        print(f"[FALLBACK] Email {email_id}, fase {stage}: anche il ripiego è fallito "
+        logger.error(f"[FALLBACK] Email {email_id}, fase {stage}: anche il ripiego è fallito "
               f"({type(fallback_exc).__name__}: {fallback_exc}).")
         return False, exc
     if handled:
-        print(f"[FALLBACK] Email {email_id}, fase {stage}: completata in modalità senza strumenti.")
+        logger.info(f"[FALLBACK] Email {email_id}, fase {stage}: completata in modalità senza strumenti.")
     return bool(handled), exc
 
 

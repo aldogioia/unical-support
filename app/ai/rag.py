@@ -1,3 +1,4 @@
+import logging
 import time
 import random
 import json
@@ -8,6 +9,8 @@ from langchain_core.documents import Document as LangchainDocument
 from flashrank import Ranker, RerankRequest
 from app.core.config import settings
 from langchain_postgres import PGVector
+
+logger = logging.getLogger(__name__)
 
 PARAGRAPH_CHUNK_SIZE = 1500
 PARAGRAPH_SPLIT_SAFETY_THRESHOLD = 2000
@@ -42,10 +45,10 @@ def init_vector_store():
         except Exception as e:
             if attempt < max_retries - 1:
                 sleep_time = random.uniform(0.5, 2.0)
-                print(f"[RAG] Conflitto di inizializzazione DB (Worker paralleli). Ritento tra {sleep_time:.2f}s...")
+                logger.warning(f"[RAG] Conflitto di inizializzazione DB (Worker paralleli). Ritento tra {sleep_time:.2f}s...")
                 time.sleep(sleep_time)
             else:
-                print("[RAG] Errore critico: impossibile inizializzare il Vector Store.")
+                logger.error("[RAG] Errore critico: impossibile inizializzare il Vector Store.")
                 raise e
 
 def get_vector_store():
@@ -94,7 +97,7 @@ def index_langchain_documents(docs: list, category_names: list[str] | None = Non
 
     chunks = _split_into_paragraph_chunks(docs)
 
-    print(f"Indicizzazione di {len(chunks)} frammenti nel Vector DB...")
+    logger.info(f"[RAG] Indicizzazione di {len(chunks)} frammenti nel Vector DB...")
 
     # batch piccoli da 5 con pausa di 3 secondi tra ognuno
     batch_size = 5
@@ -108,13 +111,13 @@ def index_langchain_documents(docs: list, category_names: list[str] | None = Non
         for attempt in range(retries):
             try:
                 vector_store.add_documents(batch)
-                print(f"  Batch {batch_num}/{total_batches} indicizzato")
+                logger.info(f"[RAG] Batch {batch_num}/{total_batches} indicizzato")
                 time.sleep(3)
                 break
             except Exception as e:
                 if "429" in str(e) and attempt < retries - 1:
                     wait = 30 * (attempt + 1)
-                    print(f"  Rate limit, aspetto {wait}s...")
+                    logger.warning(f"[RAG] Rate limit, aspetto {wait}s...")
                     time.sleep(wait)
                 else:
                     raise e
@@ -163,7 +166,7 @@ def retrieve_context(query: str, k: int = 4, category_names: list[str] | str | N
     if names:
         document_ids = get_document_ids_for_categories(names)
         if not document_ids:
-            print(f"[RAG] Nessun documento associato alle categorie {names}.")
+            logger.info(f"[RAG] Nessun documento associato alle categorie {names}.")
             return ""
         search_filter = {"document_id": {"$in": document_ids}}
 
@@ -174,7 +177,7 @@ def retrieve_context(query: str, k: int = 4, category_names: list[str] | str | N
             candidates = vector_store.similarity_search(query, k=candidate_count)
 
     except Exception as e:
-        print(f"Errore similarity search: {e}")
+        logger.exception(f"[RAG] Errore similarity search: {e}")
         return ""
 
     if not candidates:
@@ -193,10 +196,10 @@ def retrieve_context(query: str, k: int = 4, category_names: list[str] | str | N
             score = float(result["score"])
             doc.metadata["retrieval_relevance_score"] = score if 0 <= score <= 1 else None
             final_docs.append(doc)
-        print(f"Reranking completato: selezionati {len(final_docs)} frammenti finali")
+        logger.info(f"[RAG] Reranking completato: selezionati {len(final_docs)} frammenti finali")
 
     except Exception as e:
-        print(f"Reranking fallito, uso candidati originali: {e}")
+        logger.warning(f"[RAG] Reranking fallito, uso candidati originali: {e}")
         final_docs = candidates[:k]
 
     return format_source_context(final_docs)

@@ -1,9 +1,12 @@
+import logging
 import os
 from uuid import UUID
 from app.core.celery_app import celery_app
 from app.db.database import session_scope
 from app.models.document import Document
 from app.models.category import Category
+
+logger = logging.getLogger(__name__)
 
 @celery_app.task(name="app.tasks.document_tasks.process_document_task")
 def process_document_task(document_id: UUID | str, file_path: str, category_ids: list[str] | str | None = None, *legacy_args):
@@ -16,7 +19,7 @@ def process_document_task(document_id: UUID | str, file_path: str, category_ids:
     try:
         docs = []
         if file_path and os.path.exists(file_path):
-            print(f"[WORKER] Estrazione dati da file: {file_path}")
+            logger.info(f"[WORKER] Estrazione dati da file: {file_path}")
             loader = UnstructuredLoader(file_path)
             docs = loader.load()
             os.remove(file_path)
@@ -43,13 +46,13 @@ def process_document_task(document_id: UUID | str, file_path: str, category_ids:
                 category_names = [c.name for c in db_categories]
 
         raw_text = "\n\n".join(doc.page_content for doc in docs if doc.page_content)
-        print(f"[WORKER] Normalizzazione in markdown atomico per il documento {document_id}...")
+        logger.info(f"[WORKER] Normalizzazione in markdown atomico per il documento {document_id}...")
         normalization = normalize_to_structured_markdown(
             raw_text, source_name=source_name, reference_url=reference_url
         )
 
         if normalization.needs_review:
-            print(f"[WORKER] Documento {document_id} marcato come needs_review: {normalization.review_notes}")
+            logger.warning(f"[WORKER] Documento {document_id} marcato come needs_review: {normalization.review_notes}")
             with session_scope() as db:
                 db_doc = db.query(Document).filter(Document.id == document_id).first()
                 if db_doc:
@@ -77,10 +80,10 @@ def process_document_task(document_id: UUID | str, file_path: str, category_ids:
                 db_doc.processing_status = "indexed"
                 db.commit()
 
-        print(f"[WORKER] Documento {document_id} processato! Chunks: {chunk_count}")
+        logger.info(f"[WORKER] Documento {document_id} processato! Chunks: {chunk_count}")
 
     except Exception as e:
-        print(f"[WORKER] Errore elaborazione documento {document_id}: {e}")
+        logger.exception(f"[WORKER] Errore elaborazione documento {document_id}: {e}")
 
 
 @celery_app.task(name="app.tasks.document_tasks.force_index_document_task")
@@ -99,7 +102,7 @@ def force_index_document_task(document_id: UUID | str):
         source = db.query(Document).filter(Document.id == document_id).first()
         markdown = reviewed_markdown(source.extracted_text) if source else ""
         if not source or source.processing_status != "pending" or not markdown:
-            print(f"[WORKER] Indicizzazione forzata ignorata per il documento {document_id}.")
+            logger.warning(f"[WORKER] Indicizzazione forzata ignorata per il documento {document_id}.")
             return
         category_names = sorted(c.name for c in source.categories)
         reference_url = source.reference_url
@@ -114,7 +117,7 @@ def force_index_document_task(document_id: UUID | str):
             document_id=str(document_id), reference_url=reference_url, source_name=source_name,
         )
     except Exception as e:
-        print(f"[WORKER] Indicizzazione forzata fallita per il documento {document_id}: {e}")
+        logger.exception(f"[WORKER] Indicizzazione forzata fallita per il documento {document_id}: {e}")
         with session_scope() as db:
             db_doc = db.query(Document).filter(Document.id == document_id).first()
             if db_doc and db_doc.processing_status == "pending":
@@ -128,4 +131,4 @@ def force_index_document_task(document_id: UUID | str):
             db_doc.processing_status = "indexed"
             if not (notes or "").startswith(FORCED_REVIEW_NOTE):
                 db_doc.review_notes = FORCED_REVIEW_NOTE + ("\n" + notes if notes else "")
-    print(f"[WORKER] Documento {document_id} indicizzato manualmente. Chunks: {chunk_count}")
+    logger.info(f"[WORKER] Documento {document_id} indicizzato manualmente. Chunks: {chunk_count}")

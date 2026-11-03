@@ -1,3 +1,4 @@
+import logging
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,6 +11,12 @@ from app.db.database import engine, Base
 from app.services.blacklist_service import remove_expired_tokens
 from app.db.database import SessionLocal
 
+logger = logging.getLogger(__name__)
+
+# Formato di log unico per tutto il backend, compresi i log di uvicorn.
+from app.core.logging_config import setup_logging
+setup_logging("backend")
+
 # Base.metadata.create_all(bind=engine) # Rimosso in produzione
 
 scheduler = BackgroundScheduler()
@@ -19,7 +26,7 @@ def scheduled_token_cleanup():
     try:
         remove_expired_tokens(db)
     except Exception as e:
-        print(f"Errore durante la pulizia dei token: {e}")
+        logger.exception(f"Errore durante la pulizia dei token: {e}")
     finally:
         db.close()
 
