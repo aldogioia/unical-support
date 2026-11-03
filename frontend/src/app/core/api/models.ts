@@ -3,6 +3,7 @@
 
 export type { AiSettingsResponse } from './models/ai-settings-response';
 export type { AiSettingsUpdate } from './models/ai-settings-update';
+export type { LocalModelsResponse } from './models/local-models-response';
 export type { BodyCreateUserFeedbackApiFeedbackPost } from './models/body-create-user-feedback-api-feedback-post';
 export type { BodyImportCategoriesFromJsonApiCategoriesImportPost } from './models/body-import-categories-from-json-api-categories-import-post';
 export type { BodyUploadDocumentApiDocumentsUploadPost } from './models/body-upload-document-api-documents-upload-post';

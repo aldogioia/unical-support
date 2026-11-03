@@ -48,6 +48,35 @@
 .agent-fields .form-control {
   font-size: 12px;
 }
+.model-picker {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.model-picker select {
+  flex: 1;
+  min-width: 0;
+}
+.model-refresh {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.model-mode {
+  margin-top: 6px;
+  padding-left: 0;
+}
+.model-ok,
+.model-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+}
+.model-ok {
+  color: var(--ds-success, var(--ds-text-secondary));
+}
+.model-error {
+  color: var(--ds-danger);
+}
 .agent-status {
   border-top: var(--ds-container-stroke) solid var(--ds-border);
   margin-top: 25px;
