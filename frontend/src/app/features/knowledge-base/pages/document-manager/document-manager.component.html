@@ -118,40 +118,56 @@
               <ds-icon name="check" />{{ uploadNotice() }}
             </div>
           }
-          <div class="field-stack">
-            <div>
-              <label class="form-label">Categorie della fonte</label
-              ><app-category-multi-select
-                [categories]="categories()"
-                [(selectedIds)]="selectedCategoryIds"
-                [disabled]="uploading()"
-                placeholder="Seleziona una o più categorie"
-              />
-              <p class="field-hint">
-                Associa la fonte agli argomenti su cui l’AI dovrà rispondere.
-              </p>
+          @if (currentFile(); as file) {
+            <div class="queue-file" aria-live="polite">
+              <span class="upload-symbol"><ds-icon name="file" /></span>
+              <div class="queue-file-main">
+                <span class="queue-step"
+                  >File {{ queuePosition() }} di {{ queueTotal() }}</span
+                ><strong>{{ file.name }}</strong
+                ><small
+                  >{{ formatSize(file.size) }}
+                  @if (pendingFiles().length > 1) {
+                    · poi altri {{ pendingFiles().length - 1 }} in coda
+                  }</small
+                >
+              </div>
             </div>
-            <div>
-              <label for="public-source-url" class="form-label"
-                >Link della fonte (facoltativo)</label
-              ><input
-                id="public-source-url"
-                class="form-control"
-                type="url"
-                [(ngModel)]="referenceUrl"
-                placeholder="https://www.unical.it/..."
-                maxlength="2048"
-                [disabled]="uploading()"
-              />
-              <p class="field-hint">
-                Puoi inserirlo ora o aggiungerlo/modificarlo in seguito. Verrà
-                citato dall'AI nelle risposte.
-              </p>
+            <div class="field-stack">
+              <div>
+                <label class="form-label">Categorie della fonte</label
+                ><app-category-multi-select
+                  [categories]="categories()"
+                  [(selectedIds)]="selectedCategoryIds"
+                  [disabled]="uploading()"
+                  placeholder="Seleziona una o più categorie"
+                />
+                <p class="field-hint">
+                  Associa la fonte agli argomenti su cui l’AI dovrà rispondere.
+                </p>
+              </div>
+              <div>
+                <label for="public-source-url" class="form-label"
+                  >Link della fonte (facoltativo)</label
+                ><input
+                  id="public-source-url"
+                  class="form-control"
+                  type="url"
+                  [(ngModel)]="referenceUrl"
+                  placeholder="https://www.unical.it/..."
+                  maxlength="2048"
+                  [disabled]="uploading()"
+                />
+                <p class="field-hint">
+                  Puoi inserirlo ora o aggiungerlo/modificarlo in seguito. Verrà
+                  citato dall'AI nelle risposte.
+                </p>
+              </div>
             </div>
+          } @else {
             <div
               class="upload-zone"
               [class.is-dragging]="isDragging()"
-              [class.is-uploading]="uploading()"
               (dragover)="onDragOver($event)"
               (dragleave)="onDragLeave($event)"
               (drop)="onDrop($event)"
@@ -160,11 +176,7 @@
               ><strong>Trascina i documenti qui</strong
               ><span
                 >oppure
-                <button
-                  class="text-link"
-                  [disabled]="uploading()"
-                  (click)="fileInput.click()"
-                >
+                <button class="text-link" (click)="fileInput.click()">
                   scegli i file
                 </button></span
               ><small>PDF, DOCX, TXT, JSON, YAML, MD · Fino a 50 MB</small
@@ -174,26 +186,47 @@
                 type="file"
                 multiple
                 accept=".pdf,.docx,.txt,.json,.yaml,.yml,.md"
-                aria-label="Carica documenti"
+                aria-label="Scegli i documenti"
                 (change)="onFileSelected($event)"
-                [disabled]="uploading()"
               />
             </div>
-          </div>
+            <p class="field-hint queue-hint">
+              I file non vengono caricati subito: per ciascuno indicherai
+              categorie e link, poi lo invierai all'elaborazione.
+            </p>
+          }
         </div>
         <footer class="detail-footer">
-          <span class="toolbar-copy" role="status">{{
-            uploading()
-              ? "Importazione in corso…"
-              : "Il caricamento inizia alla selezione dei file."
-          }}</span
-          ><button
-            class="btn btn-outline"
-            [disabled]="uploading()"
-            (click)="closeDetail()"
-          >
-            Chiudi
-          </button>
+          @if (currentFile()) {
+            <button
+              type="button"
+              class="btn btn-primary queue-send"
+              [disabled]="uploading()"
+              (click)="sendCurrentFile()"
+            >
+              @if (uploading()) {
+                <span class="spinner" aria-hidden="true"></span>Invio…
+              } @else {
+                <ds-icon name="upload" />Invia {{ queuePosition() }}/{{
+                  queueTotal()
+                }}
+              }
+            </button>
+            <button
+              type="button"
+              class="btn btn-outline queue-skip"
+              [disabled]="uploading()"
+              (click)="skipCurrentFile()"
+            >
+              Salta questo file
+            </button>
+          } @else {
+            <span class="toolbar-copy" role="status"
+              >Scegli uno o più file per iniziare.</span
+            ><button class="btn btn-outline" (click)="closeDetail()">
+              Chiudi
+            </button>
+          }
         </footer>
       </section>
     } @else {

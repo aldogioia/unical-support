@@ -36,6 +36,32 @@ export interface ReviewPart {
 export const FORCED_REVIEW_NOTE =
   'Indicizzato manualmente da un amministratore nonostante la verifica di fedeltà.';
 const REVIEW_POLL_MS = 3000;
+
+/** Tipi accettati dal backend, ricavati dall'estensione quando il browser non li conosce. */
+const MIME_BY_EXTENSION: Record<string, string> = {
+  pdf: 'application/pdf',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  txt: 'text/plain',
+  md: 'text/markdown',
+  json: 'application/json',
+  yaml: 'application/x-yaml',
+  yml: 'application/x-yaml',
+};
+
+export function fileExtension(name: string): string {
+  const dot = name.lastIndexOf('.');
+  return dot >= 0 ? name.slice(dot + 1).toLowerCase() : '';
+}
+
+/**
+ * Alcuni browser (Firefox su Windows per i .md) dichiarano un tipo generico:
+ * in quel caso il tipo viene impostato in base all'estensione.
+ */
+export function withKnownType(file: File): File {
+  const known = MIME_BY_EXTENSION[fileExtension(file.name)];
+  if (!known || (file.type && file.type !== 'application/octet-stream')) return file;
+  return new File([file], file.name, { type: known, lastModified: file.lastModified });
+}
 const REVIEW_POLL_MAX = 60;
 
 export function parseReviewNotes(notes: string | null | undefined): ReviewPart[] {
@@ -122,6 +148,8 @@ export class DocumentManagerComponent implements OnInit, OnDestroy {
   });
   openCreate(): void {
     if (this.uploading()) return;
+    if (this.pendingFiles().length && !this.confirmDiscardQueue()) return;
+    this.resetQueue();
     this.cancelEditCategories();
     this.selectedDocumentId.set(null);
     this.creating.set(true);
@@ -130,6 +158,8 @@ export class DocumentManagerComponent implements OnInit, OnDestroy {
   }
   selectDocument(document: DocumentResponse): void {
     if (this.uploading() || this.savingCategoryDocId()) return;
+    if (this.pendingFiles().length && !this.confirmDiscardQueue()) return;
+    this.resetQueue();
     this.resetReview();
     this.cancelEditCategories();
     this.creating.set(false);
@@ -138,6 +168,8 @@ export class DocumentManagerComponent implements OnInit, OnDestroy {
   }
   closeDetail(): void {
     if (this.uploading() || this.savingCategoryDocId()) return;
+    if (this.pendingFiles().length && !this.confirmDiscardQueue()) return;
+    this.resetQueue();
     this.resetReview();
     this.cancelEditCategories();
     this.creating.set(false);
@@ -148,6 +180,15 @@ export class DocumentManagerComponent implements OnInit, OnDestroy {
       document.filename.split('.').pop()?.toUpperCase().slice(0, 5) || 'FILE'
     );
   }
+
+  /** File scelti e non ancora inviati: si inviano uno alla volta con il pulsante Invia. */
+  readonly pendingFiles = signal<File[]>([]);
+  readonly queueTotal = signal(0);
+  readonly queueSent = signal(0);
+  readonly currentFile = computed(() => this.pendingFiles()[0] ?? null);
+  readonly queuePosition = computed(
+    () => this.queueTotal() - this.pendingFiles().length + 1,
+  );
 
   documents = signal<DocumentResponse[]>([]);
   categories = signal<CategoryResponse[]>([]);
@@ -293,34 +334,108 @@ export class DocumentManagerComponent implements OnInit, OnDestroy {
     input.value = '';
   }
 
-  async handleFiles(files: FileList) {
+  handleFiles(files: FileList | File[]) {
     if (this.uploading()) return;
+    this.uploadNotice.set('');
+    this.uploadError.set(null);
+    const chosen = Array.from(files);
+    const valid = chosen.filter((f) => fileExtension(f.name) in MIME_BY_EXTENSION);
+    const rejected = chosen.length - valid.length;
+    if (rejected) {
+      this.uploadError.set(
+        `${rejected === 1 ? 'Un file è stato scartato' : rejected + ' file sono stati scartati'}: formati ammessi PDF, DOCX, TXT, JSON, YAML, MD.`,
+      );
+    }
+    if (!valid.length) return;
+    if (!this.pendingFiles().length) {
+      this.queueTotal.set(0);
+      this.queueSent.set(0);
+      this.clearUploadFields();
+    }
+    this.pendingFiles.update((queue) => [...queue, ...valid]);
+    this.queueTotal.update((n) => n + valid.length);
+  }
+
+  /** Invia il file corrente con le sue categorie e il suo link, poi passa al successivo. */
+  async sendCurrentFile() {
+    const file = this.currentFile();
+    if (!file || this.uploading()) return;
     this.uploadNotice.set('');
     this.uploadError.set(null);
     if (!this.validatePublicUrl(this.referenceUrl)) return;
     this.uploading.set(true);
     try {
-      for (const file of Array.from(files)) {
-        const created = await this.api.invoke(
-          uploadDocumentApiDocumentsUploadPost,
-          {
-            body: {
-              file: file as any,
-              reference_url: this.referenceUrl.trim() || null,
-              category_ids: [...this.selectedCategoryIds],
-            },
+      const created = await this.api.invoke(
+        uploadDocumentApiDocumentsUploadPost,
+        {
+          body: {
+            file: withKnownType(file) as any,
+            reference_url: this.referenceUrl.trim() || null,
+            category_ids: [...this.selectedCategoryIds],
           },
-        );
-        this.documents.update((docs) => [created, ...docs]);
-      }
-      this.referenceUrl = '';
-      this.uploadNotice.set('Fonte aggiunta ai Documenti.');
+        },
+      );
+      this.documents.update((docs) => [created, ...docs]);
+      this.queueSent.update((n) => n + 1);
+      this.advanceQueue();
     } catch (e) {
       console.error(e);
-      this.uploadError.set('Errore durante il caricamento del file. Riprova.');
+      this.uploadError.set(
+        `Invio di «${file.name}» non riuscito. Controlla il file e riprova: gli altri file restano in coda.`,
+      );
     } finally {
       this.uploading.set(false);
     }
+  }
+
+  /** Toglie dalla coda il file corrente senza inviarlo. */
+  skipCurrentFile() {
+    if (!this.currentFile() || this.uploading()) return;
+    this.uploadError.set(null);
+    this.advanceQueue();
+  }
+
+  formatSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  private advanceQueue() {
+    this.pendingFiles.update((queue) => queue.slice(1));
+    this.clearUploadFields();
+    if (this.pendingFiles().length) return;
+    const sent = this.queueSent();
+    this.queueTotal.set(0);
+    this.queueSent.set(0);
+    if (sent) {
+      this.uploadNotice.set(
+        sent === 1
+          ? 'Documento inviato: è in elaborazione.'
+          : `${sent} documenti inviati: sono in elaborazione.`,
+      );
+    }
+  }
+
+  private clearUploadFields() {
+    this.selectedCategoryIds = [];
+    this.referenceUrl = '';
+  }
+
+  private resetQueue() {
+    this.pendingFiles.set([]);
+    this.queueTotal.set(0);
+    this.queueSent.set(0);
+    this.clearUploadFields();
+  }
+
+  private confirmDiscardQueue(): boolean {
+    const left = this.pendingFiles().length;
+    return confirm(
+      left === 1
+        ? "C'è un file non ancora inviato: verrà scartato. Vuoi chiudere?"
+        : `Ci sono ${left} file non ancora inviati: verranno scartati. Vuoi chiudere?`,
+    );
   }
 
   needsReview(doc: DocumentResponse): boolean {

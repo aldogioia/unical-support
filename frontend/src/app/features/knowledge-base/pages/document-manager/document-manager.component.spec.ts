@@ -12,6 +12,7 @@ import {
   DocumentManagerComponent,
   FORCED_REVIEW_NOTE,
   parseReviewNotes,
+  withKnownType,
 } from './document-manager.component';
 
 const category = {
@@ -55,6 +56,11 @@ describe('Knowledge base master-detail', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.upload-zone')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('.source-tabs')).toBeNull();
+    expect(
+      fixture.nativeElement.querySelectorAll('input[type="url"]').length,
+    ).toBe(0);
+    component.handleFiles([new File(['x'], 'guida.txt', { type: 'text/plain' })]);
+    fixture.detectChanges();
     expect(
       fixture.nativeElement.querySelectorAll('input[type="url"]').length,
     ).toBe(1);
@@ -103,19 +109,24 @@ describe('Knowledge base master-detail', () => {
     expect(component.selectedDocument()?.categories).toEqual([]);
     fixture.destroy();
   }));
-  it('uploads only a local file with its optional source link and categories', fakeAsync(() => {
+  it('queues chosen files and uploads only after Invia, with that file\'s link and categories', fakeAsync(() => {
     const fixture = TestBed.createComponent(DocumentManagerComponent),
       component = fixture.componentInstance;
     fixture.detectChanges();
     flushMicrotasks();
     component.openCreate();
-    component.referenceUrl = 'https://www.unical.it/guida.pdf';
-    component.selectedCategoryIds = ['category-1'];
     api.invoke.and.returnValue(
       Promise.resolve({ ...source, id: 'document-2' }) as any,
     );
     const file = new File(['Testo'], 'guida.txt', { type: 'text/plain' });
-    component.handleFiles([file] as unknown as FileList);
+    component.handleFiles([file]);
+    fixture.detectChanges();
+    expect(api.invoke).not.toHaveBeenCalledWith(uploadDocumentApiDocumentsUploadPost, jasmine.anything());
+    expect(fixture.nativeElement.querySelector('.upload-zone')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.queue-send').textContent).toContain('Invia 1/1');
+    component.referenceUrl = 'https://www.unical.it/guida.pdf';
+    component.selectedCategoryIds = ['category-1'];
+    component.sendCurrentFile();
     flushMicrotasks();
     expect(api.invoke).toHaveBeenCalledWith(
       uploadDocumentApiDocumentsUploadPost,
@@ -129,6 +140,10 @@ describe('Knowledge base master-detail', () => {
     );
     expect(component.documents().length).toBe(2);
     expect(component.uploading()).toBeFalse();
+    expect(component.pendingFiles().length).toBe(0);
+    expect(component.uploadNotice()).toContain('Documento inviato');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.upload-zone')).not.toBeNull();
     fixture.destroy();
   }));
   it('allows clearing a source link without re-uploading the file', fakeAsync(() => {
@@ -289,6 +304,130 @@ describe('Document review for administrators', () => {
     flushMicrotasks();
     expect(component.isForcing(reviewed as any)).toBeFalse();
     expect(component.reviewError()).toContain("Impossibile avviare");
+    fixture.destroy();
+  }));
+});
+
+describe('Upload queue: one file at a time', () => {
+  let api: jasmine.SpyObj<Api>;
+  let uploads: any[];
+  beforeEach(async () => {
+    uploads = [];
+    api = jasmine.createSpyObj<Api>('Api', ['invoke']);
+    api.invoke.and.callFake(((operation: unknown, params: any) => {
+      if (operation === readCategoriesApiCategoriesGet) return Promise.resolve([category]);
+      if (operation === uploadDocumentApiDocumentsUploadPost) {
+        uploads.push(params.body);
+        return Promise.resolve({ ...source, id: 'new-' + uploads.length, filename: params.body.file.name });
+      }
+      return Promise.resolve([source]);
+    }) as any);
+    await TestBed.configureTestingModule({
+      imports: [DocumentManagerComponent],
+      providers: [
+        { provide: Api, useValue: api },
+        { provide: AuthService, useValue: { currentUser } },
+      ],
+    }).compileComponents();
+  });
+
+  function start(...names: string[]) {
+    const fixture = TestBed.createComponent(DocumentManagerComponent),
+      component = fixture.componentInstance;
+    fixture.detectChanges();
+    flushMicrotasks();
+    component.openCreate();
+    component.handleFiles(names.map((n) => new File(['x'], n, { type: 'text/plain' })));
+    fixture.detectChanges();
+    return { fixture, component };
+  }
+
+  it('walks through the queue with Invia 1/3, 2/3, 3/3 and empty fields for every file', fakeAsync(() => {
+    const { fixture, component } = start('a.txt', 'b.txt', 'c.txt');
+    const button = () => fixture.nativeElement.querySelector('.queue-send').textContent;
+    expect(button()).toContain('Invia 1/3');
+    expect(fixture.nativeElement.querySelector('.queue-file').textContent).toContain('a.txt');
+    component.referenceUrl = 'https://www.unical.it/a';
+    component.selectedCategoryIds = ['category-1'];
+    component.sendCurrentFile();
+    flushMicrotasks();
+    fixture.detectChanges();
+    expect(button()).toContain('Invia 2/3');
+    expect(component.referenceUrl).toBe('');
+    expect(component.selectedCategoryIds).toEqual([]);
+    component.referenceUrl = 'https://www.unical.it/b';
+    component.sendCurrentFile();
+    flushMicrotasks();
+    fixture.detectChanges();
+    expect(button()).toContain('Invia 3/3');
+    component.sendCurrentFile();
+    flushMicrotasks();
+    fixture.detectChanges();
+    expect(uploads.map((u) => [u.file.name, u.reference_url, u.category_ids])).toEqual([
+      ['a.txt', 'https://www.unical.it/a', ['category-1']],
+      ['b.txt', 'https://www.unical.it/b', []],
+      ['c.txt', null, []],
+    ]);
+    expect(component.uploadNotice()).toContain('3 documenti inviati');
+    expect(fixture.nativeElement.querySelector('.upload-zone')).not.toBeNull();
+    fixture.destroy();
+  }));
+
+  it('skips a file without uploading it and keeps the position', fakeAsync(() => {
+    const { fixture, component } = start('a.txt', 'b.txt');
+    component.skipCurrentFile();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.queue-send').textContent).toContain('Invia 2/2');
+    component.sendCurrentFile();
+    flushMicrotasks();
+    expect(uploads.map((u) => u.file.name)).toEqual(['b.txt']);
+    expect(component.uploadNotice()).toContain('Documento inviato');
+    fixture.destroy();
+  }));
+
+  it('stays on the same file when the upload fails', fakeAsync(() => {
+    const { component } = start('a.txt', 'b.txt');
+    api.invoke.and.returnValue(Promise.reject(new Error('rete')) as any);
+    component.sendCurrentFile();
+    flushMicrotasks();
+    expect(component.currentFile()?.name).toBe('a.txt');
+    expect(component.pendingFiles().length).toBe(2);
+    expect(component.uploadError()).toContain('a.txt');
+    expect(component.uploading()).toBeFalse();
+  }));
+
+  it('discards files with formats that are not accepted', fakeAsync(() => {
+    const { component } = start('a.txt', 'setup.exe');
+    expect(component.pendingFiles().map((f) => f.name)).toEqual(['a.txt']);
+    expect(component.uploadError()).toContain('scartato');
+  }));
+
+  it('asks before closing with files still in the queue', fakeAsync(() => {
+    const { component } = start('a.txt', 'b.txt');
+    spyOn(window, 'confirm').and.returnValue(false);
+    component.closeDetail();
+    expect(window.confirm).toHaveBeenCalled();
+    expect(component.creating()).toBeTrue();
+    expect(component.pendingFiles().length).toBe(2);
+    (window.confirm as jasmine.Spy).and.returnValue(true);
+    component.closeDetail();
+    expect(component.creating()).toBeFalse();
+    expect(component.pendingFiles().length).toBe(0);
+  }));
+
+  it('sends markdown as text/markdown when the browser does not know the type (Firefox)', fakeAsync(() => {
+    const fixture = TestBed.createComponent(DocumentManagerComponent),
+      component = fixture.componentInstance;
+    fixture.detectChanges();
+    flushMicrotasks();
+    component.openCreate();
+    component.handleFiles([new File(['# Titolo'], 'guida.md', { type: 'application/octet-stream' })]);
+    component.sendCurrentFile();
+    flushMicrotasks();
+    expect(uploads[0].file.type).toBe('text/markdown');
+    expect(uploads[0].file.name).toBe('guida.md');
+    expect(withKnownType(new File(['x'], 'a.pdf', { type: 'application/pdf' })).type).toBe('application/pdf');
+    expect(withKnownType(new File(['x'], 'b.md', { type: '' })).type).toBe('text/markdown');
     fixture.destroy();
   }));
 });

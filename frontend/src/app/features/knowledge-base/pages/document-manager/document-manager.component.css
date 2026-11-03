@@ -214,3 +214,50 @@
     width: 100%;
   }
 }
+
+/* Coda di caricamento: un file alla volta, con categorie e link, poi Invia */
+.queue-file {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  border: var(--ds-stroke) solid var(--ds-border);
+  border-left: 3px solid var(--ds-color-primary);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-surface);
+}
+.queue-file .upload-symbol {
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+.queue-file-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.queue-file-main strong {
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.queue-file-main small {
+  font-size: 12px;
+  color: var(--ds-text-secondary);
+}
+.queue-step {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ds-color-primary);
+}
+.queue-hint {
+  text-align: center;
+}
+.detail-footer > .queue-skip {
+  order: -1;
+  margin-right: auto;
+}
+
