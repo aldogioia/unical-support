@@ -148,3 +148,68 @@ def test_worker_failure_puts_the_document_back_in_review():
     run_worker(document, index_side_effect=RuntimeError('embeddings offline'))
     assert document.processing_status == 'needs_review'
     assert document.review_notes == 'Parte 1/1: dati persi: 14'
+
+
+# ------------------------------------------------------------------ testo corretto a mano dall'admin
+
+CORRECTED = '**Seconda rata.** La seconda rata scade il 30 aprile 2027. (Fonte: Regolamento Tasse.)'
+
+
+def forced_result(document_id):
+    return dict(id=str(document_id), filename='a.pdf', content_type='application/pdf', categories=[],
+                processing_status='pending', review_notes=None)
+
+
+def test_endpoint_without_body_keeps_the_generated_text():
+    document_id = uuid4()
+    with patch.object(document_service, 'force_index_document', return_value=forced_result(document_id)) as force:
+        response = make_client(UserRole.admin).post(f'/api/documents/{document_id}/force-index')
+    assert response.status_code == 200
+    assert force.call_args.kwargs['markdown'] is None
+
+
+def test_endpoint_forwards_the_corrected_text():
+    document_id = uuid4()
+    with patch.object(document_service, 'force_index_document', return_value=forced_result(document_id)) as force:
+        response = make_client(UserRole.admin).post(
+            f'/api/documents/{document_id}/force-index', json={'markdown': CORRECTED})
+    assert response.status_code == 200
+    assert force.call_args.kwargs['markdown'] == CORRECTED
+
+
+def test_users_cannot_send_a_corrected_text():
+    with patch.object(document_service, 'force_index_document') as force:
+        response = make_client(UserRole.user).post(
+            f'/api/documents/{uuid4()}/force-index', json={'markdown': CORRECTED})
+    assert response.status_code == 403
+    force.assert_not_called()
+
+
+def test_corrected_text_replaces_the_generated_one_before_queueing():
+    document = reviewed()
+    with patch.object(document_service, 'force_index_document_task') as task:
+        document_service.force_index_document(locked_db(document), document.id, uuid4(),
+                                              markdown='  ' + CORRECTED.replace(' ', ' ', 1) + '\r\n')
+    assert document.extracted_text == document_service.REVIEW_PREFIX + CORRECTED
+    assert document_service.reviewed_markdown(document.extracted_text) == CORRECTED
+    assert document.processing_status == 'pending'
+    task.delay.assert_called_once_with(str(document.id))
+
+
+def test_blank_corrected_text_is_refused_and_nothing_changes():
+    document = reviewed()
+    with patch.object(document_service, 'force_index_document_task') as task, pytest.raises(HTTPException) as error:
+        document_service.force_index_document(locked_db(document), document.id, uuid4(), markdown=' \n ')
+    assert error.value.status_code == 422
+    assert document.extracted_text == document_service.REVIEW_PREFIX + MARKDOWN
+    assert document.processing_status == 'needs_review'
+    task.delay.assert_not_called()
+
+
+def test_worker_indexes_the_corrected_text():
+    document = reviewed()
+    with patch.object(document_service, 'force_index_document_task'):
+        document_service.force_index_document(locked_db(document), document.id, uuid4(), markdown=CORRECTED)
+    index, _ = run_worker(document)
+    assert index.call_args.args[0][0].page_content == CORRECTED
+    assert document.processing_status == 'indexed'

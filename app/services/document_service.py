@@ -176,10 +176,12 @@ def reviewed_markdown(extracted_text: str | None) -> str:
     return "" if markdown == EMPTY_REVIEW_TEXT else markdown
 
 
-def force_index_document(db: Session, document_id: UUID, user_id: UUID):
+def force_index_document(db: Session, document_id: UUID, user_id: UUID, markdown: str | None = None):
     """
     Indicizza un documento fermato dalla verifica di fedeltà, su decisione di un
     amministratore. Usa il Markdown già generato: nessun file da ricaricare.
+    Se `markdown` è passato (testo corretto a mano), sostituisce quello generato
+    e viene salvato prima di accodare il worker, che lo legge da extracted_text.
     """
     db_document = (
         db.query(Document).filter(Document.id == document_id)
@@ -189,6 +191,11 @@ def force_index_document(db: Session, document_id: UUID, user_id: UUID):
         raise HTTPException(status_code=404, detail="Documento non trovato")
     if db_document.processing_status != "needs_review":
         raise HTTPException(status_code=409, detail="Il documento non è in attesa di revisione.")
+    if markdown is not None:
+        corrected = markdown.replace("\r\n", "\n").strip()
+        if not corrected:
+            raise HTTPException(status_code=422, detail="Il testo da indicizzare è vuoto.")
+        db_document.extracted_text = REVIEW_PREFIX + corrected
     if not reviewed_markdown(db_document.extracted_text):
         raise HTTPException(status_code=422, detail="Non c'è testo generato da indicizzare: ricarica il documento.")
 

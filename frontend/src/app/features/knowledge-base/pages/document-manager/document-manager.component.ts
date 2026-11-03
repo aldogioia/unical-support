@@ -35,6 +35,17 @@ export interface ReviewPart {
 /** Deve coincidere con FORCED_REVIEW_NOTE in app/services/document_service.py. */
 export const FORCED_REVIEW_NOTE =
   'Indicizzato manualmente da un amministratore nonostante la verifica di fedeltà.';
+/** Deve coincidere con REVIEW_PREFIX in app/services/document_service.py. */
+export const REVIEW_PREFIX =
+  'ATTENZIONE: verifica di fedeltà numerica/fattuale fallita, documento NON indicizzato.\n\n';
+const EMPTY_REVIEW_TEXT = 'Nessun testo generato.';
+
+/** Testo generato dall'AI per un documento in revisione, senza l'avviso iniziale (come reviewed_markdown nel backend). */
+export function reviewedMarkdown(extractedText: string | null | undefined): string {
+  if (!extractedText?.startsWith(REVIEW_PREFIX)) return '';
+  const markdown = extractedText.slice(REVIEW_PREFIX.length).trim();
+  return markdown === EMPTY_REVIEW_TEXT ? '' : markdown;
+}
 const REVIEW_POLL_MS = 3000;
 
 /** Tipi accettati dal backend, ricavati dall'estensione quando il browser non li conosce. */
@@ -114,6 +125,12 @@ export class DocumentManagerComponent implements OnInit, OnDestroy {
     this.reviewParts().some((part) => part.extra.length > 0),
   );
   readonly confirmingForceId = signal<string | null>(null);
+  /** Testo da indicizzare, modificabile dall'amministratore prima di confermare. */
+  readonly reviewDraft = signal('');
+  readonly reviewOriginal = signal('');
+  readonly reviewEdited = computed(
+    () => this.reviewDraft().trim() !== this.reviewOriginal().trim(),
+  );
   readonly forcingIds = signal<ReadonlySet<string>>(new Set());
   readonly reviewError = signal<string | null>(null);
   readonly reviewNotice = signal('');
@@ -165,6 +182,17 @@ export class DocumentManagerComponent implements OnInit, OnDestroy {
     this.creating.set(false);
     this.selectedDocumentId.set(document.id);
     this.startEditCategories(document);
+    this.startReviewDraft(document);
+  }
+
+  startReviewDraft(doc: DocumentResponse): void {
+    const markdown = this.needsReview(doc) ? reviewedMarkdown(doc.extracted_text) : '';
+    this.reviewOriginal.set(markdown);
+    this.reviewDraft.set(markdown);
+  }
+
+  restoreReviewDraft(): void {
+    this.reviewDraft.set(this.reviewOriginal());
   }
   closeDetail(): void {
     if (this.uploading() || this.savingCategoryDocId()) return;
@@ -456,6 +484,10 @@ export class DocumentManagerComponent implements OnInit, OnDestroy {
   askForceIndex(doc: DocumentResponse): void {
     this.reviewError.set(null);
     this.reviewNotice.set('');
+    if (!this.reviewDraft().trim()) {
+      this.reviewError.set('Il testo da indicizzare è vuoto: scrivi o ripristina il contenuto prima di indicizzare.');
+      return;
+    }
     this.confirmingForceId.set(doc.id);
   }
 
@@ -468,11 +500,20 @@ export class DocumentManagerComponent implements OnInit, OnDestroy {
     this.confirmingForceId.set(null);
     this.reviewError.set(null);
     this.reviewNotice.set('');
+    const draft = this.reviewDraft().trim();
+    if (!draft) {
+      this.reviewError.set('Il testo da indicizzare è vuoto: scrivi o ripristina il contenuto prima di indicizzare.');
+      return;
+    }
+    // Il corpo si invia solo se il testo è stato corretto: altrimenti si indicizza quello generato, come prima.
+    const params = this.reviewEdited()
+      ? { document_id: doc.id, body: { markdown: draft } }
+      : { document_id: doc.id };
     this.setForcing(doc.id, true);
     try {
       const updated = await this.api.invoke(
         forceIndexDocumentApiDocumentsDocumentIdForceIndexPost,
-        { document_id: doc.id },
+        params,
       );
       this.documents.update((docs) =>
         docs.map((d) => (d.id === doc.id ? updated : d)),

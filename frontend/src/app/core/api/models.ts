@@ -10,6 +10,7 @@ export type { CategoryCreate } from './models/category-create';
 export type { CategoryImportResult } from './models/category-import-result';
 export type { CategoryResponse } from './models/category-response';
 export type { CategoryUpdate } from './models/category-update';
+export type { DocumentForceIndex } from './models/document-force-index';
 export type { DocumentResponse } from './models/document-response';
 export type { DocumentUpdate } from './models/document-update';
 export type { EmailCreate } from './models/email-create';

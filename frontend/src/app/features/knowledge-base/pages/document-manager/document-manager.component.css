@@ -167,6 +167,33 @@
   font-size: 12px;
   color: var(--ds-text-secondary);
 }
+.review-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.review-editor .field-hint {
+  margin: 0;
+}
+.review-textarea {
+  width: 100%;
+  min-height: 260px;
+  resize: vertical;
+  font-family: var(--ds-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  font-size: 12.5px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  box-sizing: border-box;
+}
+.review-edited {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--ds-text-secondary);
+}
 .review-actions {
   display: flex;
   justify-content: flex-start;

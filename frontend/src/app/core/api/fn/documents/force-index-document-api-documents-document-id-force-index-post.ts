@@ -7,16 +7,21 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
+import { DocumentForceIndex } from '../../models/document-force-index';
 import { DocumentResponse } from '../../models/document-response';
 
 export interface ForceIndexDocumentApiDocumentsDocumentIdForceIndexPost$Params {
   document_id: string;
+      body?: DocumentForceIndex | null
 }
 
 export function forceIndexDocumentApiDocumentsDocumentIdForceIndexPost(http: HttpClient, rootUrl: string, params: ForceIndexDocumentApiDocumentsDocumentIdForceIndexPost$Params, context?: HttpContext): Observable<StrictHttpResponse<DocumentResponse>> {
   const rb = new RequestBuilder(rootUrl, forceIndexDocumentApiDocumentsDocumentIdForceIndexPost.PATH, 'post');
   if (params) {
     rb.path('document_id', params.document_id, {});
+    if (params.body) {
+      rb.body(params.body, 'application/json');
+    }
   }
 
   return http.request(

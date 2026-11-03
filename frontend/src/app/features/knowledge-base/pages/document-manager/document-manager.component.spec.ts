@@ -11,7 +11,9 @@ import { AuthService } from '../../../../core/services/auth.service';
 import {
   DocumentManagerComponent,
   FORCED_REVIEW_NOTE,
+  REVIEW_PREFIX,
   parseReviewNotes,
+  reviewedMarkdown,
   withKnownType,
 } from './document-manager.component';
 
@@ -304,6 +306,72 @@ describe('Document review for administrators', () => {
     flushMicrotasks();
     expect(component.isForcing(reviewed as any)).toBeFalse();
     expect(component.reviewError()).toContain("Impossibile avviare");
+    fixture.destroy();
+  }));
+
+  it('shows the generated text without the warning in an editable box', fakeAsync(() => {
+    const fixture = open();
+    const box: HTMLTextAreaElement = fixture.nativeElement.querySelector('.review-textarea');
+    flushMicrotasks();
+    fixture.detectChanges();
+    flushMicrotasks();
+    expect(box).not.toBeNull();
+    expect(box.value).toBe('Testo generato');
+    expect(fixture.nativeElement.textContent).not.toContain('Contenuto estratto');
+    expect(reviewedMarkdown(reviewed.extracted_text)).toBe('Testo generato');
+    expect(reviewedMarkdown(REVIEW_PREFIX + 'Nessun testo generato.')).toBe('');
+    expect(reviewedMarkdown('Testo qualsiasi')).toBe('');
+    fixture.destroy();
+  }));
+
+  it('sends the corrected text and labels the button Salva e indicizza', fakeAsync(() => {
+    const fixture = open(),
+      component = fixture.componentInstance;
+    component.reviewDraft.set('Testo corretto: la rata scade il 30/09');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.review-force').textContent).toContain('Salva e indicizza');
+    expect(fixture.nativeElement.querySelector('.review-restore')).not.toBeNull();
+    component.forceIndex(reviewed as any);
+    flushMicrotasks();
+    expect(api.invoke).toHaveBeenCalledWith(
+      forceIndexDocumentApiDocumentsDocumentIdForceIndexPost,
+      { document_id: reviewed.id, body: { markdown: 'Testo corretto: la rata scade il 30/09' } },
+    );
+    component.ngOnDestroy();
+    fixture.destroy();
+  }));
+
+  it('restores the generated text and then sends no body', fakeAsync(() => {
+    const fixture = open(),
+      component = fixture.componentInstance;
+    component.reviewDraft.set('Testo cambiato');
+    component.restoreReviewDraft();
+    fixture.detectChanges();
+    expect(component.reviewEdited()).toBeFalse();
+    expect(fixture.nativeElement.querySelector('.review-force').textContent).toContain('Indicizza comunque');
+    component.forceIndex(reviewed as any);
+    flushMicrotasks();
+    expect(api.invoke).toHaveBeenCalledWith(
+      forceIndexDocumentApiDocumentsDocumentIdForceIndexPost,
+      { document_id: reviewed.id },
+    );
+    component.ngOnDestroy();
+    fixture.destroy();
+  }));
+
+  it('refuses to index an empty text', fakeAsync(() => {
+    const fixture = open(),
+      component = fixture.componentInstance;
+    component.reviewDraft.set('   ');
+    component.askForceIndex(reviewed as any);
+    expect(component.confirmingForceId()).toBeNull();
+    component.forceIndex(reviewed as any);
+    flushMicrotasks();
+    expect(api.invoke).not.toHaveBeenCalledWith(
+      forceIndexDocumentApiDocumentsDocumentIdForceIndexPost,
+      jasmine.anything(),
+    );
+    expect(component.reviewError()).toContain('vuoto');
     fixture.destroy();
   }));
 });

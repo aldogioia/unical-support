@@ -343,6 +343,38 @@
                     {{ reviewError() }}
                   </div>
                 }
+                <div class="review-editor">
+                  <label for="review-markdown" class="form-label"
+                    >Testo da indicizzare</label
+                  >
+                  <p class="field-hint">
+                    È il testo riscritto dall'AI. Puoi correggere qui i dati
+                    sbagliati guardando le differenze segnalate sopra: verrà
+                    indicizzato il testo così come lo lasci.
+                  </p>
+                  <textarea
+                    id="review-markdown"
+                    class="form-control review-textarea"
+                    rows="14"
+                    spellcheck="false"
+                    [ngModel]="reviewDraft()"
+                    (ngModelChange)="reviewDraft.set($event)"
+                    [disabled]="isForcing(doc)"
+                  ></textarea>
+                  @if (reviewEdited()) {
+                    <div class="review-edited" role="status">
+                      <span>Hai modificato il testo generato.</span>
+                      <button
+                        type="button"
+                        class="btn btn-outline review-restore"
+                        [disabled]="isForcing(doc)"
+                        (click)="restoreReviewDraft()"
+                      >
+                        Ripristina testo generato
+                      </button>
+                    </div>
+                  }
+                </div>
                 <div class="review-actions">
                   @if (isForcing(doc)) {
                     <div class="review-progress" role="status">
@@ -352,8 +384,14 @@
                   } @else if (confirmingForceId() === doc.id) {
                     <div class="review-confirm" role="group" aria-label="Conferma indicizzazione">
                       <p>
-                        Il testo generato verrà indicizzato così com'è e l'AI
-                        potrà citarlo nelle risposte. Confermi?
+                        @if (reviewEdited()) {
+                          Il testo che hai corretto verrà salvato e
+                          indicizzato, e l'AI potrà citarlo nelle risposte.
+                          Confermi?
+                        } @else {
+                          Il testo generato verrà indicizzato così com'è e
+                          l'AI potrà citarlo nelle risposte. Confermi?
+                        }
                       </p>
                       <div class="review-confirm-buttons">
                         <button
@@ -361,7 +399,11 @@
                           class="btn btn-primary"
                           (click)="forceIndex(doc)"
                         >
-                          <ds-icon name="check" />Sì, indicizza comunque
+                          <ds-icon name="check" />{{
+                            reviewEdited()
+                              ? "Sì, salva e indicizza"
+                              : "Sì, indicizza comunque"
+                          }}
                         </button>
                         <button
                           type="button"
@@ -378,7 +420,9 @@
                       class="btn btn-primary review-force"
                       (click)="askForceIndex(doc)"
                     >
-                      <ds-icon name="upload" />Indicizza comunque
+                      <ds-icon name="upload" />{{
+                        reviewEdited() ? "Salva e indicizza" : "Indicizza comunque"
+                      }}
                     </button>
                   }
                 </div>
@@ -436,15 +480,17 @@
                 placeholder="Seleziona categorie"
               />
             </section>
-            <section class="detail-section">
-              <h3><ds-icon name="file" /> Contenuto estratto</h3>
-              <div class="reading-box document-content">
-                {{
-                  doc.extracted_text ||
-                    "Il testo estratto non è ancora disponibile."
-                }}
-              </div>
-            </section>
+            @if (!(isAdmin() && (needsReview(doc) || isForcing(doc)))) {
+              <section class="detail-section">
+                <h3><ds-icon name="file" /> Contenuto estratto</h3>
+                <div class="reading-box document-content">
+                  {{
+                    doc.extracted_text ||
+                      "Il testo estratto non è ancora disponibile."
+                  }}
+                </div>
+              </section>
+            }
             <div class="row-id">ID documento · {{ doc.id }}</div>
           </div>
           <footer class="detail-footer">
