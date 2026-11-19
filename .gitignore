@@ -1,4 +1,5 @@
 .env
+.env.langfuse
 .venv
 credentials.json
 token.json

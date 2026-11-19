@@ -20,6 +20,8 @@ Riferimenti ufficiali: [SDK Python](https://python.reference.langfuse.com/langfu
 
 `docker-compose.langfuse.yml` è uno stack **separato**, con web, worker Langfuse, PostgreSQL 17, ClickHouse, Redis persistente e storage S3 MinIO. Usare sempre il progetto `unical_langfuse`: non aggiungere questo file al Compose applicativo `unical_support`. I volumi e la rete restano separati; nessuna tabella Langfuse viene aggiunta al database della piattaforma.
 
+Il solo worker Celery applicativo riceve il collegamento al monitoraggio tramite l'overlay. I sei servizi dello stack Langfuse sono l'infrastruttura che riceve, elabora e conserva gli eventi: non rappresentano sei servizi applicativi strumentati. Il worker Langfuse elabora la telemetria; il worker Unical Support esegue le chiamate AI.
+
 La porta web è pubblicata soltanto su 127.0.0.1:3000; i database e lo storage non hanno porte host. Il Compose è adattato dal [file ufficiale](https://github.com/langfuse/langfuse/blob/main/docker-compose.yml). La [guida ufficiale alla VM](https://langfuse.com/self-hosting/deployment/docker-compose) raccomanda almeno 4 core, 16 GiB RAM e spazio adeguato (indicativamente 100 GiB): verificare la capacità prima di aggiungere lo stack alla VPS applicativa, oppure usare una macchina interna dedicata.
 
 Sul server, nella cartella del progetto e con l'accesso root abituale:
@@ -34,10 +36,28 @@ chmod 600 /home/operatore/secrets/langfuse.env
 Compilare il file copiato. Per ognuna delle sette variabili LF_* vuote generare **un valore diverso** con `openssl rand -hex 32`; la chiave di cifratura deve avere 64 caratteri hex. Usare valori hex anche per la password PostgreSQL per evitare problemi di escaping nell'URL. Conservare password, salt e chiave di cifratura: non rigenerarli a ogni riavvio. LF_IMAGE_TAG=4 segue il major ufficiale; prima del rollout operativo fissare il tag/digest della release 4 scelta per web e worker. LF_MINIO_IMAGE permette analogamente di fissare l'immagine storage.
 
 ```bash
-docker compose -p unical_langfuse --env-file /home/operatore/secrets/langfuse.env -f docker-compose.langfuse.yml config --quiet
-docker compose -p unical_langfuse --env-file /home/operatore/secrets/langfuse.env -f docker-compose.langfuse.yml up -d
-docker compose -p unical_langfuse --env-file /home/operatore/secrets/langfuse.env -f docker-compose.langfuse.yml logs --tail=100 web worker
+docker compose -p unical_langfuse --env-file /home/operatore/secrets/langfuse.env -f /home/operatore/unical_support/docker-compose.langfuse.yml config --quiet
+docker compose -p unical_langfuse --env-file /home/operatore/secrets/langfuse.env -f /home/operatore/unical_support/docker-compose.langfuse.yml up -d
+docker compose -p unical_langfuse --env-file /home/operatore/secrets/langfuse.env -f /home/operatore/unical_support/docker-compose.langfuse.yml logs --tail=100 web worker
 ```
+
+Per le sessioni SSH si può definire una scorciatoia indipendente dalla directory corrente:
+
+```bash
+alias lf='docker compose -p unical_langfuse --env-file /home/operatore/secrets/langfuse.env -f /home/operatore/unical_support/docker-compose.langfuse.yml'
+lf ps -a
+lf logs --tail=60 minio redis
+```
+
+L'alias va ridefinito nelle nuove sessioni. Un errore `open /root/docker-compose.langfuse.yml` indica un percorso relativo eseguito dalla directory sbagliata; i percorsi assoluti sopra evitano questo problema. In caso di dipendenze non disponibili leggere i log dei servizi coinvolti: `Created` per web/worker non implica che siano già avviati, e `health: starting` non prova da solo un guasto. Il codice 127 di un processo richiede di identificare l'errore specifico dai log; non attribuirlo automaticamente alla memoria.
+
+### Compatibilità CPU della VM
+
+Sulla VM di produzione il 19 novembre 2026 MinIO ha restituito `Fatal glibc error: CPU does not support x86-64-v2`. Anche l'esecuzione diretta di `/usr/bin/minio --version` e `/usr/bin/mc --version`, senza shell, ha confermato il requisito AMD64 v2. Il problema riguarda le istruzioni CPU esposte alla VM; cambiare entrypoint o aumentare la RAM non lo risolve.
+
+L'amministratore dell'hypervisor deve verificare se il processore fisico supporta x86-64-v2 e scegliere un modello CPU virtuale che esponga tali istruzioni (eventualmente host-passthrough, se appropriato per l'infrastruttura). In alternativa occorre un'immagine S3 compatibile con la CPU disponibile e verificata per avvio e healthcheck. Le vecchie varianti MinIO cpuv1 su Docker Hub e Quay non sono risultate scaricabili durante questa verifica: non usarne tag non verificati come correzione automatica.
+
+In attesa della modifica si può arrestare soltanto lo stack Langfuse con `lf stop`; configurazione, secret e volumi vengono conservati. Alla ripresa usare `lf up -d`, verificare `lf ps -a` e i log delle dipendenze prima di creare il progetto e abilitare l'overlay applicativo. Il warning Redis su `vm.overcommit_memory` va trattato separatamente: nel log osservato Redis accettava le connessioni e non era il blocco di avvio.
 
 Dal Mac aprire il tunnel, usando il normale jump SSH:
 

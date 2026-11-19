@@ -76,10 +76,10 @@ Non procedere se il backup o la verifica falliscono. Il dump contiene anche gli 
 Con i servizi applicativi fermi e il backup verificato:
 
 ```bash
-docker compose -p unical_support -f docker-compose.prod.yml -f docker-compose.smtp.yml run --rm --no-deps --no-build -T backend alembic current
-docker compose -p unical_support -f docker-compose.prod.yml -f docker-compose.smtp.yml run --rm --no-deps --no-build -T backend alembic upgrade head
-docker compose -p unical_support -f docker-compose.prod.yml -f docker-compose.smtp.yml run --rm --no-deps --no-build -T backend alembic check
-docker compose -p unical_support -f docker-compose.prod.yml -f docker-compose.smtp.yml run --rm --no-deps --no-build -T backend alembic current
+docker compose -p unical_support -f docker-compose.prod.yml -f docker-compose.smtp.yml run --rm --no-deps -T backend alembic current
+docker compose -p unical_support -f docker-compose.prod.yml -f docker-compose.smtp.yml run --rm --no-deps -T backend alembic upgrade head
+docker compose -p unical_support -f docker-compose.prod.yml -f docker-compose.smtp.yml run --rm --no-deps -T backend alembic check
+docker compose -p unical_support -f docker-compose.prod.yml -f docker-compose.smtp.yml run --rm --no-deps -T backend alembic current
 ```
 
 Eseguire ogni comando solo se il precedente è riuscito. La head attuale è `c2d8e4f6a901`: aggiunge `emails.retrieved_sources JSONB NULL` senza modificare email, bozze o documenti esistenti. La migrazione è necessaria prima di avviare il nuovo backend/worker, anche se Langfuse rimane disabilitato. `upgrade head` applica anche eventuali revisioni precedenti mancanti: leggerle prima di procedere.
