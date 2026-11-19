@@ -118,6 +118,22 @@ class MigrationTests(unittest.TestCase):
             self.assertEqual(connection.execute(text('SELECT generated_draft FROM emails WHERE id=:id'), {'id': email_id}).scalar(), 'Bozza esistente')
         self.migrate('upgrade', 'head')
 
+    def test_retrieval_sources_keep_old_drafts_and_downgrade_without_losing_text(self):
+        self.migrate('upgrade', 'a71d9c4e2f60')
+        identifier = uuid4()
+        with self.engine.begin() as connection:
+            connection.execute(text("INSERT INTO emails (id, gmail_id, sender, status, generated_draft, created_by, last_updated_by) VALUES (:id, 'sources-migration', 'test@example.org', 'DRAFT', 'Bozza storica', 'test', 'test')"), {'id':identifier})
+        self.migrate('upgrade', 'head')
+        with self.engine.begin() as connection:
+            row = connection.execute(text('SELECT generated_draft, retrieved_sources FROM emails WHERE id=:id'), {'id':identifier}).mappings().one()
+            self.assertEqual(row['generated_draft'], 'Bozza storica')
+            self.assertIsNone(row['retrieved_sources'])
+            connection.execute(text("UPDATE emails SET retrieved_sources='[]'::jsonb WHERE id=:id"), {'id':identifier})
+        self.migrate('downgrade', '-1')
+        self.assertNotIn('retrieved_sources', [column['name'] for column in inspect(self.engine).get_columns('emails')])
+        with self.engine.connect() as connection:
+            self.assertEqual(connection.execute(text('SELECT generated_draft FROM emails WHERE id=:id'), {'id':identifier}).scalar(), 'Bozza storica')
+
     def test_fresh_database_without_vector_tables(self):
         self.migrate('upgrade', 'head')
         self.assertIn('reference_url', [column['name'] for column in inspect(self.engine).get_columns('documents')])

@@ -202,18 +202,7 @@
                 </div>
               </div>
             }
-            <details class="ai-sources">
-              <summary>
-                <ds-icon name="book" /><span>Fonti e rilevanza</span
-                ><span class="badge">Non disponibili</span
-                ><ds-icon name="down" />
-              </summary>
-              <p>
-                Per questa email non sono disponibili frammenti documentali
-                o punteggi di rilevanza. Controlla i riferimenti nella
-                risposta e consulta i Documenti.
-              </p>
-            </details>
+            <app-retrieved-sources [sources]="email.retrieved_sources" />
           </section>
           <section class="detail-section">
             <div class="draft-heading">
@@ -225,7 +214,6 @@
                     : "Bozza di risposta"
                 }}
               </h3>
-              <app-ai-confidence [value]="email.ai_confidence" />
             </div>
             <div class="draft-view-switch" role="group" aria-label="Visualizzazione risposta">
               <button type="button" class="btn btn-sm" [class.btn-secondary]="draftView() === 'edit'" [attr.aria-pressed]="draftView() === 'edit'" (click)="draftView.set('edit')"><ds-icon name="file" />Modifica testo</button>

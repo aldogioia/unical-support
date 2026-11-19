@@ -17,7 +17,6 @@ credentials.json
 token.json
 secrets/
 uploads/
-.deploy/
 *.dump
 celerybeat-schedule*
 .pytest_cache/

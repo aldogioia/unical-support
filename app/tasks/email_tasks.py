@@ -6,6 +6,12 @@ from app.services.email_processing import claim_processing, can_write, release_p
 
 
 def _process(task, email_id, stage, generation=None):
+    from app.core.llm_observability import ai_job
+    with ai_job('email', email_id, stage, generation):
+        return _run_process(task, email_id, stage, generation)
+
+
+def _run_process(task, email_id, stage, generation=None):
     from app.ai.llm_factory import get_classifier_llm, get_responder_llm
     from langgraph.prebuilt import create_react_agent
     from langchain_core.messages import SystemMessage, HumanMessage

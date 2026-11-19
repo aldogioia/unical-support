@@ -15,6 +15,14 @@ class EmailCreate(EmailBase):
     category_ids: List[uuid.UUID] = Field(default_factory=list)
     received_at: AwareDatetime | None = None
 
+class EmailSource(BaseModel):
+    document_id: uuid.UUID | None = None
+    source_name: str
+    reference_url: str | None = None
+    page: str | None = None
+    excerpt: str
+
+
 class EmailResponse(EmailBase):
     id: uuid.UUID
     gmail_id: str
@@ -25,6 +33,7 @@ class EmailResponse(EmailBase):
     failure_stage: str | None = None
     generated_draft: str | None = None
     ai_confidence: float | None = Field(default=None, ge=0, le=1)
+    retrieved_sources: List[EmailSource] | None = None
     response_language: str | None = None
     ai_disclaimer: str | None = None
     categories: List[CategoryResponse] = []

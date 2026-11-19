@@ -74,7 +74,7 @@ def search_knowledge_base(query: str, category_names: list[str] | None = None) -
     """
     return retrieve_context(query=query, k=4, category_names=category_names)
 
-def _save_draft_response(email_id: UUID, draft_text: str, response_language: str | None = None, ai_disclaimer: str | None = None, token=None) -> str:
+def _save_draft_response(email_id: UUID, draft_text: str, response_language: str | None = None, ai_disclaimer: str | None = None, token=None, retrieved_sources=None) -> str:
     """
     Salva la bozza finale sull'email indicata.
     Passa response_language con il codice ISO della lingua rilevata (it, en, es, ecc.).
@@ -98,6 +98,7 @@ def _save_draft_response(email_id: UUID, draft_text: str, response_language: str
             return "Elaborazione scaduta o bozza revisionata: nessuna modifica applicata."
         
         email.generated_draft = formatted_draft
+        email.retrieved_sources = retrieved_sources
         email.response_language = language
         email.ai_disclaimer = disclaimer
         email.status = EmailStatus.DRAFT
@@ -106,7 +107,7 @@ def _save_draft_response(email_id: UUID, draft_text: str, response_language: str
         release_processing(email)
         return "Bozza salvata con successo."
 
-def _escalate_to_human(email_id: UUID, reason: str, token=None) -> str:
+def _escalate_to_human(email_id: UUID, reason: str, token=None, retrieved_sources=None) -> str:
     """
     Usa questo tool se non trovi informazioni sufficienti per rispondere
     e ritieni che l'email debba essere gestita da un operatore umano.
@@ -117,6 +118,7 @@ def _escalate_to_human(email_id: UUID, reason: str, token=None) -> str:
             return "Elaborazione scaduta o bozza revisionata: nessuna modifica applicata."
         
         email.status = EmailStatus.ESCALATED
+        email.retrieved_sources = retrieved_sources
         email.draft_revision += 1
         release_processing(email)
         email.generated_draft = f"GESTIONE MANUALE RICHIESTA:\n{reason}"
@@ -149,12 +151,15 @@ def processing_tools(identifier, token, stage):
     target = str(identifier)
     sources = {}
     searched = False
+    snapshots = []
 
     @tool('search_knowledge_base', description=search_knowledge_base.description)
     def search(query: str, category_names: list[str] | None = None) -> str:
-        nonlocal searched
+        nonlocal searched, snapshots
         searched = True
         context = retrieve_context(query=query, k=4, category_names=category_names)
+        from app.core.retrieval_sources import source_snapshots, merge_sources
+        snapshots = merge_sources(snapshots, source_snapshots(context))
         for passage in context.split('\n\n---\n\n'):
             try:
                 source = json.loads(passage)
@@ -196,10 +201,10 @@ def processing_tools(identifier, token, stage):
         for name, links in sources.items():
             if name != 'Documento' and name in draft_text and not any(url in draft_text for url in links):
                 return 'Non citare il nome di una fonte senza il suo link valido. Ometti la citazione priva di URL e riprova a salvare.'
-        return _save_draft_response(email_id, draft_text, response_language, ai_disclaimer, token)
+        return _save_draft_response(email_id, draft_text, response_language, ai_disclaimer, token, retrieved_sources=snapshots)
 
     @tool('escalate_to_human', description=escalate_to_human.description)
     def escalate(email_id: UUID, reason: str) -> str:
-        return _escalate_to_human(email_id, reason, token) if valid(email_id) else 'Email non autorizzata per questa elaborazione.'
+        return _escalate_to_human(email_id, reason, token, retrieved_sources=snapshots if searched else None) if valid(email_id) else 'Email non autorizzata per questa elaborazione.'
 
     return [get_available_categories, assign] if stage == 'classify' else [search, save, escalate]

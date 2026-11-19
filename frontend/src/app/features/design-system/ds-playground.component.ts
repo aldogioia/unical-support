@@ -1,12 +1,11 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
-import { AiConfidenceComponent } from '../../shared/components/ai-confidence/ai-confidence.component';
 import { AutoResizeDirective } from '../../shared/components/auto-resize.directive';
 import { DsIconComponent } from './ds-icon.component';
 
 type Tone = 'success' | 'warning' | 'danger' | 'info';
 
 @Component({
-  selector: 'ds-playground', standalone: true, imports: [DsIconComponent, AiConfidenceComponent, AutoResizeDirective],
+  selector: 'ds-playground', standalone: true, imports: [DsIconComponent, AutoResizeDirective],
   templateUrl: './ds-playground.component.html', styleUrls: ['./ds-controls.css', './ds-forms.css', './ds-upload-models.css', './ds-data.css', './ds-feedback.css', './ds-dialog.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })

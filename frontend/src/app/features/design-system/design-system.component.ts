@@ -57,7 +57,7 @@ export class DesignSystemComponent {
     { name: 'Body large', size: '16 / 26 · 400', css: 'type-large', token: '--ds-type-large', text: 'Più contesto, decisioni migliori.' },
     { name: 'Body regular', size: '14 / 22 · 400', css: 'type-regular', token: '--ds-type-regular', text: 'Rivedi la bozza prima di inviare la risposta allo studente.' },
     { name: 'Caption', size: '12 / 18 · 400', css: 'type-caption', token: '--ds-type-caption', text: 'Ultimo aggiornamento · 2 minuti fa' },
-    { name: 'Monospace', size: '12 / 20 · 400', css: 'type-mono', token: '--ds-type-mono', text: 'thread_8f2a · confidence: 0.96 · tokens: 1248' }
+    { name: 'Monospace', size: '12 / 20 · 400', css: 'type-mono', token: '--ds-type-mono', text: 'thread_8f2a · tokens: 1248' }
   ];
   readonly spacing = [4, 8, 12, 16, 24, 32, 48, 64];
   readonly radii = [{ name: 'sm', value: '4px' }, { name: 'md', value: '8px' }, { name: 'lg', value: '12px' }, { name: 'full', value: '999px' }];

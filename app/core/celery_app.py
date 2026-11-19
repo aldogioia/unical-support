@@ -1,10 +1,16 @@
 from celery import Celery
-from celery.signals import worker_process_init
+from celery.signals import worker_process_init, worker_process_shutdown
 from celery.schedules import crontab
 from app.core.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+@worker_process_shutdown.connect
+def flush_worker_observability(**kwargs):
+    from app.core.llm_observability import flush_observability
+    flush_observability()
 
 celery_app = Celery(
     "unical_worker",

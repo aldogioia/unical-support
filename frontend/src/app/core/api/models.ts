@@ -21,6 +21,7 @@ export type { EmailResponse } from './models/email-response';
 export type { EmailRetryBatchRequest } from './models/email-retry-batch-request';
 export type { EmailRetryBatchResponse } from './models/email-retry-batch-response';
 export type { EmailRetryRequest } from './models/email-retry-request';
+export type { EmailSource } from './models/email-source';
 export type { EmailStatus } from './models/email-status';
 export type { EmailUpdateDraft } from './models/email-update-draft';
 export type { FeedbackResponse } from './models/feedback-response';

@@ -1,0 +1,115 @@
+# Standalone stack: always use -p unical_langfuse and its own --env-file.
+# Based on https://github.com/langfuse/langfuse/blob/main/docker-compose.yml
+x-langfuse-environment: &langfuse-environment
+  NEXTAUTH_URL: ${LF_PUBLIC_URL:-http://localhost:3000}
+  DATABASE_URL: postgresql://langfuse:${LF_POSTGRES_PASSWORD:?Imposta LF_POSTGRES_PASSWORD}@postgres:5432/langfuse
+  SALT: ${LF_SALT:?Imposta LF_SALT}
+  ENCRYPTION_KEY: ${LF_ENCRYPTION_KEY:?Imposta LF_ENCRYPTION_KEY (64 caratteri hex)}
+  TELEMETRY_ENABLED: "false"
+  CLICKHOUSE_MIGRATION_URL: clickhouse://clickhouse:9000
+  CLICKHOUSE_URL: http://clickhouse:8123
+  CLICKHOUSE_USER: langfuse
+  CLICKHOUSE_PASSWORD: ${LF_CLICKHOUSE_PASSWORD:?Imposta LF_CLICKHOUSE_PASSWORD}
+  CLICKHOUSE_CLUSTER_ENABLED: "false"
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  REDIS_AUTH: ${LF_REDIS_PASSWORD:?Imposta LF_REDIS_PASSWORD}
+  LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse
+  LANGFUSE_S3_EVENT_UPLOAD_REGION: auto
+  LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: langfuse
+  LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: ${LF_S3_PASSWORD:?Imposta LF_S3_PASSWORD}
+  LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://minio:9000
+  LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: "true"
+  LANGFUSE_S3_EVENT_UPLOAD_PREFIX: events/
+  LANGFUSE_S3_MEDIA_UPLOAD_BUCKET: langfuse
+  LANGFUSE_S3_MEDIA_UPLOAD_REGION: auto
+  LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID: langfuse
+  LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY: ${LF_S3_PASSWORD:?Imposta LF_S3_PASSWORD}
+  LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT: http://minio:9000
+  LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE: "true"
+  LANGFUSE_S3_MEDIA_UPLOAD_PREFIX: media/
+
+services:
+  web:
+    image: docker.langfuse.com/langfuse/langfuse:${LF_IMAGE_TAG:-4}
+    restart: unless-stopped
+    depends_on: &dependencies
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      clickhouse: {condition: service_healthy}
+      minio: {condition: service_healthy}
+    ports:
+      - "127.0.0.1:${LF_PORT:-3000}:3000"
+    environment:
+      <<: *langfuse-environment
+      NEXTAUTH_SECRET: ${LF_AUTH_SECRET:?Imposta LF_AUTH_SECRET}
+      # No media are exported by the application's token-only callback.
+      LANGFUSE_S3_MEDIA_UPLOAD_INTERNAL_ENDPOINT: http://minio:9000
+  worker:
+    image: docker.langfuse.com/langfuse/langfuse-worker:${LF_IMAGE_TAG:-4}
+    restart: unless-stopped
+    depends_on: *dependencies
+    environment: *langfuse-environment
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: langfuse
+      POSTGRES_DB: langfuse
+      POSTGRES_PASSWORD: ${LF_POSTGRES_PASSWORD:?Imposta LF_POSTGRES_PASSWORD}
+    volumes: [postgres_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U langfuse -d langfuse"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${LF_REDIS_PASSWORD:?Imposta LF_REDIS_PASSWORD}
+    command: [sh, -c, 'exec redis-server --appendonly yes --maxmemory-policy noeviction --requirepass "$$REDIS_PASSWORD"']
+    volumes: [redis_data:/data]
+    healthcheck:
+      test: [CMD-SHELL, 'REDISCLI_AUTH="$$REDIS_PASSWORD" redis-cli ping | grep -q PONG']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  clickhouse:
+    image: clickhouse/clickhouse-server:26.3.62.3
+    restart: unless-stopped
+    user: "101:101"
+    environment:
+      CLICKHOUSE_DB: default
+      CLICKHOUSE_USER: langfuse
+      CLICKHOUSE_PASSWORD: ${LF_CLICKHOUSE_PASSWORD:?Imposta LF_CLICKHOUSE_PASSWORD}
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - clickhouse_logs:/var/log/clickhouse-server
+    healthcheck:
+      test: [CMD-SHELL, "wget --quiet --tries=1 --spider http://localhost:8123/ping || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    ulimits:
+      nofile: {soft: 262144, hard: 262144}
+  minio:
+    image: ${LF_MINIO_IMAGE:-cgr.dev/chainguard/minio}
+    restart: unless-stopped
+    entrypoint: sh
+    command: ["-c", 'mkdir -p /data/langfuse && minio server --address ":9000" /data']
+    environment:
+      MINIO_ROOT_USER: langfuse
+      MINIO_ROOT_PASSWORD: ${LF_S3_PASSWORD:?Imposta LF_S3_PASSWORD}
+    volumes: [minio_data:/data]
+    healthcheck:
+      test: [CMD, mc, ready, local]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+volumes:
+  postgres_data:
+  redis_data:
+  clickhouse_data:
+  clickhouse_logs:
+  minio_data:

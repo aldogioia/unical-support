@@ -44,9 +44,11 @@ def process_document_task(document_id: UUID | str, file_path: str, category_ids:
 
         raw_text = "\n\n".join(doc.page_content for doc in docs if doc.page_content)
         print(f"[WORKER] Normalizzazione in markdown atomico per il documento {document_id}...")
-        normalization = normalize_to_structured_markdown(
-            raw_text, source_name=source_name, reference_url=reference_url
-        )
+        from app.core.llm_observability import ai_job
+        with ai_job('document', document_id, 'normalize'):
+            normalization = normalize_to_structured_markdown(
+                raw_text, source_name=source_name, reference_url=reference_url
+            )
 
         if normalization.needs_review:
             print(f"[WORKER] Documento {document_id} marcato come needs_review: {normalization.review_notes}")

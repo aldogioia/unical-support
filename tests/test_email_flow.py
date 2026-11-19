@@ -216,6 +216,8 @@ def test_retry_runs_actual_scoped_classifier_and_responder_without_external_serv
     result = db.get(Email, identifier)
     assert result.status == EmailStatus.DRAFT and result.response_language == 'en'
     assert result.ai_confidence == 0.9 and not result.manually_edited
+    assert result.retrieved_sources[0]['excerpt'] == 'Codice TEST-42'
+    assert result.retrieved_sources[0]['reference_url'] == 'https://example.org/test'
 
 
 def test_sweeper_only_requeues_expired_processing_not_active_or_reviewed(flow_db):
@@ -234,3 +236,24 @@ def test_sweeper_only_requeues_expired_processing_not_active_or_reviewed(flow_db
     db.expire_all()
     assert db.get(Email, active.id).processing_token == 'active'
     assert db.get(Email, manual.id).status == EmailStatus.DRAFT
+
+
+def test_sources_are_saved_atomically_and_manual_edits_preserve_the_snapshot(flow_db):
+    from app.ai.tools import _save_draft_response
+    from app.schemas.email import EmailResponse
+    db, factory = flow_db
+    row = message(db, status=EmailStatus.TO_RESPOND, processing_token='owner')
+    sources = [dict(document_id=None, source_name='Manuale interno', reference_url=None, page='3', excerpt='Dato verificato')]
+    @contextmanager
+    def scope():
+        with factory.begin() as session: yield session
+    with patch('app.ai.tools.session_scope', scope):
+        assert _save_draft_response(row.id, 'Dato verificato', 'it', token='owner', retrieved_sources=sources) == 'Bozza salvata con successo.'
+    db.expire_all(); result = db.get(Email, row.id)
+    assert result.retrieved_sources == sources
+    assert EmailResponse.model_validate(result).retrieved_sources[0].excerpt == 'Dato verificato'
+    update_email_draft(db, row.id, EmailUpdateDraft(generated_draft='Dato revisionato', status='DRAFT', expected_revision=result.draft_revision), uuid4())
+    with patch('app.ai.tools.session_scope', scope):
+        assert 'nessuna modifica' in _save_draft_response(row.id, 'Testo obsoleto', 'it', token='owner', retrieved_sources=[])
+    db.expire_all(); result = db.get(Email, row.id)
+    assert result.generated_draft == 'Dato revisionato' and result.retrieved_sources == sources

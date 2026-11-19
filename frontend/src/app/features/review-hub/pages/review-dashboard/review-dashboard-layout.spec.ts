@@ -43,6 +43,8 @@ describe('Review hub master-detail', () => {
     expect(fixture.nativeElement.querySelector('#email-draft').value).toBe(
       'Risposta iniziale',
     );
+    expect(fixture.nativeElement.querySelector('app-ai-confidence')).toBeNull();
+    expect(fixture.nativeElement.querySelector('app-retrieved-sources')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('#email-draft').getAttribute('wrap')).toBe('soft');
     expect(fixture.nativeElement.querySelector('#email-layout-note').textContent).toContain('logo e nota di trasparenza AI');
     const calls = api.invoke.calls.count();

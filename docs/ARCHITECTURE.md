@@ -35,7 +35,7 @@ Le entità principali sono utenti, email, categorie, documenti, impostazioni AI,
 
 Il database contiene anche `langchain_pg_collection` e `langchain_pg_embedding`, gestite da LangChain. Alembic le esclude dall'autogenerazione delle rimozioni: non sono tabelle da cancellare perché assenti da `Base.metadata`.
 
-I volumi Compose sono `postgres_data` (database e vettori), `shared_uploads` (file condivisi fra API e worker) e `celerybeat_data` (stato dello scheduler). Il nome Docker effettivo dipende dal progetto Compose. Il deploy rileva e riutilizza i nomi esistenti. Redis nel Compose corrente non ha un volume persistente: non va ricreato durante un aggiornamento applicativo, perché si perderebbero code e coordinamento in memoria.
+I volumi Compose sono `postgres_data` (database e vettori), `shared_uploads` (file condivisi fra API e worker) e `celerybeat_data` (stato dello scheduler). Il nome Docker effettivo dipende dal progetto Compose: mantenere lo stesso nome progetto durante gli aggiornamenti per riutilizzare i volumi esistenti. Redis nel Compose corrente non ha un volume persistente: non va ricreato durante un aggiornamento applicativo, perché si perderebbero code e coordinamento in memoria.
 
 ## Acquisizione e lavorazione delle email
 
@@ -75,7 +75,13 @@ Classifier e responder usano LangGraph/LangChain. I provider configurabili sono 
 
 Le risposte sono generate dinamicamente: non ci sono template testuali precompilati. La lingua è la prima riconoscibile nel corpo corrente, senza influenza dell'oggetto, delle firme o dei messaggi citati. Il prompt richiede una sola lingua, concisione, tono cordiale e paragrafi senza hard wrapping. I nomi propri e i titoli ufficiali possono mantenere la forma originale. Il fallback linguistico resta configurabile quando la lingua non è identificabile.
 
-`ai_confidence` è la media dei punteggi disponibili del reranker nel tentativo di risposta, non una probabilità calibrata di correttezza. È nullable; la UI mostra N/D se assente e 0% se il valore è zero. Verde da 0.8, ambra da 0.5, rosso sotto 0.5; N/D in indaco.
+Il Review Hub mostra le fonti realmente recuperate durante la generazione. Lo snapshot nullable `emails.retrieved_sources` conserva identificativo e nome del documento, link, pagina ed estratto; viene salvato nella stessa transazione della bozza e protetto dai medesimi controlli di concorrenza. Le modifiche manuali conservano lo snapshot originario. Le bozze storiche senza snapshot mostrano “Non registrate”; una ricerca registrata senza risultati mostra “Nessuna fonte trovata”.
+
+Il badge AI Confidence è stato rimosso dall'interfaccia e dal Design System. Il campo nullable `ai_confidence` rimane nel database e nell'API per compatibilità; deriva dal reranker e non è una probabilità calibrata di correttezza.
+
+## Consumo dei modelli
+
+L'osservabilità opzionale usa Langfuse interno, separato dal database applicativo. I callback dei modelli inviano identificativi interni, fase, modello, tempi ed effettivi token restituiti dal provider, senza esportare contenuti delle email o dei documenti. Sono coperti classificazione, risposta, fallback e normalizzazione documentale; gli embedding non espongono usage tramite l'interfaccia corrente. Il servizio è disabilitato per default e un guasto alla telemetria non interrompe l'elaborazione. Installazione e limiti: [OBSERVABILITY](OBSERVABILITY.md).
 
 ## Rendering e invio
 

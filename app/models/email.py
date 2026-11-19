@@ -7,6 +7,7 @@ from app.db.database import Base
 from app.models.category import email_category_association
 from app.models.enumerators.enumerators import EmailStatus
 from app.core.audit_logging import Auditable
+from sqlalchemy.dialects.postgresql import JSONB
 
 class Email(Base, Auditable):
     __tablename__ = "emails"
@@ -42,6 +43,7 @@ class Email(Base, Auditable):
 
     generated_draft: Mapped[str | None] = mapped_column(Text)
     ai_confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
+    retrieved_sources: Mapped[list[dict] | None] = mapped_column(JSONB, nullable=True)
     response_language: Mapped[str | None] = mapped_column(String(16), nullable=True)
     ai_disclaimer: Mapped[str | None] = mapped_column(Text, nullable=True)
 

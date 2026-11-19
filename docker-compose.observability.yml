@@ -1,0 +1,16 @@
+# Optional application overlay; combine with prod and smtp, never with the Langfuse stack.
+services:
+  worker:
+    environment:
+      LANGFUSE_ENABLED: ${LANGFUSE_ENABLED:-false}
+      LANGFUSE_BASE_URL: ${APP_LANGFUSE_BASE_URL:-http://127.0.0.1:3000}
+      LANGFUSE_ENVIRONMENT: ${LANGFUSE_ENVIRONMENT:-production}
+      LANGFUSE_RELEASE: ${LANGFUSE_RELEASE:-}
+    secrets:
+      - langfuse_public_key
+      - langfuse_secret_key
+secrets:
+  langfuse_public_key:
+    file: ${LANGFUSE_PUBLIC_KEY_FILE:-/home/operatore/secrets/langfuse_public_key}
+  langfuse_secret_key:
+    file: ${LANGFUSE_SECRET_KEY_FILE:-/home/operatore/secrets/langfuse_secret_key}

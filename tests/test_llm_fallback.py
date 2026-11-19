@@ -152,8 +152,9 @@ def test_response_rejects_invented_links_then_saves_and_stores_confidence():
     good = json.dumps({'action': 'draft', 'draft_text': 'La seconda rata scade il 31 marzo.\n\nRegolamento tasse: https://www.unical.it/tasse',
                        'response_language': 'it', 'ai_disclaimer': None})
     llm = scripted_llm(bad, good)
-    def save(email_id, draft, language, disclaimer, token):
+    def save(email_id, draft, language, disclaimer, token, retrieved_sources=None):
         email.status = EmailStatus.DRAFT
+        email.retrieved_sources = retrieved_sources
         return fallback.SAVED_OK
     with patch.object(fallback, 'session_scope', fake_db(email)), \
          patch.object(fallback, 'get_responder_llm', return_value=llm), \
@@ -166,6 +167,8 @@ def test_response_rejects_invented_links_then_saves_and_stores_confidence():
     assert saved.call_args.args[2] == 'it' and saved.call_args.args[3] is None
     assert 'reference_url' in llm.invoke.call_args_list[1].args[0][-1].content
     assert email.ai_confidence == 0.8
+    assert email.retrieved_sources[0]['reference_url'] == 'https://www.unical.it/tasse'
+    assert email.retrieved_sources[0]['excerpt'] == 'La seconda rata scade il 31 marzo.'
 
 
 def test_response_repeats_search_without_filter_and_escalates_when_nothing_is_found():
@@ -189,7 +192,8 @@ def test_model_can_choose_escalation():
          patch.object(fallback, 'retrieve_context', return_value=passage()), \
          patch.object(fallback, '_escalate_to_human') as escalate:
         assert fallback.run_fallback(email.id, 'respond', 'tok', 0) is True
-    escalate.assert_called_once_with(email.id, 'Minaccia di azioni legali', 'tok')
+    assert escalate.call_args.args == (email.id, 'Minaccia di azioni legali', 'tok')
+    assert escalate.call_args.kwargs['retrieved_sources'][0]['source_name'] == 'Regolamento tasse'
 
 
 def test_save_errors_are_sent_back_to_the_model():

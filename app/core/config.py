@@ -33,6 +33,12 @@ class Settings(BaseSettings):
     # JSON environment variables, e.g. {"en":"it"}; empty means mirror the sender.
     AI_RESPONSE_LANGUAGE_OVERRIDES: dict[str, str] = Field(default_factory=dict)
     AI_DISCLAIMER_TRANSLATIONS: dict[str, str] = Field(default_factory=dict)
+    LANGFUSE_ENABLED: bool = False
+    LANGFUSE_BASE_URL: str = 'http://127.0.0.1:3000'
+    LANGFUSE_PUBLIC_KEY: str = ''
+    LANGFUSE_SECRET_KEY: SecretStr = SecretStr('')
+    LANGFUSE_ENVIRONMENT: str = 'development'
+    LANGFUSE_RELEASE: str = ''
 
     @model_validator(mode='after')
     def validate_critical_settings(self) -> "Settings":

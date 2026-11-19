@@ -194,9 +194,11 @@ def _respond(email_id, token, generation, email):
         # Come chiede il prompt del responder: se il filtro non trova nulla, si ripete senza filtro.
         context = retrieve_context(query=query, k=4, category_names=None)
     sources = _collect_sources(context)
+    from app.core.retrieval_sources import source_snapshots
+    snapshots = source_snapshots(context)
     if not context or not sources:
         _escalate_to_human(email_id, 'Modalità senza strumenti: nessun frammento pertinente trovato '
-                                     'nella Knowledge Base per questa richiesta.', token)
+                                     'nella Knowledge Base per questa richiesta.', token, retrieved_sources=snapshots)
         return True
 
     messages = [
@@ -217,14 +219,14 @@ def _respond(email_id, token, generation, email):
             action = str(data.get('action') or '').strip().lower()
             if action == 'escalate':
                 reason = str(data.get('reason') or '').strip() or 'Richiesta gestione manuale dal modello.'
-                _escalate_to_human(email_id, reason, token)
+                _escalate_to_human(email_id, reason, token, retrieved_sources=snapshots)
                 return True
             draft = data.get('draft_text')
             if action in ('draft', '') and isinstance(draft, str) and draft.strip():
                 problem = _draft_problem(draft, sources)
                 if problem is None:
                     result = _save_draft_response(email_id, draft, _optional_str(data.get('response_language')),
-                                                  _optional_str(data.get('ai_disclaimer')), token)
+                                                  _optional_str(data.get('ai_disclaimer')), token, retrieved_sources=snapshots)
                     if result == SAVED_OK:
                         _store_confidence(email_id, generation, context)
                         return True

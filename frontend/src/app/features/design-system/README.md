@@ -36,7 +36,7 @@ In `frontend/src/app/features/design-system/`:
 - `ds-controls.css` — pulsanti, stati e struttura degli esempi.
 - `ds-forms.css` — input, editor, multi-select, switch e chip.
 - `ds-upload-models.css` — radio cards, dropzone e lista file.
-- `ds-data.css` — badge, fonti, confidence e thread email.
+- `ds-data.css` — badge, fonti e thread email.
 - `ds-feedback.css` — callout, toast, skeleton e viste segmentate.
 - `ds-dialog.css` — modale e drawer di contesto.
 - `ds-icon.component.ts` — icone SVG locali, senza dipendenze.

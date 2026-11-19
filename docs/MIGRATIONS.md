@@ -4,7 +4,7 @@
 
 Alembic è l'unico percorso per aggiornare lo schema. La creazione automatica delle tabelle all'avvio è disabilitata. Non usare `stamp head` per risolvere tabelle mancanti o differenze non analizzate; il comando registrerebbe una versione senza applicare le modifiche.
 
-Il deploy remoto opzionale `--migrate` esegue il backup, ferma gli scrittori e applica `alembic upgrade head` con la nuova immagine backend. Non rimpiazza il database e non importa i dati locali. Nome del progetto e volumi esistenti vengono verificati prima dell'operazione. Vedere [DEPLOY](DEPLOY.md) per l'esecuzione sul server.
+In produzione eseguire manualmente backup e `alembic upgrade head` con la nuova immagine backend, mantenendo gli scrittori fermi. Verificare nome progetto e volumi esistenti prima dell'operazione. Vedere [DEPLOY](DEPLOY.md) per i comandi del server.
 
 ## Revisioni incluse
 
@@ -18,8 +18,11 @@ Il deploy remoto opzionale `--migrate` esegue il backup, ferma gli scrittori e a
 | [e6b9f2a1c430](../alembic/versions/e6b9f2a1c430_add_ai_confidence.py) | Confidence nullable con vincolo [0,1] |
 | [f3a6c8e1b245](../alembic/versions/f3a6c8e1b245_add_document_processing_status.py) | Stato di elaborazione e note di revisione documenti |
 | [a71d9c4e2f60](../alembic/versions/a71d9c4e2f60_email_arrival_and_processing_guards.py) | Date di arrivo, revisioni bozze e prenotazioni AI |
+| [c2d8e4f6a901](../alembic/versions/c2d8e4f6a901_store_email_retrieval_sources.py) | Snapshot nullable delle fonti recuperate per le bozze |
 
-La head prevista nel codice attuale è `a71d9c4e2f60`. Lo stato della VPS non è stato verificato in questa sessione. Il database locale era stato aggiornato alla head dopo backup durante il lavoro precedente.
+La head prevista nel codice attuale è `c2d8e4f6a901`. Lo stato della VPS non è stato verificato in questa sessione. La nuova revisione è stata collaudata soltanto su database temporanei; il database locale e quello di produzione devono essere aggiornati separatamente.
+
+La nuova colonna `retrieved_sources JSONB NULL` è compatibile con le email esistenti: NULL indica che lo storico delle fonti non è stato registrato; un array vuoto indica una ricerca registrata senza risultati. Non sono previsti backfill delle fonti, rigenerazioni di bozze o rimozioni di documenti. Langfuse usa un database separato, gestito dal proprio stack: non aggiunge altre revisioni Alembic applicative.
 
 La rimozione dei template (`d4a7e2b9f610`) elimina le relative tabelle e il tipo enum: il downgrade ricrea lo schema ma **non i contenuti eliminati**. Questa migrazione non elimina email, categorie, documenti o embedding. La conservazione del database durante il deploy significa riutilizzo dello stesso volume e dei dati applicativi; non significa che le migrazioni non possano rimuovere strutture obsolete. Leggere le revisioni ancora da applicare e verificare il backup prima di procedere.
 
@@ -33,7 +36,7 @@ docker compose -f docker-compose.dev.yml exec -T db pg_dump -U postgres -d unica
 docker compose -f docker-compose.dev.yml exec -T db pg_restore --list < /percorso/protetto/prima-migrazione.dump
 ```
 
-Annotare la revisione corrente e il numero di utenti, email e documenti. Controllare dimensione del dump, spazio libero, disponibilità degli originali e assenza di deploy concorrenti. In ambienti operativi fermare tutti gli scrittori prima di migrare; in produzione lo fa lo script. Un database con tabelle applicative ma senza revisione Alembic richiede un'analisi dello schema prima dell'aggiornamento.
+Annotare la revisione corrente e il numero di utenti, email e documenti. Controllare dimensione del dump, spazio libero, disponibilità degli originali e assenza di deploy concorrenti. In ambienti operativi fermare manualmente tutti gli scrittori prima di migrare. Un database con tabelle applicative ma senza revisione Alembic richiede un'analisi dello schema prima dell'aggiornamento.
 
 ```bash
 docker compose -f docker-compose.dev.yml stop backend worker beat
@@ -47,6 +50,7 @@ Verificare revisione attesa, conteggi conservati delle entità ancora previste e
 
 ```bash
 docker compose -f docker-compose.dev.yml exec -T db psql -U postgres -d unical_support -c 'SELECT count(*) AS emails, count(received_at) AS with_arrival FROM emails;'
+docker compose -f docker-compose.dev.yml exec -T db psql -U postgres -d unical_support -c 'SELECT count(*) AS emails, count(retrieved_sources) AS with_sources FROM emails;'
 docker compose -f docker-compose.dev.yml exec -T db psql -U postgres -d unical_support -c 'SELECT version_num FROM alembic_version;'
 ```
 
@@ -63,7 +67,7 @@ docker compose -f docker-compose.dev.yml exec -T backend alembic revision --auto
 Per riprodurre il comando della modifica email su un ramo **senza** la revisione già inclusa:
 
 ```bash
-alembic revision --autogenerate -m "add email arrival dates and processing guards"
+alembic revision --autogenerate -m "store email retrieval sources"
 ```
 
 Non creare una revisione duplicata per distribuire codice che contiene già gli script. L'autogenerazione non scrive i backfill e può non rilevare tutti i CHECK o gli enum: revisionare sempre upgrade/downgrade. Le tabelle LangChain sono escluse da `alembic/env.py`; non aggiungerne la rimozione automatica.
@@ -71,6 +75,35 @@ Non creare una revisione duplicata per distribuire codice che contiene già gli 
 ## Script completo dell'ultima revisione
 
 Il file eseguibile è quello collegato nella tabella; il codice corrente è:
+
+```python
+"""Persist retrieved source snapshots with email drafts.
+
+Revision ID: c2d8e4f6a901
+Revises: a71d9c4e2f60
+"""
+from alembic import op
+from sqlalchemy import Column
+from sqlalchemy.dialects.postgresql import JSONB
+
+revision = 'c2d8e4f6a901'
+down_revision = 'a71d9c4e2f60'
+branch_labels = None
+depends_on = None
+
+
+def upgrade():
+    # NULL means no historical retrieval record; [] means a recorded empty search.
+    op.add_column('emails', Column('retrieved_sources', JSONB(), nullable=True))
+
+
+def downgrade():
+    op.drop_column('emails', 'retrieved_sources')
+```
+
+L'upgrade conserva il testo delle bozze e lascia NULL sulle righe storiche. Il downgrade elimina solo lo storico delle fonti; occorre prima fermare i nuovi processi e tornare a codice compatibile. I test verificano upgrade/downgrade su PostgreSQL e conservazione del testo già presente.
+
+## Revisione precedente: date e concorrenza
 
 ```python
 """Arrival ordering, optimistic drafts and fenced AI processing.
@@ -127,6 +160,6 @@ docker compose -f docker-compose.dev.yml run --rm --no-deps backend alembic down
 docker compose -f docker-compose.dev.yml run --rm --no-deps backend alembic current
 ```
 
-Prima di riavviare ripristinare codice compatibile con la revisione di destinazione. In produzione usare un'immagine che contenga gli script necessari e il comando Compose del manifest; valutare ogni revisione inversa, evitando un downgrade generico di più cambiamenti alla cieca. Un downgrade non recupera dati già eliminati dalle migrazioni.
+Prima di riavviare ripristinare codice compatibile con la revisione di destinazione. In produzione usare un'immagine che contenga gli script necessari e gli stessi file e nome progetto Compose della procedura manuale; valutare ogni revisione inversa, evitando un downgrade generico di più cambiamenti alla cieca. Un downgrade non recupera dati già eliminati dalle migrazioni.
 
-Per recuperare dati eliminati occorre il dump. Verificarlo tramite restore su un database separato; pianificare poi l'eventuale ripristino operativo, tenendo conto dei dati acquisiti dopo il backup. Lo script di deploy non automatizza restore o cancellazioni del database.
+Per recuperare dati eliminati occorre il dump. Verificarlo tramite restore su un database separato; pianificare poi l'eventuale ripristino operativo, tenendo conto dei dati acquisiti dopo il backup. Il restore non fa parte del normale aggiornamento.

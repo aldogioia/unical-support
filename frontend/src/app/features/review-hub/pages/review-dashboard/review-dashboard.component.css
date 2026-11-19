@@ -10,36 +10,6 @@
   font-size: 9px;
   max-width: 50%;
 }
-.ai-sources {
-  margin-top: 13px;
-  border: var(--ds-container-stroke) solid var(--ds-border);
-  border-radius: 8px;
-  background: var(--ds-surface);
-}
-.ai-sources summary {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 13px 15px;
-  list-style: none;
-  cursor: pointer;
-  color: var(--ds-info);
-  font-size: 12px;
-}
-.ai-sources summary::-webkit-details-marker {
-  display: none;
-}
-.ai-sources summary > .badge {
-  margin-left: auto;
-}
-.ai-sources summary > ds-icon:last-child {
-  width: 13px;
-}
-.ai-sources p {
-  padding: 0 15px 15px;
-  color: var(--ds-text-secondary);
-  font-size: 12px;
-}
 .draft-heading {
   display: flex;
   align-items: baseline;

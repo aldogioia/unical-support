@@ -42,7 +42,7 @@ def _get_current_settings():
         }
 
 
-def _build_llm(provider: str, model: str, base_url: str | None, temperature: float):
+def _build_llm(provider: str, model: str, base_url: str | None, temperature: float, stage: str = 'llm'):
     """
     Istanzia il client LangChain giusto in base al provider salvato.
 
@@ -56,12 +56,14 @@ def _build_llm(provider: str, model: str, base_url: str | None, temperature: flo
                   un valore placeholder.
     """
     provider = (provider or "").lower().strip()
+    from app.core.llm_observability import llm_callbacks
+    callbacks = llm_callbacks(provider, model, stage)
 
     if provider == "groq":
-        return ChatGroq(temperature=temperature, model_name=model, api_key=settings.GROQ_API_KEY)
+        return ChatGroq(temperature=temperature, model_name=model, api_key=settings.GROQ_API_KEY, callbacks=callbacks)
 
     if provider == "google":
-        return ChatGoogleGenerativeAI(model=model, temperature=temperature, google_api_key=settings.GOOGLE_API_KEY)
+        return ChatGoogleGenerativeAI(model=model, temperature=temperature, google_api_key=settings.GOOGLE_API_KEY, callbacks=callbacks)
 
     if provider == "local":
         if not base_url:
@@ -73,6 +75,7 @@ def _build_llm(provider: str, model: str, base_url: str | None, temperature: flo
             model=model,
             temperature=temperature,
             base_url=base_url,
+            callbacks=callbacks,
             api_key="not-needed",  # molti server locali ignorano l'api_key, ma il client la richiede comunque
         )
 
@@ -86,6 +89,7 @@ def get_classifier_llm():
         model=cfg["classifier_model"],
         base_url=cfg["classifier_base_url"],
         temperature=0,
+        stage='classify',
     )
 
 def get_responder_llm():
@@ -95,6 +99,7 @@ def get_responder_llm():
         model=cfg["responder_model"],
         base_url=cfg["responder_base_url"],
         temperature=0.2,
+        stage='respond',
     )
 
 def get_formatter_llm():
@@ -111,4 +116,5 @@ def get_formatter_llm():
         model=cfg["responder_model"],
         base_url=cfg["responder_base_url"],
         temperature=0,
+        stage='normalize',
     )

@@ -232,6 +232,7 @@ def format_source_context(docs: list) -> str:
         except (ValueError, TypeError, AttributeError):
             reference = None
         passages.append(json.dumps({
+            "document_id": str(doc.metadata.get("document_id")) if str(doc.metadata.get("document_id")) in sources else None,
             "source_name": source.get("name") or doc.metadata.get("source_name") or doc.metadata.get("filename") or "Documento",
             "reference_url": reference,
             "citation_allowed": bool(reference),

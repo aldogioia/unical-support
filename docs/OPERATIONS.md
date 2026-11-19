@@ -1,6 +1,6 @@
 # OPERATIONS
 
-Eseguire i comandi dalla radice del repository. Per la produzione usare sempre progetto, file Compose e override del manifest di deploy: un Compose lanciato con un nome progetto diverso può selezionare volumi diversi.
+Eseguire i comandi dalla radice del repository. Per la produzione usare sempre progetto e file Compose indicati in [DEPLOY](DEPLOY.md): un nome progetto diverso può selezionare volumi diversi.
 
 ## Avvio in sviluppo
 
@@ -30,7 +30,7 @@ Non esiste una password universale. Per creare un account nel database dell'ambi
 docker compose -f docker-compose.dev.yml exec backend python create_user.py
 ```
 
-Lo script chiede email, password nascosta con conferma e ruolo (`admin` o `user`). Rifiuta email duplicate e password inferiori a otto caratteri. In produzione eseguire lo stesso comando `exec backend python create_user.py` con il prefisso Compose del manifest, da una sessione SSH interattiva. Non inserire password nella riga di comando o nei log. Il messaggio finale dello script indica localhost anche in produzione: accedere invece all'indirizzo effettivo dell'installazione.
+Lo script chiede email, password nascosta con conferma e ruolo (`admin` o `user`). Rifiuta email duplicate e password inferiori a otto caratteri. In produzione eseguire lo stesso comando `exec backend python create_user.py` con il prefisso Compose documentato in DEPLOY, da una sessione SSH interattiva. Non inserire password nella riga di comando o nei log. Il messaggio finale dello script indica localhost anche in produzione: accedere invece all'indirizzo effettivo dell'installazione.
 
 ## Scelta del provider email
 
@@ -44,7 +44,7 @@ Il consenso interattivo si esegue da una macchina con browser, con `credentials.
 python -m app.listener.gmail_client --reauth
 ```
 
-L'applicazione non apre un browser nei processi server: un token assente/non rinnovabile produce un errore. Non stampare o committare `token.json` e `credentials.json`. Lo script di deploy non carica quelli del computer locale: conserva i file presenti sul server o nei container esistenti in `<remote-dir>/.deploy/runtime/`. Le credenziali sono montate in sola lettura; il token è scrivibile per il rinnovo. Un nuovo consenso richiede l'aggiornamento dei file remoti e la ricreazione di backend/worker: la semplice sostituzione atomica di un file bind-mounted non aggiorna l'inode visto dai vecchi container.
+L'applicazione non apre un browser nei processi server: un token assente/non rinnovabile produce un errore. Non stampare o committare `token.json` e `credentials.json`. Per Gmail API configurare esplicitamente la persistenza dei file remoti: credenziali in sola lettura e token scrivibile per il rinnovo. La build li esclude e il deploy manuale non li recupera automaticamente dai vecchi container. Un nuovo consenso richiede l'aggiornamento dei file e la ricreazione dei servizi se si sostituisce atomicamente un file bind-mounted. Il server confermato usa attualmente SMTP.
 
 ### IMAP/SMTP
 
@@ -77,7 +77,7 @@ docker compose -f docker-compose.dev.yml exec -T backend celery -A app.core.cele
 docker compose -f docker-compose.dev.yml exec -T backend celery -A app.core.celery_app inspect registered
 ```
 
-In produzione sostituire il prefisso con quello registrato in `manifest.json`. I log possono contenere mittenti, contenuto o errori del provider: non pubblicarli integralmente senza rimuovere dati personali e token.
+In produzione usare il prefisso `docker compose -p unical_support -f docker-compose.prod.yml -f docker-compose.smtp.yml`, come documentato in DEPLOY. I log possono contenere mittenti, contenuto o errori del provider: non pubblicarli integralmente senza rimuovere dati personali e token.
 
 | Sintomo | Verifica / azione |
 | --- | --- |
@@ -91,11 +91,17 @@ In produzione sostituire il prefisso con quello registrato in `manifest.json`. I
 | Documento needs_review | Leggere review_notes e correggere il documento; non presumere che sia indicizzato |
 | Documento pending troppo a lungo | Log document_queue: alcuni errori di estrazione restano da diagnosticare nei log |
 | Nessun link nella risposta | Verificare reference_url del documento; un nome senza URL non è una citazione valida |
-| Confidence N/D | Metrica non disponibile; non significa necessariamente errore o confidenza zero |
+| Fonti “Non registrate” | Bozza storica o generazione senza storico; il nuovo campo non ricostruisce retroattivamente i retrieval |
+| “Nessuna fonte trovata” | Ricerca registrata senza frammenti utilizzabili; controllare indicizzazione, categorie e log del retrieval |
+| Token assenti in Langfuse | Verificare abilitazione, chiavi progetto, raggiungibilità e usage del provider; un valore assente non equivale a zero |
 
 Non eseguire aggiornamenti SQL indiscriminati sugli stati delle email: aggirerebbero revisioni, proprietà manuale e generazioni dei job. La documentazione architetturale descrive i controlli in [ARCHITECTURE](ARCHITECTURE.md).
 
+Langfuse interno richiede lo stack separato e l'overlay worker descritti in [OBSERVABILITY](OBSERVABILITY.md). Quando attivato, includere `-f docker-compose.observability.yml` anche nei successivi comandi Compose applicativi. Le credenziali restano nei secret del server; l'interfaccia Angular non le riceve.
+
 ## Backup e conservazione
+
+Per svuotare solo le email e le relative associazioni, mantenendo gli altri dati, seguire [EMAIL_CLEANUP](EMAIL_CLEANUP.md). La guida include arresto dei processi, backup, DELETE in transazione e ripresa del polling.
 
 In sviluppo:
 
@@ -104,18 +110,11 @@ docker compose -f docker-compose.dev.yml exec -T db pg_dump -U postgres -d unica
 docker compose -f docker-compose.dev.yml exec -T db pg_restore --list < /percorso/protetto/unical-support.dump
 ```
 
-Il dump contiene anche i vettori PostgreSQL. In produzione lo script usa utente e database effettivi del container/secrets, non i valori di sviluppo, e controlla il catalogo del dump con pg_restore. È una verifica strutturale, non un ripristino completo: provare periodicamente il restore su un database separato.
+Il dump contiene anche i vettori PostgreSQL. In produzione usare utente e database effettivi del container/secrets, non i valori di sviluppo, e controllare il catalogo con pg_restore. È una verifica strutturale, non un ripristino completo: provare periodicamente il restore su un database separato.
 
-Conservare anche upload ancora necessari, file OAuth, configurazione/secrets e modalità di attivazione del tunnel. Lo script salva il backup sul server, non su uno storage esterno: organizzare una copia protetta fuori macchina e una retention. Non cancellare automaticamente release e immagini di rollback prima di aver verificato l'aggiornamento.
+Conservare anche upload ancora necessari, file OAuth, configurazione/secrets e modalità di attivazione del tunnel. Organizzare una copia protetta dei backup fuori macchina e una retention. Conservare le immagini precedenti necessarie al rollback fino alla verifica dell'aggiornamento.
 
 ## Test e build
-
-Per i soli script di deploy non servono Docker o dipendenze applicative:
-
-```bash
-python3 tests/test_deploy.py
-python3 scripts/deploy.py --dry-run --build all --migrate
-```
 
 Per la suite backend installare le dipendenze di sviluppo in un ambiente di test. L'immagine worker non include pytest per default. Con la stack locale già attiva:
 
@@ -132,7 +131,7 @@ docker compose -f docker-compose.dev.yml run --rm --no-deps -p 9876:9876 fronten
 
 Per Karma collegare un browser a `http://localhost:9876/`; se Chrome è installato nel relativo ambiente, passare `--browsers=ChromeHeadless`. L'immagine frontend standard non include Chrome. Il warning CommonJS di html2canvas è noto e non blocca la build.
 
-Le prove live `tests/smoke_language_live.py` richiedono il modello configurato e possono consumare quota; usano retrieval sintetico, senza salvare o inviare email. La verifica del 27 ottobre 2026 aveva superato 105 test backend, 87 frontend, build e cinque casi live. Per il deploy sono stati aggiunti test separati: questi esiti storici non attestano una prova su una VPS.
+Le prove live `tests/smoke_language_live.py` richiedono il modello configurato e possono consumare quota; usano retrieval sintetico, senza salvare o inviare email. La verifica del 27 ottobre 2026 aveva superato 105 test backend, 87 frontend, build e cinque casi live; questi esiti storici non attestano una prova sulla VPS.
 
 Rigenerazione del client dopo modifiche alle API:
 

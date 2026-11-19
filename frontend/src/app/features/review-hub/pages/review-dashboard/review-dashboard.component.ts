@@ -14,7 +14,7 @@ import { CommonModule } from '@angular/common';
 import { WorkspaceHeaderComponent } from '../../../../shared/components/workspace-header/workspace-header.component';
 import { AutoResizeDirective } from '../../../../shared/components/auto-resize.directive';
 import { DsIconComponent } from '../../../../shared/components/ds-icon/ds-icon.component';
-import { AiConfidenceComponent } from '../../../../shared/components/ai-confidence/ai-confidence.component';
+import { RetrievedSourcesComponent } from '../../../../shared/components/retrieved-sources/retrieved-sources.component';
 import { EmailPreviewComponent } from '../../../../shared/components/email-preview/email-preview.component';
 import { DetailPanelDirective } from '../../../../shared/components/detail-panel.directive';
 import { senderInfo } from '../../../../shared/sender';
@@ -44,7 +44,7 @@ import { readEmailFetchStatusApiEmailsFetchStatusJobIdGet } from '../../../../co
     AutoResizeDirective,
     LoadMoreDirective,
     DetailPanelDirective,
-    AiConfidenceComponent,
+    RetrievedSourcesComponent,
     EmailPreviewComponent,
   ],
   templateUrl: './review-dashboard.component.html',
