@@ -1,5 +1,6 @@
 from celery import Celery
 from celery.signals import worker_process_init, worker_process_shutdown
+from celery.signals import setup_logging
 from celery.schedules import crontab
 from app.core.config import settings
 import logging
@@ -11,6 +12,13 @@ logger = logging.getLogger(__name__)
 def flush_worker_observability(**kwargs):
     from app.core.llm_observability import flush_observability
     flush_observability()
+
+@setup_logging.connect
+def configure_celery_logging(**kwargs):
+    """Celery usa lo stesso formato del backend; worker e beat si distinguono nel componente."""
+    import sys
+    from app.core.logging_config import setup_logging as apply_logging
+    apply_logging("beat" if "beat" in sys.argv else "worker")
 
 celery_app = Celery(
     "unical_worker",
@@ -30,6 +38,7 @@ celery_app.conf.update(
     timezone="Europe/Rome",
     enable_utc=True,
     broker_connection_retry_on_startup=True,
+    worker_redirect_stdouts_level="INFO",
     task_track_started=True,
     task_routes={
         "app.tasks.email_tasks.classify_email*": {"queue": "classify_queue"},

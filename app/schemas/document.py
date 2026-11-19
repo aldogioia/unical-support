@@ -21,6 +21,14 @@ class DocumentUpdate(BaseModel):
     reference_url: str | None = Field(default=None, max_length=2048)
     _validate_reference_url = field_validator('reference_url')(normalize_reference_url)
 
+# Massima lunghezza del testo corretto a mano da un amministratore prima dell'indicizzazione forzata.
+MAX_REVIEWED_MARKDOWN = 500_000
+
+class DocumentForceIndex(BaseModel):
+    # Testo corretto dall'amministratore: se presente sostituisce quello generato dall'AI.
+    # Assente (o corpo vuoto) = indicizza il testo generato così com'è.
+    markdown: str | None = Field(default=None, max_length=MAX_REVIEWED_MARKDOWN)
+
 class DocumentResponse(DocumentBase):
     id: uuid.UUID
     categories: List[CategoryResponse] = []

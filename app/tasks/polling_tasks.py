@@ -1,3 +1,4 @@
+import logging
 # app/tasks/polling_tasks.py
 from datetime import datetime, timedelta, timezone
 from sqlalchemy import or_
@@ -8,6 +9,8 @@ from app.schemas.email import EmailCreate
 from app.services import email_service
 from app.models.email import Email, EmailStatus
 from sqlalchemy.exc import IntegrityError
+
+logger = logging.getLogger(__name__)
 
 @celery_app.task(bind=True, name="app.tasks.polling_tasks.poll_gmail", soft_time_limit=540, time_limit=600)
 def poll_gmail(self, reservation_id: str | None = None):
@@ -24,11 +27,11 @@ def poll_gmail(self, reservation_id: str | None = None):
     fetched_count = 0
     client = None
     try:
-        print("[BEAT] Controllo nuove email...")
+        logger.info("[BEAT] Controllo nuove email...")
         try:
             client = get_email_client()
         except Exception as exc:
-            print(f"[BEAT] Inizializzazione client email fallita: {exc}")
+            logger.exception(f"[BEAT] Inizializzazione client email fallita: {exc}")
             return coordinator.update(job_id, "failed", "Impossibile accedere alla posta. Verifica provider e credenziali email.")
 
         unread_emails = client.fetch_unread_emails()
@@ -55,7 +58,7 @@ def poll_gmail(self, reservation_id: str | None = None):
             fetched_count,
         )
     except Exception as exc:
-        print(f"[BEAT] Errore durante il polling: {exc}")
+        logger.exception(f"[BEAT] Errore durante il polling: {exc}")
         return coordinator.update(
             job_id, "failed", "Errore durante il recupero delle email. Verifica la connessione alla posta e riprova.", fetched_count,
         )

@@ -20,3 +20,8 @@ class AISettingsUpdate(BaseModel):
     responder_provider: str | None = Field(default=None, min_length=2, max_length=50)
     responder_model: str | None = Field(default=None, min_length=2, max_length=100)
     responder_base_url: str | None = Field(default=None, max_length=255)
+
+
+class LocalModelsResponse(BaseModel):
+    base_url: str
+    models: list[str]

@@ -3,6 +3,7 @@
 
 export type { AiSettingsResponse } from './models/ai-settings-response';
 export type { AiSettingsUpdate } from './models/ai-settings-update';
+export type { LocalModelsResponse } from './models/local-models-response';
 export type { BodyCreateUserFeedbackApiFeedbackPost } from './models/body-create-user-feedback-api-feedback-post';
 export type { BodyImportCategoriesFromJsonApiCategoriesImportPost } from './models/body-import-categories-from-json-api-categories-import-post';
 export type { BodyUploadDocumentApiDocumentsUploadPost } from './models/body-upload-document-api-documents-upload-post';
@@ -10,6 +11,7 @@ export type { CategoryCreate } from './models/category-create';
 export type { CategoryImportResult } from './models/category-import-result';
 export type { CategoryResponse } from './models/category-response';
 export type { CategoryUpdate } from './models/category-update';
+export type { DocumentForceIndex } from './models/document-force-index';
 export type { DocumentResponse } from './models/document-response';
 export type { DocumentUpdate } from './models/document-update';
 export type { EmailCreate } from './models/email-create';

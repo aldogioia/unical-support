@@ -1,3 +1,4 @@
+import logging
 import os
 import uuid
 import smtplib
@@ -10,6 +11,8 @@ from sqlalchemy.orm import Session
 from app.models.feedback import Feedback
 from app.core.config import settings
 from uuid import UUID
+
+logger = logging.getLogger(__name__)
 
 UPLOAD_DIR = "/app/uploads/feedback"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -78,7 +81,7 @@ def create_feedback(
     try:
         _send_feedback_email(description=description, image_bytes=image_bytes, user_id=user_id)
     except Exception as e:
-        print(f"[FEEDBACK] Errore invio email notifica: {e}")
+        logger.exception(f"[FEEDBACK] Errore invio email notifica: {e}")
 
     return db_feedback
 
@@ -89,7 +92,7 @@ def _send_feedback_email(description: str, image_bytes: bytes | None, user_id: U
     recipient = settings.FEEDBACK_EMAIL_RECIPIENT
 
     if not sender or not password or not recipient:
-        print("[FEEDBACK] Variabili email non configurate, invio saltato.")
+        logger.warning("[FEEDBACK] Variabili email non configurate, invio saltato.")
         return
 
     msg = MIMEMultipart()
@@ -116,7 +119,7 @@ Descrizione:
         server.login(sender, password)
         server.sendmail(sender, recipient, msg.as_string())
 
-    print(f"[FEEDBACK] Email notifica inviata a {recipient}")
+    logger.info(f"[FEEDBACK] Email notifica inviata a {recipient}")
 
 
 def get_feedbacks(db: Session, skip: int = 0, limit: int = 100):

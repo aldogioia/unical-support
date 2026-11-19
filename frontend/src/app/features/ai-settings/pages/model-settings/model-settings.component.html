@@ -246,7 +246,8 @@
                         [id]="agent.id + '-provider'"
                         [name]="agent.id + 'Provider'"
                         class="form-control"
-                        [(ngModel)]="form[agent.provider]"
+                        [ngModel]="form[agent.provider]"
+                        (ngModelChange)="onProviderChange(agent, $event)"
                         [disabled]="saving()"
                       >
                         @for (provider of providers; track provider.value) {
@@ -259,15 +260,106 @@
                     <div>
                       <label [for]="agent.id + '-model'" class="form-label"
                         >Nome del modello</label
-                      ><input
-                        [id]="agent.id + '-model'"
-                        [name]="agent.id + 'Model'"
-                        class="form-control"
-                        [(ngModel)]="form[agent.model]"
-                        placeholder="Identificativo del modello"
-                        required
-                        [disabled]="saving()"
-                      />
+                      >
+                      @if (useManualModel(agent)) {
+                        <input
+                          [id]="agent.id + '-model'"
+                          [name]="agent.id + 'Model'"
+                          class="form-control"
+                          [(ngModel)]="form[agent.model]"
+                          placeholder="Identificativo del modello"
+                          required
+                          [disabled]="saving()"
+                        />
+                        @if (
+                          form[agent.provider] === "local" &&
+                          manualModel()[agent.id] &&
+                          localState(agent).status !== "error"
+                        ) {
+                          <button
+                            type="button"
+                            class="btn btn-ghost btn-sm model-mode"
+                            [disabled]="saving()"
+                            (click)="setManualModel(agent, false)"
+                          >
+                            Scegli dalla lista del server
+                          </button>
+                        }
+                      } @else {
+                        <div class="model-picker">
+                          <select
+                            [id]="agent.id + '-model'"
+                            [name]="agent.id + 'Model'"
+                            class="form-control"
+                            [(ngModel)]="form[agent.model]"
+                            required
+                            [disabled]="
+                              saving() || localState(agent).status === 'loading'
+                            "
+                          >
+                            @if (!modelOptions(agent).length) {
+                              <option value="" disabled>
+                                {{
+                                  localState(agent).status === "loading"
+                                    ? "Caricamento modelli…"
+                                    : "Nessun modello disponibile"
+                                }}
+                              </option>
+                            }
+                            @for (option of modelOptions(agent); track option.id) {
+                              <option [value]="option.id">
+                                {{ option.label }}
+                              </option>
+                            }
+                          </select>
+                          @if (form[agent.provider] === "local") {
+                            <button
+                              type="button"
+                              class="btn btn-outline btn-sm model-refresh"
+                              [disabled]="
+                                saving() || localState(agent).status === 'loading'
+                              "
+                              (click)="loadLocalModels(agent)"
+                            >
+                              Ricarica lista
+                            </button>
+                          }
+                        </div>
+                        @if (form[agent.provider] === "local") {
+                          <button
+                            type="button"
+                            class="btn btn-ghost btn-sm model-mode"
+                            [disabled]="saving()"
+                            (click)="setManualModel(agent, true)"
+                          >
+                            Scrivi il nome a mano
+                          </button>
+                        }
+                      }
+                      @if (form[agent.provider] === "local") {
+                        @switch (localState(agent).status) {
+                          @case ("loading") {
+                            <p class="field-hint" role="status">
+                              Lettura dei modelli dal server…
+                            </p>
+                          }
+                          @case ("ok") {
+                            <p class="field-hint model-ok" role="status">
+                              <ds-icon name="check" />Server raggiungibile:
+                              {{ localState(agent).models.length }} modelli
+                              trovati.
+                            </p>
+                          }
+                          @case ("error") {
+                            <p class="field-hint model-error" role="alert">
+                              <ds-icon name="warning" />{{
+                                localState(agent).error
+                              }}
+                              Puoi comunque scrivere il nome a mano.
+                            </p>
+                          }
+                        }
+                      }
                     </div>
                     @if (form[agent.provider] === "local") {
                       <div>
@@ -278,6 +370,7 @@
                           [name]="agent.id + 'Url'"
                           class="form-control"
                           [(ngModel)]="form[agent.url]"
+                          (blur)="onUrlCommitted(agent)"
                           placeholder="http://host.docker.internal:11434/v1"
                           [disabled]="saving()"
                         />

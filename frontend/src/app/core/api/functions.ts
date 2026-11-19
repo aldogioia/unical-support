@@ -57,6 +57,8 @@ export type { ReadAiSettingsApiAiSettingsGet$Params as ReadAiSettingsApiAiSettin
 export { readAiSettingsApiAiSettingsGet as readAiSettingsApiAiSettingsGet } from './fn/ai-settings/read-ai-settings-api-ai-settings-get';
 export type { UpdateAiSettingsApiAiSettingsPut$Params as UpdateAiSettingsApiAiSettingsPut$Params } from './fn/ai-settings/update-ai-settings-api-ai-settings-put';
 export { updateAiSettingsApiAiSettingsPut as updateAiSettingsApiAiSettingsPut } from './fn/ai-settings/update-ai-settings-api-ai-settings-put';
+export type { ListLocalModelsApiAiSettingsLocalModelsGet$Params as ListLocalModelsApiAiSettingsLocalModelsGet$Params } from './fn/ai-settings/list-local-models-api-ai-settings-local-models-get';
+export { listLocalModelsApiAiSettingsLocalModelsGet as listLocalModelsApiAiSettingsLocalModelsGet } from './fn/ai-settings/list-local-models-api-ai-settings-local-models-get';
 export type { ReadFeedbacksApiFeedbackGet$Params as ReadFeedbacksApiFeedbackGet$Params } from './fn/feedback/read-feedbacks-api-feedback-get';
 export { readFeedbacksApiFeedbackGet as readFeedbacksApiFeedbackGet } from './fn/feedback/read-feedbacks-api-feedback-get';
 export type { CreateUserFeedbackApiFeedbackPost$Params as CreateUserFeedbackApiFeedbackPost$Params } from './fn/feedback/create-user-feedback-api-feedback-post';

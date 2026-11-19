@@ -1,8 +1,11 @@
+import logging
 from langchain_groq import ChatGroq
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
 from app.core.config import settings
 from app.db.database import session_scope
+
+logger = logging.getLogger(__name__)
 
 # Fallback: usati solo se non si riesce a leggere ai_settings dal DB
 # (es. tabella non ancora migrata, DB momentaneamente non raggiungibile).
@@ -31,7 +34,7 @@ def _get_current_settings():
                 "responder_base_url": row.responder_base_url,
             }
     except Exception as e:
-        print(f"[LLM_FACTORY] Impossibile leggere ai_settings dal DB ({e}), uso i default.")
+        logger.warning(f"[LLM_FACTORY] Impossibile leggere ai_settings dal DB ({e}), uso i default.")
         return {
             "classifier_provider": DEFAULT_CLASSIFIER_PROVIDER,
             "classifier_model": DEFAULT_CLASSIFIER_MODEL,

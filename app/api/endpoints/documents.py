@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
-from app.schemas.document import DocumentResponse, DocumentUpdate
+from app.schemas.document import DocumentResponse, DocumentUpdate, DocumentForceIndex
 from app.services import document_service
 from app.db.database import get_db
 
@@ -61,6 +61,9 @@ def force_index_document(
     document_id: UUID,
     current_user: Annotated[User, Depends(is_admin_user)],
     db: Session = Depends(get_db),
+    body: Optional[DocumentForceIndex] = None,
 ):
-    """Indicizza comunque un documento fermato dalla verifica di fedeltà (solo amministratori)."""
-    return document_service.force_index_document(db, document_id, current_user.id)
+    """Indicizza comunque un documento fermato dalla verifica di fedeltà (solo amministratori).
+    Con `markdown` nel corpo indicizza il testo corretto dall'amministratore al posto di quello generato."""
+    markdown = body.markdown if body else None
+    return document_service.force_index_document(db, document_id, current_user.id, markdown=markdown)

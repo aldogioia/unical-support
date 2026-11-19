@@ -1,3 +1,4 @@
+import logging
 from uuid import UUID
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import or_, and_, func
@@ -9,6 +10,8 @@ from app.models.email import Email, EmailStatus
 from app.schemas.email import EmailUpdateDraft, EmailCreate
 from fastapi import HTTPException
 from app.core.email_formatting import normalize_email_text
+
+logger = logging.getLogger(__name__)
 
 def get_email(db: Session, email_id: UUID):
     return db.query(Email).filter(Email.id == email_id).first()
@@ -83,7 +86,7 @@ def update_email_draft(db: Session, email_id: UUID, update_data: EmailUpdateDraf
         except Exception as e:
             # Se l'invio fallisce non blocchiamo il salvataggio del draft,
             # ma segnaliamo l'errore e teniamo lo status su FAILED
-            print(f"[EMAIL_SERVICE] Errore invio email: {e}")
+            logger.exception(f"[EMAIL_SERVICE] Errore invio email: {e}")
             db_email.status = EmailStatus.FAILED
             db_email.failure_stage = 'send'
 

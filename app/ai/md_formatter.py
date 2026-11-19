@@ -5,6 +5,7 @@ from decimal import Decimal, InvalidOperation
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
+from app.ai.fallback import _response_text
 from app.ai.llm_factory import get_formatter_llm
 from app.ai.prompts import get_md_formatter_system_prompt
 
@@ -132,7 +133,8 @@ def normalize_to_structured_markdown(
             content=f"TESTO ORIGINALE (parte {idx}/{len(windows)}):\n{window}"
         )
         response = llm.invoke([sys_msg, user_msg])
-        generated = (response.content or "").strip()
+        # I modelli Gemini recenti restituiscono il contenuto come lista di blocchi, non come stringa.
+        generated = _response_text(response)
         if not generated:
             continue
 
